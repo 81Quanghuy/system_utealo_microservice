@@ -1,5 +1,6 @@
 package vn.iotstart.userservice.entity;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
@@ -43,5 +44,8 @@ public class Token extends AbstractMappedEntity implements Serializable {
     @JsonFormat(shape = JsonFormat.Shape.STRING)
     private Date expiredAt;
 
-
+    @ManyToOne
+    @JoinColumn(name = "user_id")
+    @JsonBackReference
+    private User user;
 }

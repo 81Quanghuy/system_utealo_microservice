@@ -2,8 +2,11 @@ package vn.iotstart.userservice.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import vn.iotstart.userservice.constant.RoleName;
 
+import java.io.Serial;
 import java.io.Serializable;
+import java.util.List;
 
 @AllArgsConstructor
 @NoArgsConstructor
@@ -14,6 +17,9 @@ import java.io.Serializable;
 @Table(name = "roles")
 public class Role extends AbstractMappedEntity implements Serializable {
 
+    @Serial
+    private static final long serialVersionUID = 1L;
+
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     @Column(name = "role_id")
@@ -22,11 +28,15 @@ public class Role extends AbstractMappedEntity implements Serializable {
     @Column(name = "role_code", unique = true)
     private String code;
 
-    @Column(name = "role_name")
-    private String name;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "roleName")
+    private RoleName roleName;
 
     @Builder.Default
     @Column(name = "role_description")
     private String description = "";
+
+    @OneToMany(mappedBy = "role",cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<User> users;
 
 }

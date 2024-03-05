@@ -1,9 +1,5 @@
 package vn.iotstart.userservice.service;
 
-
-
-import vn.iotstart.userservice.entity.EmailVerification;
-
 import java.util.Optional;
 
 public interface EmailVerificationService {

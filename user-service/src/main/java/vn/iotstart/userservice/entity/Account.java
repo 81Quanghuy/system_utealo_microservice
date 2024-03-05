@@ -1,5 +1,6 @@
 package vn.iotstart.userservice.entity;
 
+import java.io.Serial;
 import java.io.Serializable;
 import java.util.Date;
 import java.util.List;
@@ -11,14 +12,17 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import lombok.*;
 
-@Builder
+@AllArgsConstructor
+@NoArgsConstructor
 @Getter
 @Setter
+@Builder
 @Entity
-@NoArgsConstructor
-@AllArgsConstructor
 @Table(name = "accounts")
 public class Account extends AbstractMappedEntity implements Serializable {
+
+    @Serial
+    private static final long serialVersionUID = 1L;
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
@@ -28,6 +32,10 @@ public class Account extends AbstractMappedEntity implements Serializable {
     @Email
     @Column(name = "email")
     private String email;
+
+    @Builder.Default
+    @Column(name = "phone")
+    private String phone = "";
 
     @JsonBackReference
     @Column(name = "password")
@@ -43,22 +51,32 @@ public class Account extends AbstractMappedEntity implements Serializable {
     private Boolean isActive = true;
 
     @Builder.Default
-    @Column(name = "is_verified")
-    private boolean isVerified = false;
+    @Column(name = "is_account_verified")
+    private Boolean isVerified = false;
 
-    @Builder.Default
+    @Column(name = "created_at")
+    private Date createdAt;
+
+    @Column(name = "updated_at")
+    private Date updatedAt;
+
     @Column(name = "last_login_at")
-    private Date lastLoginAt = null;
+    private Date lastLoginAt;
 
-    @Builder.Default
-    @Column(name = "locked_at")
-    private Date lockedAt = null;
+//    @Builder.Default
+//    @Column(name = "last_login_at")
+//    private Date lastLoginAt = null;
+//
+//    @Builder.Default
+//    @Column(name = "locked_at")
+//    private Date lockedAt = null;
+//
+//    @Builder.Default
+//    @Column(name = "locked_reason")
+//    private String lockedReason = "";
+//
+//    @OneToMany(mappedBy = "account", fetch = FetchType.LAZY)
+//    @JsonIgnore
+//    private List<Token> tokens;
 
-    @Builder.Default
-    @Column(name = "locked_reason")
-    private String lockedReason = "";
-
-    @OneToMany(mappedBy = "account", fetch = FetchType.LAZY)
-    @JsonIgnore
-    private List<Token> tokens;
 }

@@ -5,17 +5,15 @@ import java.io.Serializable;
 
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
+@AllArgsConstructor
+@NoArgsConstructor
 @Getter
 @Setter
+@Builder
 @Entity
-@NoArgsConstructor
-@AllArgsConstructor
-@Table(name = "PROFILES")
+@Table(name = "profiles")
 public class Profile implements Serializable{
 
 	@Serial
@@ -23,16 +21,22 @@ public class Profile implements Serializable{
 
 	@Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "profile_id")
     private int profileId;
     
     @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "userId")
+    @JoinColumn(name = "user_id")
     private User user;
     
-    @Column(columnDefinition = "nvarchar(255)")
+    @Column(name = "biography",columnDefinition = "nvarchar(255)")
     private String bio;
 
-    private String avatar;
-    private String background;
+    @Builder.Default
+    @Column(name = "avatar")
+    private String avatar = "";
+
+    @Builder.Default
+    @Column(name = "background")
+    private String background = "";
     
 }

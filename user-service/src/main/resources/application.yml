@@ -1,6 +1,80 @@
+eureka:
+  instance:
+    hostname: localhost
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+
+server:
+  port: 8000
+
 spring:
   application:
     name: user-service
-  profiles:
-    active: dev
+  servlet:
+    multipart:
+      max-file-size: 20MB
+      max-request-size: 20MB
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: ngoquanghuy0510@gmail.com
+    password: iekijimtrmjenohk
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+  datasource:
+    driver-class-name: com.microsoft.sqlserver.jdbc.SQLServerDriver
+    url: jdbc:sqlserver://localhost;databaseName=user_service;encrypt=false;trustServerCertificate=true;sslProtocol=TLSv1.2;characterEncoding=UTF-8
+    username: sa
+    password: 123
+  jpa:
+    hibernate:
+      ddl-auto: update
+    database: sql_server
+    database-platform: org.hibernate.dialect.SQLServerDialect
 
+#springdoc:
+#  packages-to-scan:
+#    vn.iostar.userservice
+#  api-docs:
+#    path: /v3/api-docs/user-service
+#
+#resilience4j:
+#  circuitbreaker:
+#    instances:
+#      userService:
+#        register-health-indicator: true
+#        event-consumer-buffer-size: 10
+#        automatic-transition-from-open-to-half-open-enabled: true
+#        failure-rate-threshold: 50
+#        minimum-number-of-calls: 5
+#        permitted-number-of-calls-in-half-open-state: 3
+#        sliding-window-size: 10
+#        wait-duration-in-open-state: 5s
+#        sliding-window-type: COUNT_BASED
+#
+#management:
+#  endpoints:
+#    web:
+#      exposure:
+#        include: "*"
+#  health:
+#    circuitbreakers:
+#      enabled: true
+#  endpoint:
+#    health:
+#      show-details: always
+#
+#cloudinary:
+#  cloud-name: ddccjvlbf
+#  api-key: 135792485217745
+#  api-secret: 6XXhPgTw6dZ3x7d43S_x5tIF7oU
+
+#management:
+#  tracing:
+#    sampling:
+#      probability: 1.0

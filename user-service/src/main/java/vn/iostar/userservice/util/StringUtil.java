@@ -1,4 +1,4 @@
-package vn.iotstart.userservice.util;
+package vn.iostar.userservice.util;
 
 public class StringUtil {
     private static String convertToRegex(String query) {

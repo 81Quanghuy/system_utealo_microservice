@@ -1,4 +1,4 @@
-package vn.iotstart.userservice.exception;
+package vn.iostar.userservice.exception;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

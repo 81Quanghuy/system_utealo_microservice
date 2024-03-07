@@ -1,4 +1,4 @@
-package vn.iotstart.userservice.config.encoder;
+package vn.iostar.userservice.config.encoder;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

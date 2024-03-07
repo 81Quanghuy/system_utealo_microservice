@@ -2,7 +2,7 @@ package vn.iostar.userservice.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import vn.iostar.userservice.entity.Role;
-import vn.iotstart.userservice.constant.RoleName;
+import vn.iostar.userservice.constant.RoleName;
 
 import java.util.Optional;
 

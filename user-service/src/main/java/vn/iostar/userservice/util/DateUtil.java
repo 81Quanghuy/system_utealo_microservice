@@ -1,4 +1,4 @@
-package vn.iotstart.userservice.util;
+package vn.iostar.userservice.util;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;

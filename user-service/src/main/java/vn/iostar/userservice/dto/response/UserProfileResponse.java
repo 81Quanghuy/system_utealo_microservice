@@ -6,8 +6,8 @@ import java.util.List;
 
 import lombok.Data;
 import vn.iostar.userservice.entity.User;
-import vn.iotstart.userservice.constant.Gender;
-import vn.iotstart.userservice.constant.RoleName;
+import vn.iostar.userservice.constant.Gender;
+import vn.iostar.userservice.constant.RoleName;
 
 @Data
 public class UserProfileResponse {

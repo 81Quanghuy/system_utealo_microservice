@@ -6,7 +6,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 
 import lombok.*;
-import vn.iotstart.userservice.constant.TokenType;
+import vn.iostar.userservice.constant.TokenType;
 
 import java.io.Serializable;
 import java.util.Date;

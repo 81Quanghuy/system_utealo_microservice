@@ -1,0 +1,7 @@
+spring:
+  application:
+    name: post-service
+  data:
+    mongodb:
+      uri : mongodb+srv://huy:huyvff111@cluster0.wteenm1.mongodb.net/testmongo?retryWrites=true&w=majority
+      database : post-service

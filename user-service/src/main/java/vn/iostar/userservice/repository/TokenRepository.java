@@ -12,9 +12,9 @@ import java.util.Optional;
 @Repository
 public interface TokenRepository extends JpaRepository<Token,String> {
 
-    List<Token> findAllByUser_UserIdAndExpiredIsFalseAndRevokedIsFalse(String userId);
-    Optional<Token> findByUser_UserIdAndExpiredIsFalseAndRevokedIsFalse(String userId);
-    Optional<Token> findByTokenAndExpiredIsFalseAndRevokedIsFalse(String refreshToken);
+    List<Token> findAllByUser_UserIdAndExpiredAtIsFalseAndIsRevokedIsFalse(String userId);
+    Optional<Token> findByUser_UserIdAndExpiredAtIsFalseAndIsRevokedIsFalse(String userId);
+    Optional<Token> findByTokenAndExpiredAtIsFalseAndIsRevokedIsFalse(String refreshToken);
 
 }
 

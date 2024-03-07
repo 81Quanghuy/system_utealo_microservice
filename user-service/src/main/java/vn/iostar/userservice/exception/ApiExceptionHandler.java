@@ -12,11 +12,11 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingRequestHeaderException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
-import vn.iotstart.userservice.dto.response.GenericResponse;
-import vn.iotstart.userservice.exception.wrapper.BadRequestException;
-import vn.iotstart.userservice.exception.wrapper.ForbiddenException;
-import vn.iotstart.userservice.exception.wrapper.NotFoundException;
-import vn.iotstart.userservice.exception.wrapper.UnsupportedMediaTypeException;
+import vn.iostar.userservice.dto.response.GenericResponse;
+import vn.iostar.userservice.exception.wrapper.BadRequestException;
+import vn.iostar.userservice.exception.wrapper.ForbiddenException;
+import vn.iostar.userservice.exception.wrapper.NotFoundException;
+import vn.iostar.userservice.exception.wrapper.UnsupportedMediaTypeException;
 
 import java.util.HashMap;
 import java.util.List;

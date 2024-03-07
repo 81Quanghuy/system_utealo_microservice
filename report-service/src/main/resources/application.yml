@@ -1,0 +1,9 @@
+server:
+  port: 8081
+spring:
+  application:
+    name: report-service
+  data:
+    mongodb:
+      uri : mongodb+srv://huy:huyvff111@cluster0.wteenm1.mongodb.net/testmongo?retryWrites=true&w=majority
+      database : report-service

@@ -8,6 +8,11 @@
         <option value="$PROJECT_DIR$/user-serivce/pom.xml" />
         <option value="$PROJECT_DIR$/group-service/pom.xml" />
         <option value="$PROJECT_DIR$/api-gateway/pom.xml" />
+        <option value="$PROJECT_DIR$/email-service/pom.xml" />
+        <option value="$PROJECT_DIR$/friend-service/pom.xml" />
+        <option value="$PROJECT_DIR$/notification-service/pom.xml" />
+        <option value="$PROJECT_DIR$/group-service/pom.xml" />
+        <option value="$PROJECT_DIR$/conversation-service/pom.xml" />
         <option value="$PROJECT_DIR$/cloud-config/pom.xml" />
         <option value="$PROJECT_DIR$/service-discovery/pom.xml" />
         <option value="$PROJECT_DIR$/post-service/pom.xml" />

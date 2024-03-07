@@ -5,6 +5,8 @@
     <option name="originalFiles">
       <list>
         <option value="$PROJECT_DIR$/pom.xml" />
+        <option value="$PROJECT_DIR$/user-serivce/pom.xml" />
+        <option value="$PROJECT_DIR$/group-service/pom.xml" />
         <option value="$PROJECT_DIR$/api-gateway/pom.xml" />
         <option value="$PROJECT_DIR$/email-service/pom.xml" />
         <option value="$PROJECT_DIR$/friend-service/pom.xml" />
@@ -12,10 +14,18 @@
         <option value="$PROJECT_DIR$/group-service/pom.xml" />
         <option value="$PROJECT_DIR$/conversation-service/pom.xml" />
         <option value="$PROJECT_DIR$/cloud-config/pom.xml" />
+        <option value="$PROJECT_DIR$/service-discovery/pom.xml" />
+        <option value="$PROJECT_DIR$/post-service/pom.xml" />
+        <option value="$PROJECT_DIR$/report-service/pom.xml" />
       </list>
     </option>
+    <option name="ignoredFiles">
+      <set>
+        <option value="$PROJECT_DIR$/user-serivce/pom.xml" />
+      </set>
+    </option>
   </component>
-  <component name="ProjectRootManager" version="2" languageLevel="JDK_21" default="true" project-jdk-name="openjdk-21" project-jdk-type="JavaSDK">
+  <component name="ProjectRootManager" version="2" languageLevel="JDK_21" default="true" project-jdk-name="21" project-jdk-type="JavaSDK">
     <output url="file://$PROJECT_DIR$/out" />
   </component>
 </project>

@@ -1,4 +1,4 @@
-package vn.iotstart.userservice.exception.wrapper;
+package vn.iostar.userservice.exception.wrapper;
 
 public class BadRequestException extends RuntimeException{
     public BadRequestException(String message) {

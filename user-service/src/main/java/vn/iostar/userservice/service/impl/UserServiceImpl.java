@@ -1,14 +1,15 @@
-package vn.iotstart.userservice.service.impl;
+package vn.iostar.userservice.service.impl;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import vn.iotstart.userservice.dto.response.UserProfileResponse;
-import vn.iotstart.userservice.entity.User;
-import vn.iotstart.userservice.repository.UserRepository;
-import vn.iotstart.userservice.service.UserService;
+import vn.iostar.userservice.repository.UserRepository;
+import vn.iostar.userservice.dto.response.UserProfileResponse;
+import vn.iostar.userservice.entity.User;
+import vn.iostar.userservice.repository.UserRepository;
+import vn.iostar.userservice.service.UserService;
 
 import java.util.Optional;
 

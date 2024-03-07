@@ -1,6 +1,6 @@
-package vn.iotstart.userservice.util;
+package vn.iostar.userservice.util;
 
-import vn.iotstart.userservice.entity.Token;
+import vn.iostar.userservice.entity.Token;
 
 public class TokenUtil {
 

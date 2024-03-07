@@ -50,7 +50,7 @@ public class TokenServiceImpl implements TokenService {
                 // List<RefreshToken> refreshTokens =
                 // refreshTokenRepository.findAllByUser_UserIdAndExpiredIsFalseAndRevokedIsFalse(userId);
                 Optional<Token> token = refreshTokenRepository
-                        .findByUser_UserIdAndExpiredIsFalseAndRevokedIsFalse(userId);
+                        .findByUser_UserIdAndExpiredAtIsFalseAndIsRevokedIsFalse(userId);
                 if (token.isPresent() && jwtTokenProvider.validateToken(token.get().getToken())) {
                     if (!token.get().getToken().equals(refreshToken)) {
                         return ResponseEntity.status(404)
@@ -84,7 +84,7 @@ public class TokenServiceImpl implements TokenService {
             Optional<User> optionalUser = userRepository.findById(userId);
             if (optionalUser.isPresent() && optionalUser.get().getIsActive()) {
                 List<Token> refreshTokens = refreshTokenRepository
-                        .findAllByUser_UserIdAndExpiredIsFalseAndRevokedIsFalse(userId);
+                        .findAllByUser_UserIdAndExpiredAtIsFalseAndIsRevokedIsFalse(userId);
 
                 if (refreshTokens.isEmpty()) {
                     return;
@@ -108,7 +108,7 @@ public class TokenServiceImpl implements TokenService {
                         .body(buildErrorResponse("Logout failed!", HttpStatus.UNAUTHORIZED));
             }
 
-            return refreshTokenRepository.findByTokenAndExpiredIsFalseAndRevokedIsFalse(refreshToken).map(token -> {
+            return refreshTokenRepository.findByTokenAndExpiredAtIsFalseAndIsRevokedIsFalse(refreshToken).map(token -> {
                 token.setIsRevoked(true);
                 token.setIsExpired(true);
                 refreshTokenRepository.save(token);

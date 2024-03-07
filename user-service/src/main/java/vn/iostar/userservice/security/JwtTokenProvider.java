@@ -14,7 +14,7 @@ import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.UnsupportedJwtException;
 import io.jsonwebtoken.security.Keys;
 import lombok.extern.log4j.Log4j2;
-import vn.iotstart.userservice.repository.AccountRepository;
+import vn.iostar.userservice.repository.AccountRepository;
 
 @Component
 @Log4j2

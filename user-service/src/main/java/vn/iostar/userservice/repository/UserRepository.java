@@ -9,7 +9,7 @@ import org.springframework.stereotype.Repository;
 import vn.iostar.userservice.dto.ListUsers;
 import vn.iostar.userservice.dto.response.UserResponse;
 import vn.iostar.userservice.entity.User;
-import vn.iotstart.userservice.constant.RoleName;
+import vn.iostar.userservice.constant.RoleName;
 
 import java.util.Date;
 import java.util.List;

@@ -14,7 +14,7 @@ import vn.iostar.userservice.repository.ProfileRepository;
 import vn.iostar.userservice.repository.RoleRepository;
 import vn.iostar.userservice.repository.UserRepository;
 import vn.iostar.userservice.service.AccountService;
-import vn.iotstart.userservice.constant.RoleName;
+import vn.iostar.userservice.constant.RoleName;
 
 import java.util.Date;
 import java.util.List;

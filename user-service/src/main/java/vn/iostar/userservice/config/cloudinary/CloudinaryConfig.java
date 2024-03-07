@@ -1,4 +1,4 @@
-package vn.iotstart.userservice.config.cloudinary;
+package vn.iostar.userservice.config.cloudinary;
 
 import com.cloudinary.Cloudinary;
 import org.springframework.beans.factory.annotation.Value;

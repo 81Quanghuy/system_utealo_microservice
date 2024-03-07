@@ -1,4 +1,4 @@
-package vn.iotstart.userservice.constant;
+package vn.iostar.userservice.constant;
 
 public enum RoleName {
     SinhVien,

@@ -1,4 +1,4 @@
-package vn.iotstart.userservice.config.client;
+package vn.iostar.userservice.config.client;
 
 import org.springframework.cloud.client.loadbalancer.LoadBalanced;
 import org.springframework.context.annotation.Bean;

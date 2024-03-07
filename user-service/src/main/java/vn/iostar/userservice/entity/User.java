@@ -5,8 +5,8 @@ import jakarta.persistence.*;
 
 import lombok.*;
 import org.hibernate.annotations.Nationalized;
-import vn.iotstart.userservice.constant.Gender;
-import vn.iotstart.userservice.constant.RoleName;
+import vn.iostar.userservice.constant.Gender;
+import vn.iostar.userservice.constant.RoleName;
 
 import java.io.Serial;
 import java.io.Serializable;

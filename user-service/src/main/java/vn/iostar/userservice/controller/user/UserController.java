@@ -1,5 +1,6 @@
 package vn.iostar.userservice.controller.user;
 
+import com.google.common.util.concurrent.ListenableFuture;
 import lombok.RequiredArgsConstructor;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
@@ -11,6 +12,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.kafka.support.SendResult;
+import org.springframework.util.concurrent.ListenableFutureCallback;
 import org.springframework.web.bind.annotation.*;
 import vn.iostar.userservice.constant.KafkaTopicName;
 import org.springframework.mail.javamail.JavaMailSender;
@@ -38,6 +41,7 @@ import java.io.UnsupportedEncodingException;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 
 @RestController
 @RequiredArgsConstructor
@@ -298,7 +302,18 @@ public class UserController {
 
     @PostMapping
     public String sendUser(@RequestParam String email) {
-        kafkaTemplate.send(KafkaTopicName.USER_TOPIC, email);
+        try {
+            CompletableFuture<SendResult<String, Object>> future =  kafkaTemplate.send(KafkaTopicName.USER_TOPIC, email);
+           future.whenComplete((result, ex) -> {
+               if (ex == null) {
+                   System.out.println("Sent message=[" + email + "] with offset=[" + result.getRecordMetadata().offset() + "]");
+               } else {
+                   System.out.println("Unable to send message=[" + email + "] due to : " + ex.getMessage());
+               }
+           });
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
         return "User sent successfully!"+email;
     }
 }

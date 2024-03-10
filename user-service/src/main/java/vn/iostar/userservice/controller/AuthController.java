@@ -2,33 +2,29 @@ package     vn.iostar.userservice.controller;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import vn.iostar.userservice.constant.TokenType;
 import vn.iostar.userservice.dto.LoginDTO;
 import vn.iostar.userservice.dto.request.RegisterRequest;
 import vn.iostar.userservice.dto.request.TokenRequest;
 import vn.iostar.userservice.dto.response.GenericResponse;
 import vn.iostar.userservice.entity.Account;
 import vn.iostar.userservice.entity.Token;
+import vn.iostar.userservice.jwt.service.JwtService;
 import vn.iostar.userservice.repository.AccountRepository;
 import vn.iostar.userservice.repository.TokenRepository;
-import vn.iostar.userservice.security.JwtTokenProvider;
-import vn.iostar.userservice.security.UserDetail;
 import vn.iostar.userservice.service.AccountService;
 import vn.iostar.userservice.service.TokenService;
 
 
-import javax.naming.Context;
 import java.util.*;
 
 @RestController
@@ -37,12 +33,12 @@ import java.util.*;
 @RequiredArgsConstructor
 public class AuthController {
     public final AuthenticationManager authenticationManager;
-    public final JwtTokenProvider jwtTokenProvider;
     public final PasswordEncoder passwordEncoder;
     public final AccountService accountService;
     public final TokenService tokenService;
     public final TokenRepository tokenRepository;
     public final AccountRepository userRepository;
+    private final JwtService jwtService;
 
     @PostMapping("/login")
     @Transactional
@@ -60,28 +56,32 @@ public class AuthController {
                     .body(GenericResponse.builder().success(false).message("Your account is not verified!").result(null)
                             .statusCode(HttpStatus.INTERNAL_SERVER_ERROR.value()).build());
         }
-        Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(loginDTO.getCredentialId(), loginDTO.getPassword()));
-        SecurityContextHolder.getContext().setAuthentication(authentication);
-        UserDetail userDetail = (UserDetail) authentication.getPrincipal();
-        String accessToken = jwtTokenProvider.generateAccessToken(userDetail);
-        Token refreshToken = new Token();
-        String token = jwtTokenProvider.generateRefreshToken(userDetail);
-        refreshToken.setToken(token);
-        refreshToken.setUser(userDetail.getUser().getUser());
-        // invalid all refreshToken before
-        tokenService.revokeRefreshToken(userDetail.getUserId());
-        tokenService.save(refreshToken);
+
+        String accessToken = jwtService.generateAccessToken(optionalUser.get());
+        String refreshToken = jwtService.generateRefreshToken(optionalUser.get());
+
+        Token token = Token.builder()
+                .token(refreshToken)
+                .isExpired(false)
+                .isRevoked(false)
+                .type(TokenType.REFRESH_ACCESS_TOKEN)
+                .expiredAt(new Date(System.currentTimeMillis() + 30L * 24 * 60 * 60 * 1000))
+                .user(optionalUser.get().getUser())
+                .build();
+
+
+        // Invalid all refreshToken before
+        tokenService.revokeRefreshToken(optionalUser.get().getUser().getUserId());
+        tokenService.save(token);
+
         Map<String, String> tokenMap = new HashMap<>();
         tokenMap.put("accessToken", accessToken);
-        tokenMap.put("refreshToken", token);
-        tokenMap.put("userId", userDetail.getUserId());
-        tokenMap.put("roleName", userDetail.getUser().getUser().getRole().getRoleName().name());
+        tokenMap.put("refreshToken", refreshToken);
+        tokenMap.put("userId", optionalUser.get().getUser().getUserId());
+        tokenMap.put("roleName", optionalUser.get().getUser().getRole().getRoleName().name());
 
-        if (optionalUser.isPresent()) {
-            optionalUser.get().setLastLoginAt(new Date());
-            accountService.save(optionalUser.get());
-        }
+        optionalUser.get().setLastLoginAt(new Date());
+        accountService.save(optionalUser.get());
 
         return ResponseEntity.ok().body(GenericResponse.builder().success(true).message("Login successfully!")
                 .result(tokenMap).statusCode(HttpStatus.OK.value()).build());
@@ -108,7 +108,7 @@ public class AuthController {
                                     @RequestParam("refreshToken") String refreshToken) {
         String accessToken = authorizationHeader.substring(7);
 
-        if (jwtTokenProvider.getUserIdFromJwt(accessToken).equals(jwtTokenProvider.getUserIdFromJwt(refreshToken))) {
+        if (jwtService.extractUserId(accessToken).equals(jwtService.extractUserId(refreshToken))) {
             return tokenService.logout(refreshToken);
         }
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
@@ -120,8 +120,8 @@ public class AuthController {
     public ResponseEntity<GenericResponse> logoutAll(@RequestHeader("Authorization") String authorizationHeader,
                                                      @RequestParam("refreshToken") String refreshToken) {
         String accessToken = authorizationHeader.substring(7);
-        if (jwtTokenProvider.getUserIdFromJwt(accessToken).equals(jwtTokenProvider.getUserIdFromJwt(refreshToken))) {
-            String userId = jwtTokenProvider.getUserIdFromJwt(refreshToken);
+        if (jwtService.extractUserId(accessToken).equals(jwtService.extractUserId(refreshToken))) {
+            String userId = jwtService.extractUserId(refreshToken);
             tokenService.revokeRefreshToken(userId);
             SecurityContextHolder.clearContext();
             return ResponseEntity.ok().body(GenericResponse.builder().success(true).message("Logout successfully!")

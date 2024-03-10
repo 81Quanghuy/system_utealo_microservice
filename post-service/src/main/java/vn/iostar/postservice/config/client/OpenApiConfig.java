@@ -12,7 +12,7 @@ public class OpenApiConfig {
     @Bean
     public OpenAPI openAPI() {
         return new OpenAPI()
-                .info(new Info().title("UserService Management API")
+                .info(new Info().title("PtService Management API")
                         .description("Your API Description")
                         .version("1.0"));
     }

@@ -35,6 +35,11 @@ public class WebSecurityConfig {
     private MyBasicAuthenticationEntryPoint myBasicAuthenticationEntryPoint;
 
     @Bean
+    public JwtAuthenticationFilter JwtAuthenticationFilter() {
+        return new JwtAuthenticationFilter();
+    }
+
+    @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
@@ -64,6 +69,7 @@ public class WebSecurityConfig {
                 .httpBasic((basic)-> basic
                         .authenticationEntryPoint(myBasicAuthenticationEntryPoint))
                 .authenticationProvider(authenticationProvider())
+                .addFilterBefore(JwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class)
                 .cors(httpSecurityCorsConfigurer ->
                         httpSecurityCorsConfigurer.configurationSource(corsConfigurationSource()
                         )
@@ -75,13 +81,13 @@ public class WebSecurityConfig {
 
     public CorsConfigurationSource corsConfigurationSource() {
         final CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(Arrays.asList("http://localhost:3001","http://localhost:3000, http://localhost:9090")); // Điều chỉnh các nguồn mà bạn muốn cho phép truy cập
+        configuration.setAllowedOrigins(Arrays.asList("http://localhost:3001","http://localhost:3000")); // Điều chỉnh các nguồn mà bạn muốn cho phép truy cập
         configuration.setAllowedMethods(List.of("HEAD",
                 "GET", "POST", "PUT", "DELETE", "PATCH"));
         configuration.setAllowCredentials(true);
         // setAllowCredentials(true) is important, otherwise:
         // The value of the 'Access-Control-Allow-Origin' header in the response must not be the wildcard '*' when the request's credentials mode is 'include'.
-
+        
         // setAllowedHeaders is important! Without it, OPTIONS preflight request
         // will fail with 403 Invalid CORS request
         configuration.setAllowedHeaders(List.of("Authorization", "Cache-Control", "Content-Type"));

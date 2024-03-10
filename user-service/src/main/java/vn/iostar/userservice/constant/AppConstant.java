@@ -1,4 +1,4 @@
-package vn.iostar.postservice.constant;
+package vn.iostar.userservice.constant;
 
 import io.jsonwebtoken.security.Keys;
 import lombok.SneakyThrows;
@@ -6,7 +6,6 @@ import org.springframework.core.io.ClassPathResource;
 import org.springframework.util.StreamUtils;
 
 import javax.crypto.SecretKey;
-import java.io.IOException;
 
 public class AppConstant {
     /**
@@ -22,6 +21,6 @@ public class AppConstant {
         byte[] keyBytes = StreamUtils.copyToByteArray(resource.getInputStream());
         return Keys.hmacShaKeyFor(keyBytes);
     }
-
+    
 
 }

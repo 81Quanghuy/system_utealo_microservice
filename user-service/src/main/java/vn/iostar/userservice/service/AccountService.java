@@ -11,17 +11,26 @@ import java.util.List;
 import java.util.Optional;
 
 public interface AccountService {
+
+
+    // Tìm kiếm tất cả tài khoản
     List<Account> findAll();
 
+    // Đăng ký tài khoản
     ResponseEntity<GenericResponse> userRegister(@Valid RegisterRequest registerRequest);
 
+    // Xác thực tài khoản
     String validateVerificationAccount(String token);
 
+    // Tìm kiếm tài khoản theo số điện thoại
     Optional<Account> findByPhone(String phone);
 
+    // Tìm kiếm tài khoản theo email
     Optional<Account> findByEmail(String email);
 
+    // Lưu tài khoản
     <S extends Account> S save(S entity);
 
+    // Lưu tất cả tài khoản
     <S extends Account> List<S> saveAll(Iterable<S> entities);
 }

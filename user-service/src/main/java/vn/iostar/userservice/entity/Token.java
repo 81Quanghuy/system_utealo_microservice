@@ -25,7 +25,7 @@ public class Token extends AbstractMappedEntity implements Serializable {
     @Column(name = "token_id")
     private String id;
 
-    @Column(name = "token_value", unique = true)
+    @Column(name = "token_value", unique = true,length = 700)
     private String token;
 
     @Enumerated(EnumType.STRING)

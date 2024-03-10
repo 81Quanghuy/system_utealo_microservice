@@ -84,7 +84,7 @@ public class TokenServiceImpl implements TokenService {
             Optional<User> optionalUser = userRepository.findById(userId);
             if (optionalUser.isPresent() && optionalUser.get().getIsActive()) {
                 List<Token> refreshTokens = refreshTokenRepository
-                        .findAllByUser_UserIdAndExpiredAtIsFalseAndIsRevokedIsFalse(userId);
+                        .findAllByUser_UserIdAndIsExpiredIsFalseAndIsRevokedIsFalse(userId);
 
                 if (refreshTokens.isEmpty()) {
                     return;

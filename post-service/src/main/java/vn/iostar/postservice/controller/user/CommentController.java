@@ -1,22 +1,22 @@
-package vn.iostar.postservice.controller;
+package vn.iostar.postservice.controller.user;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import vn.iostar.postservice.entity.Share;
-import vn.iostar.postservice.service.ShareService;
+import vn.iostar.postservice.entity.Comment;
+import vn.iostar.postservice.service.CommentService;
 
 @RestController
-@RequestMapping("/api/v1/share")
-public class ShareController {
+@RequestMapping("/api/v1/comment")
+public class CommentController {
 
     @Autowired
-    ShareService shareService;
+    CommentService commentService;
 
     @PostMapping("/create")
-    public ResponseEntity<Share> createShare() {
-        return ResponseEntity.ok(shareService.createShare());
+    public ResponseEntity<Comment> createComment() {
+        return ResponseEntity.ok(commentService.createComment());
     }
 }

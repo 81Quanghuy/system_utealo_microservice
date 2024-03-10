@@ -18,32 +18,35 @@ import java.util.Optional;
 @Repository
 public interface UserRepository extends JpaRepository<User, String> {
 
+    // Tìm kiếm người dùng theo số điện thoại
     Optional<User> findByPhone(String phone);
 
+    // Tìm kiếm người dùng theo email
     Optional<User> findByAccountEmail(String email);
 
+    // Tìm kiếm người dùng theo vai trò
     List<User> findByRoleRoleName(RoleName roleName);
 
-    // Lấy danh sách tất cả user
+    // Lấy danh sách tất cả nguời dùng
     @Query("SELECT NEW vn.iostar.userservice.dto.response.UserResponse(u.userId, u.userName, u.address,u.phone, u.gender, u.dayOfBirth) FROM User u")
     Page<UserResponse> findAllUsers(Pageable pageable);
 
+    // Lấy mã người dùng và tên người dùng
     @Query("SELECT NEW vn.iostar.userservice.dto.ListUsers (u.userId, u.userName) FROM User u")
     List<ListUsers> findAllUsersIdAndName();
 
-    // Lấy những bài user đăng ký tài khoản trong khoảng thời gian
+    // Lấy những bài người dùng đăng ký tài khoản trong khoảng thời gian
     @Query("SELECT NEW vn.iostar.userservice.dto.response.UserResponse(u.userId, u.userName, u.address,u.phone, u.gender, u.dayOfBirth,a.isActive) FROM User u JOIN u.account a WHERE a.createdAt BETWEEN :startDate AND :endDate")
     List<UserResponse> findUsersByAccountCreatedAtBetween(@Param("startDate") Date startDate,
                                                           @Param("endDate") Date endDate);
 
-    // Đếm số lượng user trong khoảng thời gian
+    // Đếm số lượng người dùng trong khoảng thời gian
     long countUsersByAccountCreatedAtBetween(Date startDateAsDate, Date endDateAsDate);
 
     // Đếm lượng người dùng online
     long countByIsOnlineTrue();
 
-    // Tìm kiếm người dùng theo username, email, phone của người dùng
-
+    // Tìm kiếm người dùng theo tên người dùng, số điện thoại, email
     @Query("SELECT new vn.iostar.userservice.dto.response.UserResponse(u.userId, u.userName, u.address,u.phone, u.gender, u.dayOfBirth,a.isActive) FROM User u "
             + "JOIN u.account a " + "WHERE u.userName LIKE %:query% " + "OR u.phone LIKE %:query% "
             + "OR a.email LIKE %:query% ")

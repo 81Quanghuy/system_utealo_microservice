@@ -2,7 +2,7 @@ package vn.iostar.reportservice.service.Impl;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import vn.iostar.reportservice.ReportRepository;
+import vn.iostar.reportservice.repository.ReportRepository;
 import vn.iostar.reportservice.constant.PrivacyLevel;
 import vn.iostar.reportservice.entity.Report;
 import vn.iostar.reportservice.service.ReportService;

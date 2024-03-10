@@ -1,22 +1,22 @@
-package vn.iostar.postservice.controller;
+package vn.iostar.postservice.controller.user;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import vn.iostar.postservice.entity.Comment;
-import vn.iostar.postservice.service.CommentService;
+import vn.iostar.postservice.entity.Like;
+import vn.iostar.postservice.service.LikeService;
 
 @RestController
-@RequestMapping("/api/v1/comment")
-public class CommentController {
+@RequestMapping("/api/v1/like")
+public class LikeController {
 
     @Autowired
-    CommentService commentService;
+    LikeService likeService;
 
     @PostMapping("/create")
-    public ResponseEntity<Comment> createComment() {
-        return ResponseEntity.ok(commentService.createComment());
+    public ResponseEntity<Like> createLike() {
+        return ResponseEntity.ok(likeService.createLike());
     }
 }

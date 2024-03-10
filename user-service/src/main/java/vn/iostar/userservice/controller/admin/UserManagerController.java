@@ -27,8 +27,8 @@ import vn.iostar.userservice.dto.request.AccountManager;
 import vn.iostar.userservice.dto.request.UserManagerRequest;
 import vn.iostar.userservice.dto.response.UserResponse;
 import vn.iostar.userservice.entity.User;
+import vn.iostar.userservice.jwt.service.JwtService;
 import vn.iostar.userservice.repository.UserRepository;
-import vn.iostar.userservice.security.JwtTokenProvider;
 import vn.iostar.userservice.service.UserService;
 
 @RestController
@@ -39,7 +39,7 @@ public class UserManagerController {
 	UserService userService;
 
 	@Autowired
-	JwtTokenProvider jwtTokenProvider;
+	JwtService jwtService;
 
 	@Autowired
 	UserRepository userRepository;

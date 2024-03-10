@@ -26,15 +26,14 @@ import vn.iostar.userservice.dto.request.AccountManager;
 import vn.iostar.userservice.dto.request.ChangePasswordRequest;
 import vn.iostar.userservice.dto.request.UserManagerRequest;
 import vn.iostar.userservice.dto.request.UserUpdateRequest;
-import vn.iostar.userservice.dto.response.FriendResponse;
 import vn.iostar.userservice.dto.response.GenericResponse;
 import vn.iostar.userservice.dto.response.UserResponse;
 import vn.iostar.userservice.entity.*;
 import vn.iostar.userservice.exception.wrapper.BadRequestException;
+import vn.iostar.userservice.jwt.service.JwtService;
 import vn.iostar.userservice.repository.*;
 import vn.iostar.userservice.dto.response.UserProfileResponse;
 import vn.iostar.userservice.repository.UserRepository;
-import vn.iostar.userservice.security.JwtTokenProvider;
 import vn.iostar.userservice.service.AccountService;
 import vn.iostar.userservice.service.RoleService;
 import vn.iostar.userservice.service.UserService;
@@ -70,7 +69,7 @@ public class UserServiceImpl implements UserService {
 	TokenRepository tokenRepository;
 
 	@Autowired
-	JwtTokenProvider jwtTokenProvider;
+	JwtService jwtService;
 
 	@Autowired
 	RoleService roleService;
@@ -260,7 +259,7 @@ public class UserServiceImpl implements UserService {
 	@Override
 	public ResponseEntity<Object> accountManager(String authorizationHeader, UserManagerRequest request) {
 		String token = authorizationHeader.substring(7);
-		String currentUserId = jwtTokenProvider.getUserIdFromJwt(token);
+		String currentUserId = jwtService.extractUserId(token);
 		Optional<User> userManager = findById(currentUserId);
 		RoleName roleName = userManager.get().getRole().getRoleName();
 		if (!roleName.name().equals("Admin")) {
@@ -384,7 +383,7 @@ public class UserServiceImpl implements UserService {
 	@Override
 	public ResponseEntity<GenericResponseAdmin> getAllUsers(String authorizationHeader, int page, int itemsPerPage) {
 		String token = authorizationHeader.substring(7);
-		String currentUserId = jwtTokenProvider.getUserIdFromJwt(token);
+		String currentUserId = jwtService.extractUserId(token);
 		Optional<User> user = findById(currentUserId);
 		RoleName roleName = user.get().getRole().getRoleName();
 		if (!roleName.name().equals("Admin")) {

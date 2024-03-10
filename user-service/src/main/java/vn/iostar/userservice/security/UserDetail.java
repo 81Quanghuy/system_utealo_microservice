@@ -16,47 +16,47 @@ import vn.iostar.userservice.entity.Account;
 @AllArgsConstructor
 public class UserDetail implements UserDetails {
 
-    private static final long serialVersionUID = 1L;
-    private Account user;
+	private static final long serialVersionUID = 1L;
+	private Account user;
 
-    @Override
-    public Collection<? extends GrantedAuthority> getAuthorities() {
-        List<GrantedAuthority> authorities = new ArrayList<>();
-        authorities.add(new SimpleGrantedAuthority("ROLE_" + user.getUser().getRole().getRoleName()));
-        return authorities;
-    }
+	@Override
+	public Collection<? extends GrantedAuthority> getAuthorities() {
+		List<GrantedAuthority> authorities = new ArrayList<>();
+		authorities.add(new SimpleGrantedAuthority("ROLE_" + user.getUser().getRole().getRoleName()));
+		return authorities;
+	}
 
-    public String getUserId() {
-        return user.getUser().getUserId();
-    }
+	public String getUserId() {
+		return user.getUser().getUserId();
+	}
 
-    @Override
-    public String getPassword() {
-        return user.getPassword();
-    }
+	@Override
+	public String getPassword() {
+		return user.getPassword();
+	}
 
-    @Override
-    public String getUsername() {
-        return user.getEmail();
-    }
+	@Override
+	public String getUsername() {
+		return user.getEmail();
+	}
 
-    @Override
-    public boolean isAccountNonExpired() {
-        return true;
-    }
+	@Override
+	public boolean isAccountNonExpired() {
+		return true;
+	}
 
-    @Override
-    public boolean isAccountNonLocked() {
-        return true;
-    }
+	@Override
+	public boolean isAccountNonLocked() {
+		return true;
+	}
 
-    @Override
-    public boolean isCredentialsNonExpired() {
-        return true;
-    }
+	@Override
+	public boolean isCredentialsNonExpired() {
+		return true;
+	}
 
-    @Override
-    public boolean isEnabled() {
-        return user.getIsActive();
-    }
+	@Override
+	public boolean isEnabled() {
+		return user.getIsActive();
+	}
 }

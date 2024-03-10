@@ -14,12 +14,10 @@ import vn.iostar.userservice.dto.response.GenericResponse;
 import vn.iostar.userservice.entity.Account;
 import vn.iostar.userservice.entity.Token;
 import vn.iostar.userservice.entity.User;
+import vn.iostar.userservice.jwt.service.JwtService;
 import vn.iostar.userservice.repository.AccountRepository;
 import vn.iostar.userservice.repository.TokenRepository;
 import vn.iostar.userservice.repository.UserRepository;
-import vn.iostar.userservice.security.JwtTokenProvider;
-import vn.iostar.userservice.security.UserDetail;
-import vn.iostar.userservice.security.UserDetailService;
 import vn.iostar.userservice.service.TokenService;
 
 
@@ -32,9 +30,7 @@ public class TokenServiceImpl implements TokenService {
     @Autowired
     AccountRepository accountRepository;
     @Autowired
-    UserDetailService userDetailService;
-    @Autowired
-    JwtTokenProvider jwtTokenProvider;
+    JwtService jwtTokenProvider;
 
     @Override
     public <S extends Token> S save(S entity) {
@@ -44,7 +40,7 @@ public class TokenServiceImpl implements TokenService {
     @Override
     public ResponseEntity<GenericResponse> refreshAccessToken(String refreshToken) {
         try {
-            String userId = jwtTokenProvider.getUserIdFromJwt(refreshToken);
+            String userId = jwtTokenProvider.extractUserId(refreshToken);
             Optional<Account> optionalUser = accountRepository.findByUserUserId(userId);
             if (optionalUser.isPresent() && optionalUser.get().getIsActive()) {
                 // List<RefreshToken> refreshTokens =
@@ -58,13 +54,12 @@ public class TokenServiceImpl implements TokenService {
                                         .message("RefreshToken is not present. Please login again!").result("")
                                         .statusCode(HttpStatus.NOT_FOUND.value()).build());
                     }
-                    UserDetail userDetail = (UserDetail) userDetailService
-                            .loadUserByUserId(jwtTokenProvider.getUserIdFromJwt(refreshToken));
-                    String accessToken = jwtTokenProvider.generateAccessToken(userDetail);
+
+                    String accessToken = jwtTokenProvider.generateAccessToken(optionalUser.get());
                     Map<String, String> resultMap = new HashMap<>();
                     resultMap.put("accessToken", accessToken);
                     resultMap.put("refreshToken", refreshToken);
-                    resultMap.put("userId", userDetail.getUserId());
+                    resultMap.put("userId", optionalUser.get().getUser().getUserId());
                     return ResponseEntity.status(200).body(GenericResponse.builder().success(true).message("")
                             .result(resultMap).statusCode(HttpStatus.OK.value()).build());
                 }

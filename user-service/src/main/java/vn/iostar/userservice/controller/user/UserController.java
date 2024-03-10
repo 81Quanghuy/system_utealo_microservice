@@ -13,11 +13,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.web.bind.annotation.*;
 import vn.iostar.userservice.constant.KafkaTopicName;
-import vn.iostar.userservice.converters.UserMessageConverter;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.validation.BindingResult;
-import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
@@ -29,7 +27,7 @@ import vn.iostar.userservice.dto.response.GenericResponse;
 import vn.iostar.userservice.dto.response.UserProfileResponse;
 import vn.iostar.userservice.entity.PasswordResetOtp;
 import vn.iostar.userservice.entity.User;
-import vn.iostar.userservice.security.JwtTokenProvider;
+import vn.iostar.userservice.jwt.service.JwtService;
 import vn.iostar.userservice.service.AccountService;
 import vn.iostar.userservice.service.CloudinaryService;
 import vn.iostar.userservice.service.UserService;
@@ -48,7 +46,7 @@ public class UserController {
 
     private final KafkaTemplate<String, Object> kafkaTemplate;
 
-    private final JwtTokenProvider jwtTokenProvider;
+    private final JwtService jwtService;
 
     private final UserService userService;
 
@@ -75,7 +73,7 @@ public class UserController {
     @GetMapping("/profile")
     public ResponseEntity<GenericResponse> getInformation(@RequestHeader("Authorization") String authorizationHeader) {
         String token = authorizationHeader.substring(7);
-        String userId = jwtTokenProvider.getUserIdFromJwt(token);
+        String userId = jwtService.extractUserId(token);
         return userService.getProfile(userId);
     }
 
@@ -88,7 +86,7 @@ public class UserController {
     public ResponseEntity<GenericResponse> getInformation(@RequestHeader("Authorization") String authorizationHeader,
                                                           @PathVariable("userId") String userId) {
         String token = authorizationHeader.substring(7);
-        String currentUserId = jwtTokenProvider.getUserIdFromJwt(token);
+        String currentUserId = jwtService.extractUserId(token);
 
         Optional<User> user = userService.findById(userId);
         Pageable pageable = PageRequest.of(0, 5);
@@ -109,7 +107,7 @@ public class UserController {
         }
 
         String token = authorizationHeader.substring(7);
-        String userIdFromToken = jwtTokenProvider.getUserIdFromJwt(token);
+        String userIdFromToken = jwtService.extractUserId(token);
 
         return userService.updateProfile(userIdFromToken, request);
 
@@ -119,7 +117,7 @@ public class UserController {
     public ResponseEntity<GenericResponse> changePassword(@RequestBody @Valid ChangePasswordRequest request,
                                                           @RequestHeader("Authorization") String authorizationHeader, BindingResult bindingResult) throws Exception {
         String token = authorizationHeader.substring(7);
-        String userId = jwtTokenProvider.getUserIdFromJwt(token);
+        String userId = jwtService.extractUserId(token);
         if (bindingResult.hasErrors()) {
             throw new RuntimeException(Objects.requireNonNull(bindingResult.getFieldError()).getDefaultMessage());
         }
@@ -138,7 +136,7 @@ public class UserController {
 
         String otp = UUID.randomUUID().toString();
         userService.createPasswordResetOtpForUser(user.get(), otp);
-        String url = "http://localhost:3000/reset-password?token=" + otp;
+        String url = "http://localhost:8000/reset-password?token=" + otp;
         String subject = "Thay đổi mật khẩu tài khoản UteAlo";
         Context context = new Context();
         context.setVariable("url", url);
@@ -182,7 +180,7 @@ public class UserController {
                                           @RequestHeader("Authorization") String token) throws IOException {
 
         String jwt = token.substring(7);
-        String userId = jwtTokenProvider.getUserIdFromJwt(jwt);
+        String userId = jwtService.extractUserId(jwt);
 
         User user = userService.findById(userId).get();
         String avatarOld = user.getProfile().getAvatar();
@@ -204,7 +202,7 @@ public class UserController {
                                                      @RequestHeader("Authorization") String token) throws IOException {
 
         String jwt = token.substring(7);
-        String userId = jwtTokenProvider.getUserIdFromJwt(jwt);
+        String userId = jwtService.extractUserId(jwt);
 
         User user = userService.findById(userId).get();
         String backgroundOld = user.getProfile().getBackground();
@@ -224,7 +222,7 @@ public class UserController {
     @PutMapping("/delete")
     public ResponseEntity<GenericResponse> deleteUser(@RequestHeader("Authorization") String authorizationHeader) {
         String token = authorizationHeader.substring(7);
-        String userIdFromToken = jwtTokenProvider.getUserIdFromJwt(token);
+        String userIdFromToken = jwtService.extractUserId(token);
         return userService.deleteUser(userIdFromToken);
 
     }
@@ -247,7 +245,7 @@ public class UserController {
     @GetMapping("/getIsActive")
     public boolean getIsActive(@RequestHeader("Authorization") String authorizationHeader) {
         String token = authorizationHeader.substring(7);
-        String userIdToken = jwtTokenProvider.getUserIdFromJwt(token);
+        String userIdToken = jwtService.extractUserId(token);
         Optional<User> user = userService.findById(userIdToken);
         return user.get().getIsActive();
     }
@@ -257,7 +255,7 @@ public class UserController {
                                                  @ModelAttribute UpdateIsActiveRequest request) {
         try {
             String token = authorizationHeader.substring(7);
-            String userIdToken = jwtTokenProvider.getUserIdFromJwt(token);
+            String userIdToken = jwtService.extractUserId(token);
             Optional<User> userOP = userService.findById(userIdToken);
             // Lấy trạng thái isActive từ request body
             Boolean isActive = request.getIsActive();
@@ -295,8 +293,7 @@ public class UserController {
     @GetMapping("/getUserId")
     public String getUserId(@RequestHeader("Authorization") String authorizationHeader) {
         String token = authorizationHeader.substring(7);
-        String currentUserId = jwtTokenProvider.getUserIdFromJwt(token);
-        return currentUserId;
+        return jwtService.extractUserId(token);
     }
 
     @PostMapping

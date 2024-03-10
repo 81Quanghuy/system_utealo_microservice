@@ -13,6 +13,7 @@ import org.springframework.scheduling.annotation.EnableAsync;
 @OpenAPIDefinition(info =
 @Info(title = "User API", version = "1.0", description = "Documentation User API v1.0")
 )
+
 public class UserServiceApplication {
 
 	public static void main(String[] args) {

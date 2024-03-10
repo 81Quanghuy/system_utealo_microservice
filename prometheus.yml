@@ -1,0 +1,64 @@
+global:
+  scrape_interval: 2s
+  evaluation_interval: 2s
+
+scrape_configs:
+        
+  - job_name: "user_service"
+    static_configs:
+      - targets: [ "127.0.0.1:8000" ]
+
+#  - job_name: "cart_service"
+#    metrics_path: "/actuator/prometheus"
+#    static_configs:
+#      - targets: [ "172.17.0.1:7650" ]
+#
+#  - job_name: "media_service"
+#    metrics_path: "/actuator/prometheus"
+#    static_configs:
+#      - targets: [ "172.17.0.1:7657" ]
+#
+#  - job_name: "product_service"
+#    metrics_path: "/actuator/prometheus"
+#    static_configs:
+#      - targets: [ "172.17.0.1:8645" ]
+#
+#  - job_name: "search_service"
+#    metrics_path: "/actuator/prometheus"
+#    static_configs:
+#      - targets: [ "172.17.0.1:8092" ]
+#
+#  - job_name: "store_service"
+#    metrics_path: "/actuator/prometheus"
+#    static_configs:
+#      - targets: [ "172.17.0.1:8118" ]
+#
+#  - job_name: "payment_service"
+#    metrics_path: "/actuator/prometheus"
+#    static_configs:
+#      - targets: [ "172.17.0.1:8081" ]
+#
+#  - job_name: "promotion_service"
+#    metrics_path: "/metrics"
+#    static_configs:
+#      - targets: [ "172.17.0.1:5010" ]
+#
+#  - job_name: "email_service"
+#    metrics_path: "/metrics"
+#    static_configs:
+#      - targets: [ "172.17.0.1:5015" ]
+#
+#  - job_name: "delivery_service"
+#    metrics_path: "/metrics"
+#    static_configs:
+#      - targets: [ "172.17.0.1:5005" ]
+#
+#  - job_name: "order-worker"
+#    metrics_path: "/metrics"
+#    static_configs:
+#      - targets: [ "172.17.0.1:5001" ]
+#
+#  - job_name: "order-rest-api"
+#    metrics_path: "/metrics"
+#    static_configs:
+#      - targets: [ "172.17.0.1:5000" ]

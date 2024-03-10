@@ -1,11 +1,16 @@
 package vn.iostar.userservice.controller.user;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.web.bind.annotation.*;
+import vn.iostar.userservice.constant.KafkaTopicName;
+import vn.iostar.userservice.converters.UserMessageConverter;
+import vn.iostar.userservice.dto.UserDto;
 import vn.iostar.userservice.dto.response.GenericResponse;
 import vn.iostar.userservice.dto.response.UserProfileResponse;
 import vn.iostar.userservice.entity.User;
@@ -16,15 +21,15 @@ import vn.iostar.userservice.service.UserService;
 import java.util.Optional;
 
 @RestController
+@RequiredArgsConstructor
 @RequestMapping("/api/v1/user")
 public class UserController {
 
-    @Autowired
-    JwtTokenProvider jwtTokenProvider;
+    private final KafkaTemplate<String, Object> kafkaTemplate;
 
-    @Autowired
-    UserService userService;
+    private final JwtTokenProvider jwtTokenProvider;
 
+    private final UserService userService;
     @GetMapping("/profile/{userId}")
     public ResponseEntity<GenericResponse> getInformation(@RequestHeader("Authorization") String authorizationHeader,
                                                           @PathVariable("userId") String userId) {
@@ -61,5 +66,9 @@ public class UserController {
         return currentUserId;
     }
 
-
+    @PostMapping
+    public String sendUser(@RequestParam String email) {
+        kafkaTemplate.send(KafkaTopicName.USER_TOPIC, email);
+        return "User sent successfully!"+email;
+    }
 }

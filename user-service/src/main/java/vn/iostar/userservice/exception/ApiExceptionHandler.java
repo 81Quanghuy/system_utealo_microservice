@@ -119,7 +119,7 @@ public class ApiExceptionHandler {
             RuntimeException.class,
             IllegalArgumentException.class
     })
-    public <T extends RuntimeException> ResponseEntity<GenericResponse> handleServerException(final T e) {
+    public ResponseEntity<GenericResponse> handleServerException(final RuntimeException e) {
         log.info("ApiExceptionHandler, ResponseEntity<GenericResponse> handleServerException");
         final var internalServerError = HttpStatus.INTERNAL_SERVER_ERROR;
 

@@ -1,4 +1,4 @@
-package vn.iostar.reportservice;
+package vn.iostar.reportservice.repository;
 
 import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.stereotype.Repository;

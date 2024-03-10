@@ -50,7 +50,6 @@ public class AuthController {
     @Autowired
     TokenService tokenService;
 
-
     @Autowired
     TokenRepository tokenRepository;
 

@@ -1,6 +1,7 @@
 package     vn.iostar.userservice.controller;
 
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -33,28 +34,15 @@ import java.util.*;
 @RestController
 @RequestMapping("/api/v1/auth")
 @Validated
+@RequiredArgsConstructor
 public class AuthController {
-
-    @Autowired
-    AuthenticationManager authenticationManager;
-
-    @Autowired
-    JwtTokenProvider jwtTokenProvider;
-
-    @Autowired
-    PasswordEncoder passwordEncoder;
-
-    @Autowired
-    AccountService accountService;
-
-    @Autowired
-    TokenService tokenService;
-
-    @Autowired
-    TokenRepository tokenRepository;
-
-    @Autowired
-    AccountRepository userRepository;
+    public final AuthenticationManager authenticationManager;
+    public final JwtTokenProvider jwtTokenProvider;
+    public final PasswordEncoder passwordEncoder;
+    public final AccountService accountService;
+    public final TokenService tokenService;
+    public final TokenRepository tokenRepository;
+    public final AccountRepository userRepository;
 
     @PostMapping("/login")
     @Transactional

@@ -1,5 +1,6 @@
 package vn.iostar.userservice.controller.user;
 
+import lombok.RequiredArgsConstructor;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 import jakarta.validation.Valid;
@@ -9,6 +10,10 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.web.bind.annotation.*;
+import vn.iostar.userservice.constant.KafkaTopicName;
+import vn.iostar.userservice.converters.UserMessageConverter;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.validation.BindingResult;
@@ -37,20 +42,21 @@ import java.util.Optional;
 import java.util.UUID;
 
 @RestController
+@RequiredArgsConstructor
 @RequestMapping("/api/v1/user")
 public class UserController {
 
-    @Autowired
-    JwtTokenProvider jwtTokenProvider;
+    private final KafkaTemplate<String, Object> kafkaTemplate;
+
+    private final JwtTokenProvider jwtTokenProvider;
+
+    private final UserService userService;
 
     @Autowired
     CloudinaryService cloudinaryService;
 
     @Autowired
     JavaMailSender javaMailSender;
-
-    @Autowired
-    UserService userService;
 
     @Autowired
     AccountService accountService;
@@ -293,5 +299,9 @@ public class UserController {
         return currentUserId;
     }
 
-
+    @PostMapping
+    public String sendUser(@RequestParam String email) {
+        kafkaTemplate.send(KafkaTopicName.USER_TOPIC, email);
+        return "User sent successfully!"+email;
+    }
 }

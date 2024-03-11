@@ -14,16 +14,17 @@ spring:
     producer:
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
       properties:
-        [enable.idempotence]: true // check trung lap event
-        [max.in.flight.requests.per.connection]: 5 // so luong request toi da tren 1 connection
+        [enable.idempotence]: true #check trung lap event
+        [max.in.flight.requests.per.connection]: 5 # so luong request toi da tren 1 connection
         [request.timeout.ms]: 1
       retries: 1
       # 0 : no wait for kafka response
       # 1: leader write success, no wait for follower
       # -1: leader write success, wait for follower write success
       acks: -1
-#    consumer:
-#      value-deserializer: org.apache.kafka.common.serialization.ByteArrayDeserializer
+    consumer:
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      auto-offset-reset: earliest
 
   application:
     name: user-service

@@ -24,6 +24,8 @@ public interface UserRepository extends JpaRepository<User, String> {
     // Tìm kiếm người dùng theo email
     Optional<User> findByAccountEmail(String email);
 
+    List<User> findAllByUserId(String userId);
+
     // Tìm kiếm người dùng theo vai trò
     List<User> findByRoleRoleName(RoleName roleName);
 

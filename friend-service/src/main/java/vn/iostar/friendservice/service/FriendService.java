@@ -4,8 +4,10 @@ import org.springframework.http.ResponseEntity;
 import vn.iostar.friendservice.dto.FriendshipDto;
 import vn.iostar.friendservice.dto.response.FriendOfUserResponse;
 import vn.iostar.friendservice.dto.response.GenericResponse;
+import vn.iostar.friendservice.entity.Friend;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface FriendService {
     ResponseEntity<List<String>> getFriendIds(String userId);
@@ -21,4 +23,7 @@ public interface FriendService {
 	ResponseEntity<List<String>> getFriendSuggestions(String userId);
 
     ResponseEntity<GenericResponse> createFriend(FriendshipDto friend);
+
+    //findFriendUserIdsByUserId
+    Optional<Friend> findByUserId(String userId);
 }

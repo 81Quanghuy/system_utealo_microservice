@@ -354,9 +354,9 @@ public class UserServiceImpl implements UserService {
 				boolean isActive = userOptional.get().getAccount().getIsActive();
 				// Kiểm tra isActive và thiết lập trạng thái tương ứng
 				if (isActive) {
-					userItem.setIsActive("Hoạt động");
+					userItem.setIsActive(true);
 				} else {
-					userItem.setIsActive("Bị khóa");
+					userItem.setIsActive(false);
 				}
 				userItem.setRoleName(userOptional.get().getRole().getRoleName());
 				userItem.setEmail(userOptional.get().getAccount().getEmail());
@@ -1038,6 +1038,11 @@ public class UserServiceImpl implements UserService {
 	@Override
 	public List<User> findByRoleRoleName(RoleName roleName) {
 		return userRepository.findByRoleRoleName(roleName);
+	}
+
+	@Override
+	public List<User> findAllByUserId(String userId) {
+		return userRepository.findAllByUserId(userId);
 	}
 
 	// Lấy toàn bộ thông tin người dùng

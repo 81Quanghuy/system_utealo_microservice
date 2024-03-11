@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import vn.iostar.friendservice.dto.FriendDTO;
 import vn.iostar.friendservice.dto.FriendshipDto;
 import vn.iostar.friendservice.dto.response.FriendOfUserResponse;
 import vn.iostar.friendservice.dto.response.GenericResponse;
@@ -156,5 +157,10 @@ public class FriendServiceImpl implements FriendService {
                 .result(null)
                 .build());
 
+    }
+
+    @Override
+    public Optional<Friend> findByUserId(String userId) {
+        return friendshipRepository.findByAuthorId(userId);
     }
 }

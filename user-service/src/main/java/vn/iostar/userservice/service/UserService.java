@@ -134,4 +134,5 @@ public interface UserService {
 	UserStatisticsDTO getUserStatistics(String userId);
 
 	List<User> findByRoleRoleName(RoleName roleName);
+	List<User> findAllByUserId(String userId);
 }

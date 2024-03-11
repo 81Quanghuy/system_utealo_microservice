@@ -8,7 +8,7 @@ import org.springframework.kafka.listener.CommonErrorHandler;
 import org.springframework.kafka.listener.DeadLetterPublishingRecoverer;
 import org.springframework.kafka.listener.DefaultErrorHandler;
 import org.springframework.util.backoff.FixedBackOff;
-import vn.iostar.userservice.constant.KafkaTopicName;
+import vn.iostar.friendservice.constant.KafkaTopicName;
 
 @Configuration
 public class KafkaConfig {
@@ -19,7 +19,7 @@ public class KafkaConfig {
     }
     @Bean
     public NewTopic topic1() {
-        return new NewTopic(KafkaTopicName.USER_TOPIC, 2, (short) 1);
+        return new NewTopic(KafkaTopicName.FRIEND_TOPIC, 2, (short) 1);
     }
 
 }

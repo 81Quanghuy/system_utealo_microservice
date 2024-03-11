@@ -2,8 +2,10 @@ package vn.iostar.friendservice.repository;
 
 import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.stereotype.Repository;
+import vn.iostar.friendservice.dto.FriendDTO;
 import vn.iostar.friendservice.entity.Friend;
 
+import java.util.List;
 import java.util.Optional;
 
 @Repository

@@ -4,8 +4,9 @@ import io.jsonwebtoken.Claims;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import vn.iostar.friendservice.jwt.service.JwtService;
-import vn.iostar.friendservice.jwt.util.JwtUtil;
+import vn.iostar.userservice.entity.Account;
+import vn.iostar.userservice.jwt.service.JwtService;
+import vn.iostar.userservice.jwt.util.JwtUtil;
 
 import java.util.Date;
 import java.util.function.Function;
@@ -40,8 +41,18 @@ public class JwtServiceImpl implements JwtService {
 		log.info("JwtServiceImpl, Boolean, validateToken");
 		return this.jwtUtil.validateToken(token);
 	}
-	
-	
+
+	@Override
+	public String generateAccessToken(final Account credential) {
+		log.info("JwtServiceImpl, String, generateAccessToken");
+		return this.jwtUtil.generateAccessToken(credential);
+	}
+
+	@Override
+	public String generateRefreshToken(Account credential) {
+		log.info("JwtServiceImpl, String, generateRefreshToken");
+		return this.jwtUtil.generateRefreshToken(credential);
+	}
 	
 }
 

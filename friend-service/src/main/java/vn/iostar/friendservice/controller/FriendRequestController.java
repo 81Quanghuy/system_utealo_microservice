@@ -23,6 +23,22 @@ public class FriendRequestController {
     private final JwtService jwtService;
     private final FriendRequestService friendRequestService;
 
+
+    /**
+     * Lay trang thai nguoi dung dua theo userId va userToken: Ban be, dang cho ket ban,chap nhan loi moi ket ban
+     * @param authorizationHeader
+     * @param userId
+     * @return ResponseEntity<GenericResponse>
+     */
+    @GetMapping("/status/{userId}")
+    public ResponseEntity<GenericResponse> getStatusByUserId(@RequestHeader("Authorization") String authorizationHeader,
+                                                             @Valid @PathVariable("userId") String userId) {
+        String token = authorizationHeader.substring(7);
+        String userIdToken = jwtService.extractUserId(token);
+        return friendRequestService.getStatusByUserId(userId,userIdToken);
+    }
+
+
     @GetMapping
     public ResponseEntity<List<FriendRequestDto>> getFriendRequests(@RequestHeader(HttpHeaders.AUTHORIZATION) String authorizationHeader) {
         log.info("FriendRequestController, getFriendRequests");

@@ -1,4 +1,4 @@
-package vn.iostar.friendservice.service.impl;
+package vn.iostar.friendservice.consumer;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -6,20 +6,16 @@ import lombok.Setter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.kafka.annotation.KafkaListener;
-import org.springframework.kafka.annotation.RetryableTopic;
-import org.springframework.retry.annotation.Backoff;
 import org.springframework.stereotype.Service;
 import vn.iostar.friendservice.constant.KafkaTopicName;
-import vn.iostar.friendservice.dto.UserDto;
 import vn.iostar.friendservice.dto.response.UserResponse;
-import vn.iostar.friendservice.service.FriendService;
 
 import java.util.List;
 
 @Service
 @RequiredArgsConstructor
-public class MessageServiceImpl {
-    private final Logger logger = LoggerFactory.getLogger(MessageServiceImpl.class);
+public class ListenerUserTopic {
+    private final Logger logger = LoggerFactory.getLogger(ListenerUserTopic.class);
     @Setter
     @Getter
     private List<UserResponse> lastReceivedUser;

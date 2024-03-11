@@ -18,4 +18,6 @@ public interface FriendRequestService {
     ResponseEntity<GenericResponse> rejectFriendRequest(String userId, String friendRequestId);
 
     ResponseEntity<GenericResponse> deleteFriendRequest(String userId, String friendRequestId);
+
+    ResponseEntity<GenericResponse> getStatusByUserId(String userId, String userIdToken);
 }

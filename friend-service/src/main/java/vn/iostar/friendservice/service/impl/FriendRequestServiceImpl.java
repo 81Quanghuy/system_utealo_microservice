@@ -2,6 +2,7 @@ package vn.iostar.friendservice.service.impl;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import vn.iostar.friendservice.constant.FriendStateEnum;
@@ -28,7 +29,7 @@ import java.util.UUID;
 public class FriendRequestServiceImpl implements FriendRequestService {
 
     private final FriendRequestRepository friendRequestRepository;
-    private final FriendRepository friendshipRepository;
+    private final FriendRepository friendRepository;
     private final MapperService mapperService;
 
     @Override
@@ -139,6 +140,28 @@ public class FriendRequestServiceImpl implements FriendRequestService {
                 .message("Xóa lời mời kết bạn thành công!")
                 .result(mapperService.mapToFriendRequestDto(friendRequest))
                 .build());
+    }
+
+    @Override
+    public ResponseEntity<GenericResponse> getStatusByUserId(String userId, String userIdToken) {
+        Optional<Friend> friend = friendRepository.findByAuthorIdAndFriendIdsContaining(userId, userIdToken);
+
+        // Check if the user is a friend
+        if (friend.isPresent()) {
+            return ResponseEntity.ok().body(new GenericResponse(true, "Bạn bè", "null", HttpStatus.OK.value()));
+        }
+
+        // Check if the user has sent a friend request
+        Optional<FriendRequest> friendRequest = friendRequestRepository.findByTwoUserId(userId,
+                userIdToken);
+        if (friendRequest.isPresent()) {
+            if (friendRequest.get().getSenderId().equals(userIdToken)) {
+                return ResponseEntity.ok().body(new GenericResponse(true, "Đã gửi lời mời", "null", HttpStatus.OK.value()));
+            } else {
+                return ResponseEntity.ok().body(new GenericResponse(true, "Chấp nhận lời mời", "null", HttpStatus.OK.value()));
+            }
+        }
+        return ResponseEntity.ok().body(new GenericResponse(true, "Kết bạn", "null", HttpStatus.OK.value()));
     }
 
     private static FriendRequest getFriendRequest(Optional<FriendRequest> optionalFriendRequest, String userId, FriendStateEnum rejected) {

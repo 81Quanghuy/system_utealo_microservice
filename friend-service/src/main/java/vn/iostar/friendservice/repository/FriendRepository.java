@@ -14,4 +14,5 @@ public interface FriendRepository extends MongoRepository<Friend, String> {
     Optional<Friend> findByAuthorIdAndFriendIdsContaining(String authorId, String userId);
 
     Optional<Friend> findByAuthorId(String authorId);
+
 }

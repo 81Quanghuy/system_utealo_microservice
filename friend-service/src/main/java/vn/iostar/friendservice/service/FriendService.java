@@ -31,8 +31,7 @@ public interface FriendService {
     //findFriendUserIdsByUserId
     Optional<Friend> findByUserId(String userId);
 
-    List<UserResponse> findFriendUserIdsByUserId(String userId);
+    List<FriendResponse> findFriendUserIdsByUserId(String userId);
 
-
-    Page<FriendResponse> findFriendByUserId(String userId, PageRequest pageable);
+    ResponseEntity<GenericResponse> findFriendSuggestions(String userIdToken);
 }

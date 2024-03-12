@@ -21,6 +21,4 @@ public class AppConstant {
         byte[] keyBytes = StreamUtils.copyToByteArray(resource.getInputStream());
         return Keys.hmacShaKeyFor(keyBytes);
     }
-    
-
 }

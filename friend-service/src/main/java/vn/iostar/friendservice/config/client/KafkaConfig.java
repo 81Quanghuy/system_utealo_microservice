@@ -19,7 +19,7 @@ public class KafkaConfig {
     }
     @Bean
     public NewTopic topic1() {
-        return new NewTopic(KafkaTopicName.FRIEND_TOPIC, 2, (short) 1);
+        return new NewTopic(KafkaTopicName.GET_LIST_FRIEND_BY_USERID_TOPIC, 2, (short) 1);
     }
 
 }

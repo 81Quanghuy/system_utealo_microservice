@@ -21,24 +21,7 @@ import java.util.Optional;
 public class MessageServiceImpl {
     private final Logger logger = LoggerFactory.getLogger(MessageServiceImpl.class);
     private final UserService userService;
-    private final KafkaTemplate<String, List<UserResponse>> kafkaTemplate;
     private final KafkaTemplate<String, String> userIdKafkaTemplate;
-
-    @KafkaListener(topics = KafkaTopicName.FRIEND_TOPIC, groupId = "user-service")
-    public void receiveFriendInformation(List<String> list_userId) {
-        logger.info("Consumed message: " + list_userId);
-        List<UserResponse> list = new ArrayList<>();
-        for (String userId : list_userId) {
-            Optional<User> user = userService.findById(userId);
-            if (user.isPresent()) {
-                UserResponse userResponse = new UserResponse(user.get());
-                list.add(userResponse);
-            }
-        }
-        kafkaTemplate.send(KafkaTopicName.USER_TOPIC, list);
-        System.out.println("Consumed message: " + list);
-    }
-
 
     @KafkaListener(topics = KafkaTopicName.POST_TOPIC_GET_USER, groupId = "user-service")
     public void receivePostInformation(String userId) {
@@ -54,6 +37,4 @@ public class MessageServiceImpl {
         }
 
     }
-
-
 }

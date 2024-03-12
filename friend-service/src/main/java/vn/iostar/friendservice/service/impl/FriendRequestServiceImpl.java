@@ -2,6 +2,8 @@ package vn.iostar.friendservice.service.impl;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -18,10 +20,7 @@ import vn.iostar.friendservice.repository.FriendRequestRepository;
 import vn.iostar.friendservice.service.FriendRequestService;
 import vn.iostar.friendservice.service.MapperService;
 
-import java.util.Date;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor
@@ -32,119 +31,31 @@ public class FriendRequestServiceImpl implements FriendRequestService {
     private final FriendRepository friendRepository;
     private final MapperService mapperService;
 
-    @Override
-    public ResponseEntity<List<FriendRequestDto>> getFriendRequests(String userId) {
-        log.info("FriendRequestServiceImpl, getFriendRequests");
-        List<FriendRequest> friendRequests = friendRequestRepository.findAllByRecipientId(userId);
-        List<FriendRequestDto> friendRequestDtos = friendRequests.stream()
-                .map(mapperService::mapToFriendRequestDto)
-                .toList();
-        return ResponseEntity.ok(friendRequestDtos);
-    }
+
 
     @Override
-    public ResponseEntity<GenericResponse> createFriendRequest(String userId, CreateFriendRequest createFriendRequest) {
-        log.info("FriendRequestServiceImpl, createFriendRequest");
-        Optional<FriendRequest> optionalFriendRequest = friendRequestRepository.findByTwoUserId(userId, createFriendRequest.getUserId());
-        if (optionalFriendRequest.isPresent()) {
-            if (optionalFriendRequest.get().getState().equals(FriendStateEnum.REJECTED)) {
-                FriendRequest friendRequest = optionalFriendRequest.get();
-                friendRequest.setState(FriendStateEnum.PENDING);
-                friendRequest.setUpdatedAt(new Date());
-                friendRequestRepository.save(friendRequest);
-                return ResponseEntity.ok(GenericResponse.builder()
-                        .success(true)
-                        .statusCode(200)
-                        .message("Gửi lại lời mời kết bạn thành công!")
-                        .result(mapperService.mapToFriendRequestDto(friendRequest))
-                        .build());
-            } else if (optionalFriendRequest.get().getState().equals(FriendStateEnum.PENDING)) {
-                throw new BadRequestException("Lời mời kết bạn đã được gửi trước đó!");
-            } else {
-                throw new BadRequestException("Hai người đã là bạn bè!");
-            }
-        }
-        if (friendshipRepository.findByAuthorIdAndFriendIdsContaining(userId, createFriendRequest.getUserId()).isPresent()) {
-            throw new BadRequestException("Hai người đã là bạn bè!");
-        }
-        FriendRequest friendRequest = friendRequestRepository.save(FriendRequest.builder()
-                .id(UUID.randomUUID().toString())
-                .senderId(userId)
-                .recipientId(createFriendRequest.getUserId())
-                .state(FriendStateEnum.PENDING)
-                .createdAt(new Date())
-                .build());
-        return ResponseEntity.ok(GenericResponse.builder()
-                .success(true)
-                .statusCode(200)
-                .message("Gửi lời mời kết bạn thành công!")
-                .result(mapperService.mapToFriendRequestDto(friendRequest))
-                .build());
-    }
-
-    @Override
-    public ResponseEntity<GenericResponse> acceptFriendRequest(String userId, String friendRequestId) {
-        log.info("FriendRequestServiceImpl, acceptFriendRequest");
-        Optional<FriendRequest> optionalFriendRequest = friendRequestRepository.findById(friendRequestId);
-        FriendRequest friendRequest = getFriendRequest(optionalFriendRequest, userId, FriendStateEnum.ACCEPTED);
-        friendRequest = friendRequestRepository.save(friendRequest);
-        Friend senderRecipient = friendshipRepository.findByAuthorId(userId)
-                        .orElseThrow(() -> new NotFoundException("Yêu cầu không phù hợp!"));
-        if (senderRecipient.getFriendIds().contains(friendRequest.getSenderId())) {
-            throw new BadRequestException("Hai người đã là bạn bè!");
-        }
-        Friend recipientSender = friendshipRepository.findByAuthorId(friendRequest.getSenderId())
-                .orElseThrow(() -> new NotFoundException("Yêu cầu không phù hợp!"));
-        senderRecipient.getFriendIds().add(friendRequest.getSenderId());
-        recipientSender.getFriendIds().add(userId);
-        friendshipRepository.save(senderRecipient);
-        friendshipRepository.save(recipientSender);
-        return ResponseEntity.ok(GenericResponse.builder()
-                .success(true)
-                .statusCode(200)
-                .message("Chấp nhận lời mời kết bạn thành công!")
-                .result(mapperService.mapToFriendRequestDto(friendRequest))
-                .build());
-
-    }
-
-    @Override
-    public ResponseEntity<GenericResponse> rejectFriendRequest(String userId, String friendRequestId) {
-        log.info("FriendRequestServiceImpl, rejectFriendRequest");
-        Optional<FriendRequest> optionalFriendRequest = friendRequestRepository.findById(friendRequestId);
-        FriendRequest friendRequest = getFriendRequest(optionalFriendRequest, userId, FriendStateEnum.REJECTED);
-        friendRequest = friendRequestRepository.save(friendRequest);
-        return ResponseEntity.ok(GenericResponse.builder()
-                .success(true)
-                .statusCode(200)
-                .message("Từ chối lời mời kết bạn thành công!")
-                .result(mapperService.mapToFriendRequestDto(friendRequest))
-                .build());
-    }
-
-    @Override
-    public ResponseEntity<GenericResponse> deleteFriendRequest(String userId, String friendRequestId) {
+    public ResponseEntity<GenericResponse> deleteFriendRequest(String userIdToken, String userId) {
         log.info("FriendRequestServiceImpl, deleteFriendRequest");
-        Optional<FriendRequest> optionalFriendRequest = friendRequestRepository.findById(friendRequestId);
+        Optional<FriendRequest> optionalFriendRequest = friendRequestRepository.findByTwoUserId(userIdToken, userId);
         if (optionalFriendRequest.isEmpty()) {
             throw new BadRequestException("Không tìm thấy lời mời kết bạn!");
         }
         FriendRequest friendRequest = optionalFriendRequest.get();
-        if (!friendRequest.getSenderId().equals(userId)) {
-            throw new BadRequestException("Bạn không có quyền thực hiện hành động này!");
+        if (friendRequest.getRecipientId().equals(userIdToken) ) {
+            friendRequestRepository.delete(friendRequest);
+            return ResponseEntity.ok(GenericResponse.builder()
+                    .success(true)
+                    .statusCode(200)
+                    .message("Xóa lời mời kết bạn thành công!")
+                    .result(mapperService.mapToFriendRequestDto(friendRequest))
+                    .build());
         }
-        friendRequestRepository.delete(friendRequest);
-        return ResponseEntity.ok(GenericResponse.builder()
-                .success(true)
-                .statusCode(200)
-                .message("Xóa lời mời kết bạn thành công!")
-                .result(mapperService.mapToFriendRequestDto(friendRequest))
-                .build());
+        throw new BadRequestException("Không thể xóa lời mời kết bạn!");
     }
 
     @Override
     public ResponseEntity<GenericResponse> getStatusByUserId(String userId, String userIdToken) {
-        Optional<Friend> friend = friendRepository.findByAuthorIdAndFriendIdsContaining(userId, userIdToken);
+        Optional<Friend> friend = friendRepository.findByAuthorIdAndFriendIdsContaining(userIdToken, userId);
 
         // Check if the user is a friend
         if (friend.isPresent()) {
@@ -164,22 +75,135 @@ public class FriendRequestServiceImpl implements FriendRequestService {
         return ResponseEntity.ok().body(new GenericResponse(true, "Kết bạn", "null", HttpStatus.OK.value()));
     }
 
-    private static FriendRequest getFriendRequest(Optional<FriendRequest> optionalFriendRequest, String userId, FriendStateEnum rejected) {
-        if (optionalFriendRequest.isEmpty()) {
-            throw new BadRequestException("Không tìm thấy lời mời kết bạn!");
-        }
-        FriendRequest friendRequest = optionalFriendRequest.get();
-        if (!friendRequest.getRecipientId().equals(userId)) {
-            throw new BadRequestException("Bạn không có quyền thực hiện hành động này!");
-        }
-        if (friendRequest.getState().equals(FriendStateEnum.ACCEPTED)) {
-            throw new BadRequestException("Lời mời kết bạn đã được chấp nhận trước đó!");
-        }
-        if (friendRequest.getState().equals(FriendStateEnum.REJECTED)) {
-            throw new BadRequestException("Lời mời kết bạn đã bị từ chối trước đó!");
-        }
-        friendRequest.setState(rejected);
-        friendRequest.setUpdatedAt(new Date());
-        return friendRequest;
+    @Override
+    public ResponseEntity<GenericResponse> getRequestList(String userId) {
+        log.info("FriendRequestServiceImpl, getRequestList");
+        List<FriendRequest> friendRequests = friendRequestRepository.findAllBySenderId(userId);
+        List<FriendRequestDto> friendRequestDos = friendRequests.stream()
+                .map(mapperService::mapToFriendRequestDto)
+                .toList();
+        return ResponseEntity.ok(GenericResponse.builder()
+                .success(true)
+                .statusCode(200)
+                .message("Lấy danh sách lời mời kết bạn thành công!")
+                .result(friendRequestDos)
+                .build());
     }
+
+    @Override
+    public ResponseEntity<GenericResponse> getSenderRequestPageable(String userId) {
+        log.info("FriendRequestServiceImpl, getSenderRequestPageable");
+        PageRequest pageable = PageRequest.of(0, 10);
+        Page<FriendRequest> friendRequests = friendRequestRepository.findAllBySenderId(userId, pageable);
+        List<FriendRequestDto> friendRequestDos = friendRequests.stream()
+                .map(mapperService::mapToFriendRequestDto)
+                .toList();
+        return ResponseEntity.ok(GenericResponse.builder()
+                .success(true)
+                .statusCode(200)
+                .message("Lấy danh sách lời mời kết bạn thành công!")
+                .result(friendRequestDos)
+                .build());
+    }
+
+    @Override
+    public ResponseEntity<GenericResponse> sendFriendRequest(String userId, String userIdToken) {
+        log.info("FriendRequestServiceImpl, sendFriendRequest");
+        Optional<Friend> friend = friendRepository.findByAuthorIdAndFriendIdsContaining(userIdToken, userId);
+        if (friend.isPresent()) {
+            throw new BadRequestException("Hai người đã là bạn bè!");
+        }
+        Optional<FriendRequest> friendRequest = friendRequestRepository.findByTwoUserId(userIdToken,userId);
+        if (friendRequest.isPresent()) {
+            throw new BadRequestException("Đã gửi lời mời kết bạn!");
+        }
+        friendRequestRepository.save(FriendRequest.builder()
+                .id(UUID.randomUUID().toString())
+                .senderId(userIdToken)
+                .recipientId(userId)
+                .isActive(true)
+                .createdAt(new Date())
+                .build());
+        return ResponseEntity.ok(GenericResponse.builder()
+                .success(true)
+                .statusCode(200)
+                .message("Gửi lời mời kết bạn thành công!")
+                .build());
+    }
+
+    @Override
+    public ResponseEntity<GenericResponse> getInvitationSenderList(String userId) {
+        log.info("FriendRequestServiceImpl, getInvitationSenderList");
+        List<FriendRequest> friendRequests = friendRequestRepository.findAllByRecipientId(userId);
+        List<FriendRequestDto> friendRequestDos = friendRequests.stream()
+                .map(mapperService::mapToFriendRequestDto)
+                .toList();
+        return ResponseEntity.ok(GenericResponse.builder()
+                .success(true)
+                .statusCode(200)
+                .message("Lấy danh sách lời mời kết bạn thành công!")
+                .result(friendRequestDos)
+                .build());
+    }
+
+    @Override
+    public ResponseEntity<GenericResponse> cancelRequestFriend(String userIdToken, String userId) {
+        log.info("FriendRequestServiceImpl, cancelRequestFriend");
+        Optional<FriendRequest> friendRequest = friendRequestRepository.findByTwoUserId(userIdToken,userId);
+        if (friendRequest.isEmpty()) {
+            throw new NotFoundException("Không tìm thấy lời mời kết bạn!");
+        }
+        if (!friendRequest.get().getSenderId().equals(userIdToken)) {
+            throw new BadRequestException("Không thể hủy lời mời kết bạn!");
+        }
+        friendRequestRepository.delete(friendRequest.get());
+        return ResponseEntity.ok(GenericResponse.builder()
+                .success(true)
+                .statusCode(200)
+                .message("Hủy lời mời kết bạn thành công!")
+                .build());
+    }
+
+    @Override
+    public ResponseEntity<GenericResponse> acceptRequest(String userIdToken, String userId) {
+        log.info("FriendRequestServiceImpl, acceptRequest");
+        Optional<FriendRequest> friendRequest = friendRequestRepository.findByTwoUserId(userId,userIdToken);
+        if (friendRequest.isEmpty()) {
+            throw new NotFoundException("Không tìm thấy lời mời kết bạn!");
+        }
+        if (!friendRequest.get().getRecipientId().equals(userIdToken)) {
+            throw new BadRequestException("Không thể chấp nhận lời mời kết bạn!");
+        }
+        friendRequestRepository.delete(friendRequest.get());
+
+        //check if authorId already of userIdToken and userId
+        Optional<Friend> friend = friendRepository.findByAuthorId(userIdToken);
+        Optional<Friend> friend1 = friendRepository.findByAuthorId(userId);
+        if (friend.isPresent()) {
+            friend.get().getFriendIds().add(userId);
+            friendRepository.save(friend.get());
+        } else {
+            friendRepository.save(Friend.builder()
+                    .id(UUID.randomUUID().toString())
+                    .authorId(userIdToken)
+                    .friendIds(List.of(userId))
+                    .build());
+        }
+        if (friend1.isPresent()) {
+            friend1.get().getFriendIds().add(userIdToken);
+            friendRepository.save(friend1.get());
+        } else {
+            friendRepository.save(Friend.builder()
+                    .id(UUID.randomUUID().toString())
+                    .authorId(userId)
+                    .friendIds(List.of(userIdToken))
+                    .build());
+        }
+        return ResponseEntity.ok(GenericResponse.builder()
+                .success(true)
+                .statusCode(200)
+                .message("Chấp nhận lời mời kết bạn thành công!")
+                .build());
+    }
+
 }

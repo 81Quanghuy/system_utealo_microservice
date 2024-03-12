@@ -1,5 +1,7 @@
 package vn.iostar.friendservice.repository;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.data.mongodb.repository.Query;
 import org.springframework.stereotype.Repository;
@@ -12,9 +14,13 @@ import java.util.Optional;
 public interface FriendRequestRepository extends MongoRepository<FriendRequest, String> {
 
     List<FriendRequest> findAllByRecipientId(String recipientId);
+    Page<FriendRequest> findAllByRecipientId(String recipientId, Pageable pageable);
 
     @Query("{'$or': [{'senderId': ?0, 'recipientId': ?1}, {'senderId': ?1, 'recipientId': ?0}]}")
     Optional<FriendRequest> findByTwoUserId(String senderId, String recipientId);
 
-    //
+    //findAllBySenderIdPageable
+    List<FriendRequest> findAllBySenderId(String senderId);
+    Page<FriendRequest> findAllBySenderId(String senderId, Pageable pageable);
+
 }

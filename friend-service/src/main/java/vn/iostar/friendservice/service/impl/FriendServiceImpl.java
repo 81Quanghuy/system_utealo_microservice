@@ -181,7 +181,7 @@ public class FriendServiceImpl implements FriendService {
 
     @Override
     public List<UserResponse> findFriendUserIdsByUserId(String userId) {
-
+        return null;
     }
 
     @Override

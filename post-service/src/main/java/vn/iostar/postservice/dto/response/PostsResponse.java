@@ -2,7 +2,6 @@ package vn.iostar.postservice.dto.response;
 
 import java.util.Date;
 import java.util.List;
-import java.util.Optional;
 
 import lombok.Data;
 import vn.iostar.postservice.constant.PrivacyLevel;
@@ -30,7 +29,7 @@ public class PostsResponse {
 	private RoleName roleName;
 	private PrivacyLevel privacyLevel;
 
-	public PostsResponse(Post post) {
+	public PostsResponse(Post post, UserOfPostResponse userOfPostResponse) {
 		this.postId = post.getId();
 		this.postTime = post.getPostTime();
 		this.updateAt = post.getUpdatedAt();
@@ -39,8 +38,8 @@ public class PostsResponse {
 		this.files = post.getFiles();
 		this.location = post.getLocation();
 		this.userId = post.getUserId();
-//		this.userName = post.getUserName();
-//		this.avatarUser = post.getAvatarUser();
+		this.userName = userOfPostResponse.getUserName();
+		this.avatarUser = userOfPostResponse.getAvatarUser();
 //		this.postGroupId = post.getPostGroupId();
 //		this.postGroupName = post.getPostGroupName();
 //		this.avatarGroup = post.getAvatarGroup();

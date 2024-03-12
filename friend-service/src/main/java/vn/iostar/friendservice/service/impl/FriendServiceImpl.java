@@ -59,8 +59,6 @@ public class FriendServiceImpl implements FriendService {
             senderRecipient.getFriendIds().remove(friendId);
             recipientSender.getFriendIds().remove(userId);
             friendRepository.saveAll(List.of(senderRecipient, recipientSender));
-            Optional<FriendRequest> optionalFriendRequest = friendRequestRepository.findByTwoUserId(userId, friendId);
-            optionalFriendRequest.ifPresent(friendRequestRepository::delete);
             return ResponseEntity.ok(GenericResponse.builder()
                     .success(true)
                     .statusCode(200)
@@ -139,7 +137,7 @@ public class FriendServiceImpl implements FriendService {
         List<String> userIdResult = new ArrayList<>();
 
         while (userIdResult.size() < 10 && !friendIds.isEmpty()) {
-            String friendId = friendIds.remove(0);
+            String friendId = friendIds.removeFirst();
             Friend friendFriendship = friendRepository.findByAuthorId(friendId)
                     .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng này!"));
             List<String> friendFriendIds = friendFriendship.getFriendIds();
@@ -180,12 +178,20 @@ public class FriendServiceImpl implements FriendService {
     }
 
     @Override
-    public List<UserResponse> findFriendUserIdsByUserId(String userId) {
-        return null;
+    public List<FriendResponse> findFriendUserIdsByUserId(String userId) {
+        logger.info("FriendServiceImpl, findFriendUserIdsByUserId");
+        Optional<Friend> friend = friendRepository.findByAuthorId(userId);
+        if (friend.isPresent()) {
+            kafkaTemplate.send(KafkaTopicName.GET_LIST_FRIEND_BY_USERID_TOPIC, friend.get().getFriendIds());
+            logger.info("Sent friend list to Kafka"+friend.get().getFriendIds());
+
+        }
+        return listenerUserTopic.getLastReceivedUser();
     }
 
+
     @Override
-    public Page<FriendResponse> findFriendByUserId(String userId, PageRequest pageable) {
+    public ResponseEntity<GenericResponse> findFriendSuggestions(String userIdToken) {
         return null;
     }
 

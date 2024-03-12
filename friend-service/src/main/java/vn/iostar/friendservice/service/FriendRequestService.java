@@ -9,15 +9,22 @@ import vn.iostar.friendservice.dto.response.GenericResponse;
 import java.util.List;
 
 public interface FriendRequestService {
-    ResponseEntity<List<FriendRequestDto>> getFriendRequests(String userId);
 
-    ResponseEntity<GenericResponse> createFriendRequest(String userId, CreateFriendRequest createFriendRequest);
-
-    ResponseEntity<GenericResponse> acceptFriendRequest(String userId, String friendRequestId);
-
-    ResponseEntity<GenericResponse> rejectFriendRequest(String userId, String friendRequestId);
 
     ResponseEntity<GenericResponse> deleteFriendRequest(String userId, String friendRequestId);
 
     ResponseEntity<GenericResponse> getStatusByUserId(String userId, String userIdToken);
+
+    ResponseEntity<GenericResponse> getRequestList(String userId);
+
+    ResponseEntity<GenericResponse> getSenderRequestPageable(String userId);
+
+    ResponseEntity<GenericResponse> sendFriendRequest(String userId, String userIdToken);
+
+    ResponseEntity<GenericResponse> getInvitationSenderList(String userId);
+
+    ResponseEntity<GenericResponse> cancelRequestFriend(String userIdToken, String userId);
+
+    ResponseEntity<GenericResponse> acceptRequest(String userIdToken, String userId);
+
 }

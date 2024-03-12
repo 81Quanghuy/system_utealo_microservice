@@ -28,35 +28,35 @@ public class JwtUtilImpl implements JwtUtil {
 	private Key getSigningKey() {
 		return AppConstant.getSecretKey();
 	}
-	
+
 	@Override
 	public String extractUserId(final String token) {
 		return this.extractClaims(token, Claims::getSubject);
 	}
-	
+
 	@Override
 	public Date extractExpiration(final String token) {
 		return this.extractClaims(token, Claims::getExpiration);
 	}
-	
+
 	@Override
 	public <T> T extractClaims(final String token, Function<Claims, T> claimsResolver) {
 		final Claims claims = this.extractAllClaims(token);
 		return claimsResolver.apply(claims);
 	}
-	
+
 	private Claims extractAllClaims(final String token) {
 		return Jwts.parserBuilder()
-					.setSigningKey(this.getSigningKey())
-					.build()
-					.parseClaimsJws(token)
-					.getBody();
+				.setSigningKey(this.getSigningKey())
+				.build()
+				.parseClaimsJws(token)
+				.getBody();
 	}
-	
+
 	private Boolean isTokenExpired(final String token) {
 		return this.extractExpiration(token).before(new Date());
 	}
-	
+
 	@Override
 	public Boolean validateToken(final String token) {
 		try {
@@ -102,15 +102,5 @@ public class JwtUtilImpl implements JwtUtil {
 				.signWith(this.getSigningKey(), SignatureAlgorithm.HS512)
 				.compact();
 	}
-	
+
 }
-
-
-
-
-
-
-
-
-
-

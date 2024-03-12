@@ -32,9 +32,8 @@ public class FriendRequest implements Serializable {
     @Field(name = "recipient_id")
     private String recipientId;
 
-    @Field(name = "status")
-    private FriendStateEnum state;
-
+    @Field(name = "is_active")
+    private Boolean isActive;
 
     @CreatedDate
     @JsonFormat(shape = JsonFormat.Shape.STRING)

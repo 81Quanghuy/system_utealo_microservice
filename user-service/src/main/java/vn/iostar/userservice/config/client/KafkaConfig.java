@@ -3,6 +3,7 @@ package vn.iostar.userservice.config.client;
 import com.fasterxml.jackson.databind.JsonSerializer;
 import org.apache.kafka.clients.admin.NewTopic;
 import org.apache.kafka.clients.producer.ProducerConfig;
+import org.springframework.cloud.client.loadbalancer.LoadBalanced;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.kafka.core.DefaultKafkaProducerFactory;
@@ -31,4 +32,8 @@ public class KafkaConfig {
         return new NewTopic(KafkaTopicName.USER_TOPIC, 2, (short) 1);
     }
 
+    @Bean
+    public NewTopic getUserInf() {
+        return new NewTopic(KafkaTopicName.GET_USER_INF_FRIEND_TOPIC, 2, (short) 1);
+    }
 }

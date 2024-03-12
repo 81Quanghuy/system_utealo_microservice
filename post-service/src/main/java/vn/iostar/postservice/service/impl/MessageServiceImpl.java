@@ -6,6 +6,7 @@ import lombok.Setter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.kafka.annotation.KafkaListener;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import vn.iostar.postservice.constant.KafkaTopicName;
 import vn.iostar.postservice.constant.KafkaTopicName;
@@ -18,13 +19,19 @@ import java.util.List;
 @RequiredArgsConstructor
 public class MessageServiceImpl {
     private final Logger logger = LoggerFactory.getLogger(MessageServiceImpl.class);
-    @Setter
+    private final KafkaTemplate<String, String> kafkaTemplate;
+
     @Getter
-    private UserOfPostResponse lastReceivedUser;
+    @Setter
+    private String lastReceivedUser;
+
     @KafkaListener(topics = KafkaTopicName.USER_TOPIC, groupId = "post-service")
-    public void receiveUserInformation(UserOfPostResponse user) {
-        logger.info("Consumed message: " + user);
-        System.out.println("Consumed message: " + user);
-        this.setLastReceivedUser(user); //lưu lại thông tin user
+    public void getUserName(String userName) {
+        logger.info("Consumed message: " + userName);
+        System.out.println("Consumed message of user: " + userName);
+        lastReceivedUser = userName;
+        System.out.println("Last received user: " + lastReceivedUser);
     }
+
+
 }

@@ -21,8 +21,6 @@ public class MessageServiceImpl {
     @Setter
     @Getter
     private UserOfPostResponse lastReceivedUser;
-    //gửi email lỗi lại liên tục 3 lần
-    //@RetryableTopic(attempts = "3", dltTopicSuffix = "dlt",backoff = @Backoff(delay = 1000, maxDelay = 10000, multiplier = 2))
     @KafkaListener(topics = KafkaTopicName.USER_TOPIC, groupId = "post-service")
     public void receiveUserInformation(UserOfPostResponse user) {
         logger.info("Consumed message: " + user);

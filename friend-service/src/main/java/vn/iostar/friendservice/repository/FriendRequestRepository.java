@@ -15,4 +15,6 @@ public interface FriendRequestRepository extends MongoRepository<FriendRequest, 
 
     @Query("{'$or': [{'senderId': ?0, 'recipientId': ?1}, {'senderId': ?1, 'recipientId': ?0}]}")
     Optional<FriendRequest> findByTwoUserId(String senderId, String recipientId);
+
+    //
 }

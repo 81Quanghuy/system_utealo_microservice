@@ -1,5 +1,6 @@
 package vn.iostar.friendservice.constant;
 
 public enum FriendStateEnum {
-    PENDING, ACCEPTED, REJECTED, BLOCKED;
+    ACCEPT, //  Chấp nhận lời mời
+    SENDED, // Đã gửi lời mời
 }

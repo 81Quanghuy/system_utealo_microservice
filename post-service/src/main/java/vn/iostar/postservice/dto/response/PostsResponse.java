@@ -29,7 +29,7 @@ public class PostsResponse {
 	private RoleName roleName;
 	private PrivacyLevel privacyLevel;
 
-	public PostsResponse(Post post, UserOfPostResponse userOfPostResponse) {
+	public PostsResponse(Post post, String userName ) {
 		this.postId = post.getId();
 		this.postTime = post.getPostTime();
 		this.updateAt = post.getUpdatedAt();
@@ -38,8 +38,13 @@ public class PostsResponse {
 		this.files = post.getFiles();
 		this.location = post.getLocation();
 		this.userId = post.getUserId();
-		this.userName = userOfPostResponse.getUserName();
-		this.avatarUser = userOfPostResponse.getAvatarUser();
+//		if (userOfPostResponse != null) {
+//			this.userName = userOfPostResponse.getUserName();
+//			this.avatarUser = userOfPostResponse.getAvatarUser();
+//		}
+		if (userName != null) {
+			this.userName = userName;
+		}
 //		this.postGroupId = post.getPostGroupId();
 //		this.postGroupName = post.getPostGroupName();
 //		this.avatarGroup = post.getAvatarGroup();

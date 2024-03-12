@@ -31,6 +31,7 @@ public class PostServiceImpl implements PostService {
     private final JwtService jwtService;
 
     private final KafkaTemplate<String, String> kafkaTemplate;
+    private final KafkaTemplate<String, UserOfPostResponse> kafkaTemplateUser;
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
     private final MessageServiceImpl messageService;
 
@@ -43,7 +44,7 @@ public class PostServiceImpl implements PostService {
     }
 
     @Override
-    public ResponseEntity<Object> createUserPost(String token, CreatePostRequestDTO requestDTO) {
+    public ResponseEntity<Object> createUserPost(String token, CreatePostRequestDTO requestDTO)  {
 
         List<String> allowedFileExtensions = Arrays.asList("docx", "txt", "pdf");
 
@@ -96,20 +97,19 @@ public class PostServiceImpl implements PostService {
         // Thiết lập các giá trị cố định
         post.setPostTime(new Date());
         post.setUpdatedAt(new Date());
-
+        kafkaTemplate.send(KafkaTopicName.POST_TOPIC_GET_USER, userId);
+        logger.info("Sent userId to Kafka");
+        String userOfPostResponse = messageService.getLastReceivedUser();
+        logger.info("Received userOfPostResponse from Kafka" + userOfPostResponse);
+        //UserOfPostResponse userOfPostResponse1 = new UserOfPostResponse();
 
         // Tiếp tục xử lý tạo bài đăng
         save(post);
-
-        kafkaTemplate.send(KafkaTopicName.POST_TOPIC_GET_USER, userId);
-        logger.info("Sent userId to Kafka");
-        UserOfPostResponse userOfPostResponse = messageService.getLastReceivedUser();
 
         PostsResponse postsResponse = new PostsResponse(post, userOfPostResponse);
         List<Integer> count = new ArrayList<>();
         postsResponse.setComments(count);
         postsResponse.setLikes(count);
-
 
         GenericResponse response = GenericResponse.builder().success(true).message("Post Created Successfully")
                 .result(postsResponse).statusCode(200).build();

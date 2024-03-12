@@ -10,14 +10,13 @@ import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import vn.iostar.friendservice.constant.KafkaTopicName;
 import vn.iostar.friendservice.dto.response.FriendResponse;
-import vn.iostar.friendservice.dto.response.UserResponse;
 
 import java.util.List;
 
 @Service
 @RequiredArgsConstructor
-public class ListenerUserTopic {
-    private final Logger logger = LoggerFactory.getLogger(ListenerUserTopic.class);
+public class ListenerUserService {
+    private final Logger logger = LoggerFactory.getLogger(ListenerUserService.class);
     private final KafkaTemplate<String, List<FriendResponse>> kafkaTemplate;
     @Setter
     @Getter

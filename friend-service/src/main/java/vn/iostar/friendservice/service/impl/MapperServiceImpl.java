@@ -17,7 +17,6 @@ public class MapperServiceImpl implements MapperService {
                 .id(friendRequest.getId())
                 .senderId(friendRequest.getSenderId())
                 .recipientId(friendRequest.getRecipientId())
-                .status(friendRequest.getState().toString())
                 .createdAt(friendRequest.getCreatedAt() == null ?
                         null : DateUtil.date2String(friendRequest.getCreatedAt(), AppConstant.LOCAL_DATE_TIME_FORMAT))
                 .updatedAt(friendRequest.getUpdatedAt() == null ?

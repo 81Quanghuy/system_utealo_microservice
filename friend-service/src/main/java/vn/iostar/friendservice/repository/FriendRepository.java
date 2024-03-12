@@ -15,7 +15,4 @@ public interface FriendRepository extends MongoRepository<Friend, String> {
 
     Optional<Friend> findByAuthorId(String authorId);
 
-    // Đề xuất bạn của bạn bè với số lượng giới hạn là 10 người sử dụng userId
-
-    List<FriendDTO> findFriendSuggestions(String userId);
 }

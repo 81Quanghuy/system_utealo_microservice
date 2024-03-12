@@ -13,7 +13,7 @@ public class MessageServiceImpl {
     private final Logger logger = LoggerFactory.getLogger(MessageServiceImpl.class);
     private final EmailService emailService;
 
-    @KafkaListener(topics = "email_topic", groupId = "email-service")
+    @KafkaListener(topics = "email-topic", groupId = "email-service")
     public void consume(String email) {
         logger.info("Consumed message: " + email);
         emailService.sendOtp(email);

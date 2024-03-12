@@ -1,18 +1,23 @@
 package vn.iostar.postservice.service.impl;
 
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
-import vn.iostar.postservice.constant.PrivacyLevel;
+import vn.iostar.postservice.constant.KafkaTopicName;
 import vn.iostar.postservice.dto.GenericResponse;
 import vn.iostar.postservice.dto.request.CreatePostRequestDTO;
 import vn.iostar.postservice.dto.response.PostsResponse;
+import vn.iostar.postservice.dto.response.UserOfPostResponse;
 import vn.iostar.postservice.entity.Post;
 import vn.iostar.postservice.jwt.service.JwtService;
 import vn.iostar.postservice.repository.PostRepository;
 import vn.iostar.postservice.service.CloudinaryService;
 import vn.iostar.postservice.service.PostService;
+
 
 import java.io.IOException;
 import java.util.*;
@@ -25,6 +30,12 @@ public class PostServiceImpl implements PostService {
 
     private final JwtService jwtService;
 
+    private final KafkaTemplate<String, String> kafkaTemplate;
+    private final KafkaTemplate<String, UserOfPostResponse> kafkaTemplateUser;
+    private final Logger logger = LoggerFactory.getLogger(this.getClass());
+    private final MessageServiceImpl messageService;
+
+
     private CloudinaryService cloudinaryService;
 
     @Override
@@ -33,7 +44,7 @@ public class PostServiceImpl implements PostService {
     }
 
     @Override
-    public ResponseEntity<Object> createUserPost(String token, CreatePostRequestDTO requestDTO) {
+    public ResponseEntity<Object> createUserPost(String token, CreatePostRequestDTO requestDTO)  {
 
         List<String> allowedFileExtensions = Arrays.asList("docx", "txt", "pdf");
 
@@ -86,10 +97,16 @@ public class PostServiceImpl implements PostService {
         // Thiết lập các giá trị cố định
         post.setPostTime(new Date());
         post.setUpdatedAt(new Date());
+        kafkaTemplate.send(KafkaTopicName.POST_TOPIC_GET_USER, userId);
+        logger.info("Sent userId to Kafka");
+        String userOfPostResponse = messageService.getLastReceivedUser();
+        logger.info("Received userOfPostResponse from Kafka" + userOfPostResponse);
+        //UserOfPostResponse userOfPostResponse1 = new UserOfPostResponse();
 
         // Tiếp tục xử lý tạo bài đăng
         save(post);
-        PostsResponse postsResponse = new PostsResponse(post);
+
+        PostsResponse postsResponse = new PostsResponse(post, userOfPostResponse);
         List<Integer> count = new ArrayList<>();
         postsResponse.setComments(count);
         postsResponse.setLikes(count);

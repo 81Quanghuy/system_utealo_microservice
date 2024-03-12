@@ -10,7 +10,6 @@ import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import vn.iostar.userservice.constant.KafkaTopicName;
 import vn.iostar.userservice.dto.response.FriendResponse;
-import vn.iostar.userservice.dto.response.UserResponse;
 import vn.iostar.userservice.entity.User;
 import vn.iostar.userservice.service.UserService;
 
@@ -20,7 +19,7 @@ import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
-public class ListenerUserTopic {
+public class ListenerFriendService {
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
     private final UserService userService;
     private final KafkaTemplate<String, List<FriendResponse>> kafkaTemplate;

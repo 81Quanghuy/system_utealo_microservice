@@ -4,23 +4,16 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
-import vn.iostar.friendservice.constant.FriendStateEnum;
 import vn.iostar.friendservice.constant.KafkaTopicName;
-import vn.iostar.friendservice.consumer.ListenerUserTopic;
-import vn.iostar.friendservice.dto.FriendDTO;
+import vn.iostar.friendservice.consumer.ListenerUserService;
 import vn.iostar.friendservice.dto.FriendshipDto;
 import vn.iostar.friendservice.dto.response.FriendOfUserResponse;
 import vn.iostar.friendservice.dto.response.FriendResponse;
 import vn.iostar.friendservice.dto.response.GenericResponse;
-import vn.iostar.friendservice.dto.response.UserResponse;
 import vn.iostar.friendservice.entity.Friend;
-import vn.iostar.friendservice.entity.FriendRequest;
 import vn.iostar.friendservice.exception.wrapper.BadRequestException;
 import vn.iostar.friendservice.exception.wrapper.NotFoundException;
 import vn.iostar.friendservice.repository.FriendRepository;
@@ -38,7 +31,7 @@ public class FriendServiceImpl implements FriendService {
     private final FriendRepository friendRepository;
     private final FriendRequestRepository friendRequestRepository;
     private final KafkaTemplate<String, List<String>> kafkaTemplate;
-    private final ListenerUserTopic listenerUserTopic;
+    private final ListenerUserService listenerUserService;
 
     @Override
     public ResponseEntity<List<String>> getFriendIds(String userId) {
@@ -186,7 +179,7 @@ public class FriendServiceImpl implements FriendService {
             logger.info("Sent friend list to Kafka"+friend.get().getFriendIds());
 
         }
-        return listenerUserTopic.getLastReceivedUser();
+        return listenerUserService.getLastReceivedUser();
     }
 
 

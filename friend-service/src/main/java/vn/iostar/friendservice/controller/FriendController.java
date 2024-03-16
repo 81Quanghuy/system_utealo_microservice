@@ -23,6 +23,7 @@ public class FriendController {
 
     /**
      * Lay danh sach ban be theo userId
+     *
      * @return ResponseEntity<GenericResponse>
      */
     @GetMapping("/list/{userId}")
@@ -31,28 +32,16 @@ public class FriendController {
         return ResponseEntity.ok(GenericResponse.builder().success(true).message("Get List Friend Successfully")
                 .result(friend).statusCode(HttpStatus.OK.value()).build());
     }
-//
-//    /**
-//     * Lấy danh sách bạn bè có phân trang
-//     * @param userId
-//     * @return ResponseEntity<GenericResponse>
-//     */
-//    @GetMapping("/list/pageable/{userId}")
-//    public ResponseEntity<GenericResponse> getListFriendTop10ByUserId(@Valid @PathVariable("userId") String userId) {
-//        PageRequest pageable = PageRequest.of(0, 10);
-//        Page<FriendResponse> friend = friendService.findFriendByUserId(userId, pageable);
-//        return ResponseEntity.ok(GenericResponse.builder().success(true).message("Get List Friend Successfully")
-//                .result(friend).statusCode(HttpStatus.OK.value()).build());
-//    }
 
     @DeleteMapping("/delete/{userId}")
-    public ResponseEntity<GenericResponse> deleteFriend(@RequestHeader(HttpHeaders.AUTHORIZATION) String authorizationHeader, @RequestParam String userId) {
+    public ResponseEntity<GenericResponse> deleteFriend(
+            @RequestHeader(HttpHeaders.AUTHORIZATION) String authorizationHeader,
+            @PathVariable("userId") String userId) {
         log.info("FriendshipController, deleteFriend");
         String accessToken = authorizationHeader.substring(7);
         String userIdToken = jwtService.extractUserId(accessToken);
         return friendService.deleteFriend(userIdToken, userId);
     }
-
 
 
     /**
@@ -63,7 +52,7 @@ public class FriendController {
      * @return The resource if found, or a 404 Not Found response.
      */
     @GetMapping("/suggestion/list")
-    public ResponseEntity<List<String>> getSuggestionList(
+    public ResponseEntity<GenericResponse> getSuggestionList(
             @RequestHeader("Authorization") String authorizationHeader) {
         String token = authorizationHeader.substring(7);
         String userIdToken = jwtService.extractUserId(token);

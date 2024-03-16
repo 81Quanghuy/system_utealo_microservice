@@ -10,6 +10,7 @@ import vn.iostar.userservice.dto.request.AccountManager;
 import vn.iostar.userservice.dto.request.ChangePasswordRequest;
 import vn.iostar.userservice.dto.request.UserManagerRequest;
 import vn.iostar.userservice.dto.request.UserUpdateRequest;
+import vn.iostar.userservice.dto.response.FriendResponse;
 import vn.iostar.userservice.dto.response.GenericResponse;
 import vn.iostar.userservice.dto.response.UserProfileResponse;
 import vn.iostar.userservice.dto.response.UserResponse;
@@ -135,4 +136,6 @@ public interface UserService {
 
 	List<User> findByRoleRoleName(RoleName roleName);
 	List<User> findAllByUserId(String userId);
+
+	List<FriendResponse> getFriendByListUserId(UserIds listUserId);
 }

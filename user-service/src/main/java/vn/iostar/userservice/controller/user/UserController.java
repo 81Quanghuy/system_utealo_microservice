@@ -11,9 +11,6 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.kafka.core.KafkaTemplate;
-import org.springframework.kafka.support.SendResult;
-import org.springframework.util.concurrent.ListenableFutureCallback;
 import org.springframework.web.bind.annotation.*;
 import vn.iostar.userservice.constant.KafkaTopicName;
 import org.springframework.mail.javamail.JavaMailSender;
@@ -22,10 +19,12 @@ import org.springframework.validation.BindingResult;
 import org.springframework.web.multipart.MultipartFile;
 import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
+import vn.iostar.userservice.dto.UserIds;
 import vn.iostar.userservice.dto.request.ChangePasswordRequest;
 import vn.iostar.userservice.dto.request.PasswordResetRequest;
 import vn.iostar.userservice.dto.request.UpdateIsActiveRequest;
 import vn.iostar.userservice.dto.request.UserUpdateRequest;
+import vn.iostar.userservice.dto.response.FriendResponse;
 import vn.iostar.userservice.dto.response.GenericResponse;
 import vn.iostar.userservice.dto.response.UserProfileResponse;
 import vn.iostar.userservice.entity.PasswordResetOtp;
@@ -38,6 +37,7 @@ import vn.iostar.userservice.service.UserService;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
@@ -48,7 +48,6 @@ import java.util.concurrent.CompletableFuture;
 @RequestMapping("/api/v1/user")
 public class UserController {
 
-    private final KafkaTemplate<String, Object> kafkaTemplate;
 
     private final JwtService jwtService;
 
@@ -151,7 +150,7 @@ public class UserController {
         helper.setSubject(subject);
         helper.setText(content, true);
         helper.setTo(user.get().getAccount().getEmail());
-        helper.setFrom(env.getProperty("spring.mail.username"), "Admin UteAlo");
+        helper.setFrom(Objects.requireNonNull(env.getProperty("spring.mail.username")), "Admin UteAlo");
 
         javaMailSender.send(message);
 
@@ -300,20 +299,13 @@ public class UserController {
         return jwtService.extractUserId(token);
     }
 
-    @PostMapping
-    public String sendUser(@RequestParam String email) {
-        try {
-            CompletableFuture<SendResult<String, Object>> future =  kafkaTemplate.send(KafkaTopicName.USER_TOPIC, email);
-           future.whenComplete((result, ex) -> {
-               if (ex == null) {
-                   System.out.println("Sent message=[" + email + "] with offset=[" + result.getRecordMetadata().offset() + "]");
-               } else {
-                   System.out.println("Unable to send message=[" + email + "] due to : " + ex.getMessage());
-               }
-           });
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-        return "User sent successfully!"+email;
+    /**
+     * GET FriendResponse by List userId
+     * @param list_userId
+     * @return FriendResponse: userId, name, avatar, background
+     */
+    @PostMapping("/getProfileByListUserId")
+    public List<FriendResponse> getFriendByListUserId(@RequestBody UserIds list_userId) {
+        return userService.getFriendByListUserId(list_userId);
     }
 }

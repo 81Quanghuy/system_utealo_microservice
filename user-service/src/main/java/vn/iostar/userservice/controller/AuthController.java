@@ -4,8 +4,6 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.BindingResult;
@@ -32,7 +30,6 @@ import java.util.*;
 @Validated
 @RequiredArgsConstructor
 public class AuthController {
-    public final AuthenticationManager authenticationManager;
     public final PasswordEncoder passwordEncoder;
     public final AccountService accountService;
     public final TokenService tokenService;
@@ -115,23 +112,6 @@ public class AuthController {
                 .body(GenericResponse.builder().success(false).message("Logout failed!")
                         .result("Please login before logout!").statusCode(HttpStatus.UNAUTHORIZED.value()).build());
     }
-
-    @PostMapping("/logout-all")
-    public ResponseEntity<GenericResponse> logoutAll(@RequestHeader("Authorization") String authorizationHeader,
-                                                     @RequestParam("refreshToken") String refreshToken) {
-        String accessToken = authorizationHeader.substring(7);
-        if (jwtService.extractUserId(accessToken).equals(jwtService.extractUserId(refreshToken))) {
-            String userId = jwtService.extractUserId(refreshToken);
-            tokenService.revokeRefreshToken(userId);
-            SecurityContextHolder.clearContext();
-            return ResponseEntity.ok().body(GenericResponse.builder().success(true).message("Logout successfully!")
-                    .result("").statusCode(HttpStatus.OK.value()).build());
-        }
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                .body(GenericResponse.builder().success(false).message("Logout failed!")
-                        .result("Please login before logout!").statusCode(HttpStatus.UNAUTHORIZED.value()).build());
-    }
-
     @PostMapping("/refresh-access-token")
     public ResponseEntity<GenericResponse> refreshAccessToken(@RequestBody TokenRequest tokenRequest) {
         String refreshToken = tokenRequest.getRefreshToken();

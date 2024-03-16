@@ -12,7 +12,6 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -26,6 +25,7 @@ import vn.iostar.userservice.dto.request.AccountManager;
 import vn.iostar.userservice.dto.request.ChangePasswordRequest;
 import vn.iostar.userservice.dto.request.UserManagerRequest;
 import vn.iostar.userservice.dto.request.UserUpdateRequest;
+import vn.iostar.userservice.dto.response.FriendResponse;
 import vn.iostar.userservice.dto.response.GenericResponse;
 import vn.iostar.userservice.dto.response.UserResponse;
 import vn.iostar.userservice.entity.*;
@@ -148,7 +148,7 @@ public class UserServiceImpl implements UserService {
 
 		User user = userOptional.get();
 		if (!passwordEncoder.matches(request.getPassword(), user.getAccount().getPassword()))
-			throw new BadCredentialsException("Mật khẩu không chính xác");
+			throw new BadRequestException("Mật khẩu không chính xác");
 
 		if (passwordEncoder.matches(request.getNewPassword(), user.getAccount().getPassword()))
 			throw new RuntimeException("Mật khẩu mới không được trùng với mật khẩu cũ");
@@ -1045,6 +1045,7 @@ public class UserServiceImpl implements UserService {
 		return userRepository.findAllByUserId(userId);
 	}
 
+
 	// Lấy toàn bộ thông tin người dùng
 	@Override
 	public UserProfileResponse getFullProfile(Optional<User> user, Pageable pageable) {
@@ -1057,7 +1058,23 @@ public class UserServiceImpl implements UserService {
 //		profileResponse.setPostGroup(groupPostResponses);
 		return profileResponse;
 	}
+	@Override
+	public List<FriendResponse> getFriendByListUserId(UserIds listUserId) {
 
-
+		List<FriendResponse> listFriend = new ArrayList<>();
+		for (String userId : listUserId.getUserId()) {
+			Optional<User> user = findById(userId);
+			if (user.isPresent()) {
+				FriendResponse friend = new FriendResponse();
+				friend.setUserId(user.get().getUserId());
+				friend.setBackground(user.get().getProfile().getBackground());
+				friend.setAvatar(user.get().getProfile().getAvatar());
+				friend.setUsername(user.get().getUserName());
+				friend.setIsOnline(user.get().getIsOnline());
+				listFriend.add(friend);
+			}
+		}
+		return listFriend;
+	}
 
 }

@@ -1,13 +1,10 @@
 package vn.iostar.friendservice.service;
 
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.http.ResponseEntity;
 import vn.iostar.friendservice.dto.FriendshipDto;
 import vn.iostar.friendservice.dto.response.FriendOfUserResponse;
 import vn.iostar.friendservice.dto.response.FriendResponse;
 import vn.iostar.friendservice.dto.response.GenericResponse;
-import vn.iostar.friendservice.dto.response.UserResponse;
 import vn.iostar.friendservice.entity.Friend;
 
 import java.util.List;
@@ -24,7 +21,7 @@ public interface FriendService {
 
     ResponseEntity<List<FriendOfUserResponse>> getFriendsOfUser(String userId, String friendId);
 
-	ResponseEntity<List<String>> getFriendSuggestions(String userId);
+	ResponseEntity<GenericResponse> getFriendSuggestions(String userId);
 
     ResponseEntity<GenericResponse> createFriend(FriendshipDto friend);
 

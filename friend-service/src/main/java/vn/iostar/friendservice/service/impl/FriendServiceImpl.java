@@ -4,12 +4,11 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
-import vn.iostar.friendservice.constant.KafkaTopicName;
-import vn.iostar.friendservice.consumer.ListenerUserService;
 import vn.iostar.friendservice.dto.FriendshipDto;
+import vn.iostar.friendservice.dto.UserIds;
 import vn.iostar.friendservice.dto.response.FriendOfUserResponse;
 import vn.iostar.friendservice.dto.response.FriendResponse;
 import vn.iostar.friendservice.dto.response.GenericResponse;
@@ -17,8 +16,8 @@ import vn.iostar.friendservice.entity.Friend;
 import vn.iostar.friendservice.exception.wrapper.BadRequestException;
 import vn.iostar.friendservice.exception.wrapper.NotFoundException;
 import vn.iostar.friendservice.repository.FriendRepository;
-import vn.iostar.friendservice.repository.FriendRequestRepository;
 import vn.iostar.friendservice.service.FriendService;
+import vn.iostar.friendservice.service.client.UserClientService;
 
 import java.util.*;
 
@@ -29,9 +28,8 @@ public class FriendServiceImpl implements FriendService {
 
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
     private final FriendRepository friendRepository;
-    private final FriendRequestRepository friendRequestRepository;
-    private final KafkaTemplate<String, List<String>> kafkaTemplate;
-    private final ListenerUserService listenerUserService;
+
+    private final UserClientService userClientService;
 
     @Override
     public ResponseEntity<List<String>> getFriendIds(String userId) {
@@ -119,7 +117,7 @@ public class FriendServiceImpl implements FriendService {
     }
 
     @Override
-    public ResponseEntity<List<String>> getFriendSuggestions(String userId) {
+    public ResponseEntity<GenericResponse> getFriendSuggestions(String userId) {
         log.info("FriendshipServiceImpl, getFriendSuggestions");
 
         Friend friendship = friendRepository.findByAuthorId(userId)
@@ -140,8 +138,12 @@ public class FriendServiceImpl implements FriendService {
                 }
             }
         }
-
-        return ResponseEntity.ok(userIdResult);
+        UserIds userIds = UserIds.builder()
+                .userId(userIdResult)
+                .build();
+        List<FriendResponse> friendResponses = userClientService.getFriendByListUserId(userIds);
+        return ResponseEntity.ok(GenericResponse.builder().success(true).message("Get Suggestion List Successfully!")
+                .result(friendResponses).statusCode(HttpStatus.OK.value()).build());
 
     }
 
@@ -173,13 +175,14 @@ public class FriendServiceImpl implements FriendService {
     @Override
     public List<FriendResponse> findFriendUserIdsByUserId(String userId) {
         logger.info("FriendServiceImpl, findFriendUserIdsByUserId");
-        Optional<Friend> friend = friendRepository.findByAuthorId(userId);
-        if (friend.isPresent()) {
-            kafkaTemplate.send(KafkaTopicName.GET_LIST_FRIEND_BY_USERID_TOPIC, friend.get().getFriendIds());
-            logger.info("Sent friend list to Kafka"+friend.get().getFriendIds());
-
+        Optional<Friend> friendship = friendRepository.findByAuthorId(userId);
+        if (friendship.isEmpty()) {
+            return new ArrayList<>();
         }
-        return listenerUserService.getLastReceivedUser();
+        UserIds userIds = UserIds.builder()
+                .userId(friendship.get().getFriendIds())
+                .build();
+        return userClientService.getFriendByListUserId(userIds);
     }
 
 

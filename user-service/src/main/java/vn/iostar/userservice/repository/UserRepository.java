@@ -53,5 +53,6 @@ public interface UserRepository extends JpaRepository<User, String> {
             + "JOIN u.account a " + "WHERE u.userName LIKE %:query% " + "OR u.phone LIKE %:query% "
             + "OR a.email LIKE %:query% ")
     List<UserResponse> searchUser(String query);
+
 }
 

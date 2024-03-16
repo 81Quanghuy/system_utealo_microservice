@@ -9,11 +9,9 @@ import java.io.Serializable;
 @Builder
 public class FriendRequestDto implements Serializable {
 
-    private String id;
-    private String senderId;
-    private String recipientId;
-    private String status;
-    private String createdAt;
-    private String updatedAt;
+    private int friendRequestId;
+    private String userFromId;
+    private String userToId;
+    private boolean isActive;
 
 }

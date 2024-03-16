@@ -124,7 +124,7 @@ public class FriendRequestController {
      *                      header for authentication.
      * @return The resource if found, or a 404 Not Found response.
      */
-    @DeleteMapping("/request/cancel/{userId}")
+    @DeleteMapping("/cancel/{userId}")
     public ResponseEntity<GenericResponse> cancelRequestFriend(
             @RequestHeader("Authorization") String authorizationHeader, @Valid @PathVariable("userId") String userId) {
         String token = authorizationHeader.substring(7);
@@ -145,11 +145,7 @@ public class FriendRequestController {
                                                       @Valid @PathVariable("userId") String userId) {
         String token = authorizationHeader.substring(7);
         String userIdToken = jwtService.extractUserId(token);
-
         return friendRequestService.acceptRequest(userIdToken,userId);
 
     }
-
-
-
 }

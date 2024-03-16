@@ -3,7 +3,6 @@ package vn.iostar.userservice.service.impl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,9 +25,6 @@ import java.util.Optional;
 public class AccountServiceImpl implements AccountService {
     @Autowired
     AccountRepository accountRepository;
-
-    @Autowired
-    KafkaTemplate<String, Object> kafkaTemplate;
 
     @Override
     public <S extends Account> List<S> saveAll(Iterable<S> entities) {
@@ -93,7 +89,6 @@ public class AccountServiceImpl implements AccountService {
 //            }
 //            saveGroupandRole(registerRequest, poOptional.get());
 //        }
-        kafkaTemplate.send(KafkaTopicName.USER_TOPIC, registerRequest.getEmail());
 
         return ResponseEntity.ok(GenericResponse.builder().success(true).message("Sign Up Success").result(null)
                 .statusCode(200).build());

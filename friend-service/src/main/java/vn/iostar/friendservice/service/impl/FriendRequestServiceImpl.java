@@ -7,9 +7,8 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
-import vn.iostar.friendservice.constant.FriendStateEnum;
-import vn.iostar.friendservice.dto.FriendRequestDto;
-import vn.iostar.friendservice.dto.request.CreateFriendRequest;
+import vn.iostar.friendservice.dto.UserIds;
+import vn.iostar.friendservice.dto.response.FriendResponse;
 import vn.iostar.friendservice.dto.response.GenericResponse;
 import vn.iostar.friendservice.entity.Friend;
 import vn.iostar.friendservice.entity.FriendRequest;
@@ -18,7 +17,7 @@ import vn.iostar.friendservice.exception.wrapper.NotFoundException;
 import vn.iostar.friendservice.repository.FriendRepository;
 import vn.iostar.friendservice.repository.FriendRequestRepository;
 import vn.iostar.friendservice.service.FriendRequestService;
-import vn.iostar.friendservice.service.MapperService;
+import vn.iostar.friendservice.service.client.UserClientService;
 
 import java.util.*;
 
@@ -29,8 +28,7 @@ public class FriendRequestServiceImpl implements FriendRequestService {
 
     private final FriendRequestRepository friendRequestRepository;
     private final FriendRepository friendRepository;
-    private final MapperService mapperService;
-
+    private final UserClientService userClientService;
 
 
     @Override
@@ -47,7 +45,6 @@ public class FriendRequestServiceImpl implements FriendRequestService {
                     .success(true)
                     .statusCode(200)
                     .message("Xóa lời mời kết bạn thành công!")
-                    .result(mapperService.mapToFriendRequestDto(friendRequest))
                     .build());
         }
         throw new BadRequestException("Không thể xóa lời mời kết bạn!");
@@ -79,14 +76,17 @@ public class FriendRequestServiceImpl implements FriendRequestService {
     public ResponseEntity<GenericResponse> getRequestList(String userId) {
         log.info("FriendRequestServiceImpl, getRequestList");
         List<FriendRequest> friendRequests = friendRequestRepository.findAllBySenderId(userId);
-        List<FriendRequestDto> friendRequestDos = friendRequests.stream()
-                .map(mapperService::mapToFriendRequestDto)
-                .toList();
+        UserIds userIds = UserIds.builder()
+                .userId(friendRequests.stream()
+                        .map(FriendRequest::getRecipientId)
+                        .toList())
+                .build();
+        List<FriendResponse> friendResponses = userClientService.getFriendByListUserId(userIds);
         return ResponseEntity.ok(GenericResponse.builder()
                 .success(true)
                 .statusCode(200)
                 .message("Lấy danh sách lời mời kết bạn thành công!")
-                .result(friendRequestDos)
+                .result(friendResponses)
                 .build());
     }
 
@@ -95,14 +95,17 @@ public class FriendRequestServiceImpl implements FriendRequestService {
         log.info("FriendRequestServiceImpl, getSenderRequestPageable");
         PageRequest pageable = PageRequest.of(0, 10);
         Page<FriendRequest> friendRequests = friendRequestRepository.findAllBySenderId(userId, pageable);
-        List<FriendRequestDto> friendRequestDos = friendRequests.stream()
-                .map(mapperService::mapToFriendRequestDto)
-                .toList();
+        UserIds userIds = UserIds.builder()
+                .userId(friendRequests.stream()
+                        .map(FriendRequest::getRecipientId)
+                        .toList())
+                .build();
+        List<FriendResponse> friendResponses = userClientService.getFriendByListUserId(userIds);
         return ResponseEntity.ok(GenericResponse.builder()
                 .success(true)
                 .statusCode(200)
                 .message("Lấy danh sách lời mời kết bạn thành công!")
-                .result(friendRequestDos)
+                .result(friendResponses)
                 .build());
     }
 
@@ -135,14 +138,17 @@ public class FriendRequestServiceImpl implements FriendRequestService {
     public ResponseEntity<GenericResponse> getInvitationSenderList(String userId) {
         log.info("FriendRequestServiceImpl, getInvitationSenderList");
         List<FriendRequest> friendRequests = friendRequestRepository.findAllByRecipientId(userId);
-        List<FriendRequestDto> friendRequestDos = friendRequests.stream()
-                .map(mapperService::mapToFriendRequestDto)
-                .toList();
+        UserIds userIds = UserIds.builder()
+                .userId(friendRequests.stream()
+                        .map(FriendRequest::getRecipientId)
+                        .toList())
+                .build();
+        List<FriendResponse> friendResponses = userClientService.getFriendByListUserId(userIds);
         return ResponseEntity.ok(GenericResponse.builder()
                 .success(true)
                 .statusCode(200)
                 .message("Lấy danh sách lời mời kết bạn thành công!")
-                .result(friendRequestDos)
+                .result(friendResponses)
                 .build());
     }
 

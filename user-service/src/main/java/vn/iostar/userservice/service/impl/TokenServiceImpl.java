@@ -8,7 +8,6 @@ import java.util.Optional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import vn.iostar.userservice.dto.response.GenericResponse;
 import vn.iostar.userservice.entity.Account;
@@ -107,7 +106,6 @@ public class TokenServiceImpl implements TokenService {
                 token.setIsRevoked(true);
                 token.setIsExpired(true);
                 refreshTokenRepository.save(token);
-                SecurityContextHolder.clearContext();
                 return ResponseEntity.ok(buildSuccessResponse("Logout successfully!"));
             }).orElse(ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .body(buildErrorResponse("Logout failed!", HttpStatus.NOT_FOUND)));

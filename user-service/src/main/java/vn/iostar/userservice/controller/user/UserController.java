@@ -287,8 +287,7 @@ public class UserController {
             throw new RuntimeException("User not found.");
         }
         Pageable pageable = PageRequest.of(0, 5);
-        UserProfileResponse profileResponse = userService.getFullProfile(user, pageable);
-        return profileResponse;
+        return userService.getFullProfile(user, pageable);
     }
 
 

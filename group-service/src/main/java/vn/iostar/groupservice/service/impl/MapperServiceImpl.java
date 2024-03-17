@@ -3,6 +3,7 @@ package vn.iostar.groupservice.service.impl;
 import vn.iostar.groupservice.constant.AppConstant;
 import vn.iostar.groupservice.dto.*;
 import vn.iostar.groupservice.dto.response.GroupMemberResponse;
+import vn.iostar.groupservice.dto.response.GroupProfileResponse;
 import vn.iostar.groupservice.entity.*;
 import vn.iostar.groupservice.service.MapperService;
 import vn.iostar.groupservice.service.client.UserClientService;
@@ -119,6 +120,16 @@ public class MapperServiceImpl implements MapperService {
                 .avatarUrl(group.getAvatarGroup())
                 .coverUrl(group.getBackgroundGroup())
                 .isPublic(group.getIsPublic())
+                .build();
+    }
+
+    @Override
+    public GroupProfileResponse mapToGroupProfileResponse(Group group) {
+        return GroupProfileResponse.builder()
+                .id(group.getId())
+                .groupName(group.getPostGroupName())
+                .groupAvatar(group.getAvatarGroup())
+                .groupType(group.getIsPublic() ? "public" : "private")
                 .build();
     }
 

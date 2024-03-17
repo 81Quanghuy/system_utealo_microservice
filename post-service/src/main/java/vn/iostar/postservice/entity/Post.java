@@ -13,6 +13,7 @@ import vn.iostar.postservice.constant.PrivacyLevel;
 
 import java.io.Serializable;
 import java.util.Date;
+import java.util.List;
 
 @Document(collection = "posts")
 @AllArgsConstructor
@@ -55,5 +56,14 @@ public class Post implements Serializable {
     @JsonFormat(shape = JsonFormat.Shape.STRING)
     @Field(name = "updated_at")
     private Date updatedAt;
+
+    @Field(name = "shares")
+    private List<Share> shareIds;
+
+    @Field(name = "likes")
+    private List<Like> likeIds;
+
+    @Field(name = "comments")
+    private List<Comment> commentIds;
 
 }

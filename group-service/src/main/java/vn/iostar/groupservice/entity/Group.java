@@ -45,6 +45,9 @@ public class Group implements Serializable {
     @Field(name = "isSystem")
     private Boolean isSystem;
 
+    @Field(name = "isActive")
+    private Boolean isActive;
+
     // true: private, false: public
     @Field(name = "isPublic")
     private Boolean isPublic;

@@ -1,16 +1,20 @@
 package vn.iostar.groupservice.service.client;
 
-import vn.iostar.groupservice.dto.CredentialDto;
-import vn.iostar.groupservice.dto.SimpleUserDto;
-import vn.iostar.groupservice.dto.UserDto;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import vn.iostar.groupservice.dto.UserIds;
+import vn.iostar.groupservice.dto.response.FriendResponse;
+import vn.iostar.groupservice.dto.response.UserProfileResponse;
 
-@FeignClient(name = "user-service", contextId = "userClientService", path = "/api/v1/users")
+import java.util.List;
+
+@FeignClient(name = "user-service", contextId = "userClientService", path = "/api/v1/user")
 public interface UserClientService {
-
-
-
+    @GetMapping("/getProfileByUserId/{userId}")
+    UserProfileResponse getProfileByUserId(@PathVariable String userId);
+    @PostMapping("/getProfileByListUserId")
+    List<FriendResponse> getFriendByListUserId(@RequestBody UserIds list_userId) ;
 }

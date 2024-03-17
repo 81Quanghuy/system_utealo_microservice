@@ -66,7 +66,7 @@ public interface UserService {
 
 	ResponseEntity<GenericResponse> deleteUser(String idFromToken);
 
-	UserProfileResponse getFullProfile(Optional<User> user, Pageable pageable);
+	UserProfileResponse getFullProfile(User user);
 
 	// Tìm tất cả user trong hệ thống
 	Page<UserResponse> findAllUsers(int page, int itemsPerPage);
@@ -138,4 +138,5 @@ public interface UserService {
 	List<User> findAllByUserId(String userId);
 
 	List<FriendResponse> getFriendByListUserId(UserIds listUserId);
+
 }

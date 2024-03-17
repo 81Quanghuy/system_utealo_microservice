@@ -9,15 +9,21 @@ import vn.iostar.groupservice.entity.GroupMember;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 @Repository
 public interface GroupMemberRepository extends MongoRepository<GroupMember, String> {
-    List<GroupMember> findByUserId(String userId);
     List<GroupMember> findAllByUserId(String userId);
     Optional<GroupMember> findByUserIdAndGroupId(String userId, String groupId);
     List<GroupMember> findAllByGroupId(String groupId);
     Page<GroupMember> findAllByGroupId(String groupId, Pageable pageable);
 
+    //find Group By UserId and Role
+    Optional<GroupMember> findByUserIdAndRoleAndGroupId(String userId, GroupMemberRoleType role,String groupId);
+
+    // count member by groupId
     Integer countByGroupId(String groupId);
-    List<GroupMember> findAllByUserIdAndRole(String userId, GroupMemberRoleType role);
+
+    void deleteAllByGroupId(String postGroupId);
+    List<GroupMember> findAllByGroupIdAndRoleIn(String groupId, List<GroupMemberRoleType> roles);
 }

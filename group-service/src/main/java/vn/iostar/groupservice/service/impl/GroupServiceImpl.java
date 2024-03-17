@@ -331,4 +331,9 @@ public class GroupServiceImpl implements GroupService {
                 .statusCode(HttpStatus.OK.value())
                 .build());
     }
+
+    @Override
+    public Optional<Group> findById(String id) {
+        return groupRepository.findById(id);
+    }
 }

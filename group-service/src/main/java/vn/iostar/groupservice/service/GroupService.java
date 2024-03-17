@@ -9,6 +9,7 @@ import vn.iostar.groupservice.dto.request.GroupConfigRequest;
 import vn.iostar.groupservice.dto.request.GroupCreateRequest;
 import vn.iostar.groupservice.dto.request.UpdateDetailRequest;
 import vn.iostar.groupservice.dto.response.GenericResponse;
+import vn.iostar.groupservice.entity.Group;
 
 import java.io.IOException;
 import java.util.List;
@@ -44,4 +45,5 @@ public interface GroupService {
     ResponseEntity<GenericResponse> getAllClassesForAdmin(String token, Integer page, Integer size);
 
     ResponseEntity<GenericResponse> createGroupNew(GroupCreateRequest groupCreateRequest);
+    Optional<Group> findById(String id);
 }

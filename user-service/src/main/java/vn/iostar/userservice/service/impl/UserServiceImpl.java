@@ -1049,14 +1049,7 @@ public class UserServiceImpl implements UserService {
 	// Lấy toàn bộ thông tin người dùng
 	@Override
 	public UserProfileResponse getFullProfile(Optional<User> user, Pageable pageable) {
-		UserProfileResponse profileResponse = new UserProfileResponse(user.get());
-//		List<FriendResponse> fResponse = friendRepository.findFriendUserIdsByUserId(user.get().getUserId());
-//		profileResponse.setFriends(fResponse);
-//
-//		List<GroupPostResponse> groupPostResponses = postGroupRepository
-//				.findPostGroupInfoByUserId(user.get().getUserId(), pageable);
-//		profileResponse.setPostGroup(groupPostResponses);
-		return profileResponse;
+        return new UserProfileResponse(user.get());
 	}
 	@Override
 	public List<FriendResponse> getFriendByListUserId(UserIds listUserId) {

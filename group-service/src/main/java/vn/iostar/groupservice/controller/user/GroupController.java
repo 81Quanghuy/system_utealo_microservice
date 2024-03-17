@@ -6,6 +6,8 @@ import vn.iostar.groupservice.dto.request.GroupConfigRequest;
 import vn.iostar.groupservice.dto.request.GroupCreateRequest;
 import vn.iostar.groupservice.dto.request.UpdateDetailRequest;
 import vn.iostar.groupservice.dto.response.GenericResponse;
+import vn.iostar.groupservice.dto.response.GroupProfileResponse;
+import vn.iostar.groupservice.entity.Group;
 import vn.iostar.groupservice.jwt.service.JwtService;
 import vn.iostar.groupservice.service.GroupService;
 import jakarta.validation.Valid;
@@ -16,6 +18,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import vn.iostar.groupservice.service.MapperService;
 
 import java.io.IOException;
 import java.util.List;
@@ -28,6 +31,7 @@ import java.util.Optional;
 public class GroupController {
 
     private final GroupService groupService;
+    private final MapperService mapperService;
     private final JwtService jwtService;
 
     @PostMapping
@@ -137,5 +141,18 @@ public class GroupController {
         log.info("AdminGroupController, createGroup");
 
         return groupService.createGroupNew(groupCreateRequest);
+    }
+
+
+    // Group Client
+    @GetMapping("/getGroup/{groupId}")
+    public GroupProfileResponse getGroup(@PathVariable String groupId) {
+        Optional<Group> group = groupService.findById(groupId);
+
+        if (group.isEmpty()) {
+            throw new RuntimeException("Group not found.");
+        }
+        return mapperService.mapToGroupProfileResponse(group.get());
+
     }
 }

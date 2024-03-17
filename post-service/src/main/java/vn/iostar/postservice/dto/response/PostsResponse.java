@@ -3,6 +3,7 @@ package vn.iostar.postservice.dto.response;
 import java.util.Date;
 import java.util.List;
 
+import lombok.Builder;
 import lombok.Data;
 import vn.iostar.postservice.constant.PrivacyLevel;
 import vn.iostar.postservice.constant.RoleName;
@@ -29,7 +30,7 @@ public class PostsResponse {
 	private RoleName roleName;
 	private PrivacyLevel privacyLevel;
 
-	public PostsResponse(Post post, String userName ) {
+	public PostsResponse(Post post, UserProfileResponse user, GroupProfileResponse group) {
 		this.postId = post.getId();
 		this.postTime = post.getPostTime();
 		this.updateAt = post.getUpdatedAt();
@@ -38,20 +39,17 @@ public class PostsResponse {
 		this.files = post.getFiles();
 		this.location = post.getLocation();
 		this.userId = post.getUserId();
-//		if (userOfPostResponse != null) {
-//			this.userName = userOfPostResponse.getUserName();
-//			this.avatarUser = userOfPostResponse.getAvatarUser();
-//		}
-		if (userName != null) {
-			this.userName = userName;
+		if (user != null) {
+			this.userName = user.getUserName();
+			this.avatarUser = user.getAvatar();
+            this.roleName = user.getRoleName();
 		}
-//		this.postGroupId = post.getPostGroupId();
-//		this.postGroupName = post.getPostGroupName();
-//		this.avatarGroup = post.getAvatarGroup();
-//		this.groupType = post.getGroupType();
-//		this.comments = post.getComments();
-//		this.likes = post.getLikes();
-//		this.roleName = post.getRoleName();
+		if (group != null) {
+			this.postGroupId = group.getId();
+			this.postGroupName = group.getGroupName();
+			this.avatarGroup = group.getGroupAvatar();
+			this.groupType = group.getGroupType();
+		}
 		this.privacyLevel = post.getPrivacyLevel();
 	}
 }

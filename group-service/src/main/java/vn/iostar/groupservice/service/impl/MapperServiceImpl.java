@@ -1,20 +1,23 @@
 package vn.iostar.groupservice.service.impl;
 
-import vn.iostar.groupservice.constant.AppConstant;
-import vn.iostar.groupservice.dto.*;
-import vn.iostar.groupservice.dto.response.GroupMemberResponse;
-import vn.iostar.groupservice.dto.response.PostGroupResponse;
-import vn.iostar.groupservice.dto.response.UserProfileResponse;
-import vn.iostar.groupservice.entity.*;
-import vn.iostar.groupservice.service.MapperService;
-import vn.iostar.groupservice.service.client.UserClientService;
-import vn.iostar.groupservice.util.DateUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import vn.iostar.groupservice.constant.AppConstant;
+import vn.iostar.groupservice.dto.*;
+import vn.iostar.groupservice.dto.response.GroupMemberResponse;
+import vn.iostar.groupservice.dto.response.GroupProfileResponse;
+import vn.iostar.groupservice.dto.response.PostGroupResponse;
+import vn.iostar.groupservice.dto.response.UserProfileResponse;
+import vn.iostar.groupservice.entity.Event;
+import vn.iostar.groupservice.entity.Group;
+import vn.iostar.groupservice.entity.GroupMember;
+import vn.iostar.groupservice.entity.GroupRequest;
+import vn.iostar.groupservice.service.MapperService;
+import vn.iostar.groupservice.service.client.UserClientService;
+import vn.iostar.groupservice.util.DateUtil;
 
 import java.util.List;
-import java.util.Set;
 
 @Service
 @Slf4j
@@ -145,6 +148,16 @@ public class MapperServiceImpl implements MapperService {
                 .avatarUrl(group.getAvatarGroup())
                 .coverUrl(group.getBackgroundGroup())
                 .isPublic(group.getIsPublic())
+                .build();
+    }
+
+    @Override
+    public GroupProfileResponse mapToGroupProfileResponse(Group group) {
+        return GroupProfileResponse.builder()
+                .id(group.getId())
+                .groupName(group.getPostGroupName())
+                .groupAvatar(group.getAvatarGroup())
+                .groupType(group.getIsPublic() ? "public" : "private")
                 .build();
     }
 

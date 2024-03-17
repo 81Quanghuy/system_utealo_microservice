@@ -10,6 +10,7 @@ import vn.iostar.groupservice.dto.request.GroupConfigRequest;
 import vn.iostar.groupservice.dto.request.GroupCreateRequest;
 import vn.iostar.groupservice.dto.request.UpdateDetailRequest;
 import vn.iostar.groupservice.dto.response.GenericResponse;
+import vn.iostar.groupservice.entity.Group;
 
 import java.io.IOException;
 import java.util.List;
@@ -29,7 +30,6 @@ public interface GroupService {
 
     ResponseEntity<GenericResponse> clockGroup(String groupId, String currentUserId);
 
-
     ResponseEntity<GenericResponse> getPostGroupById(String currentUserId, String postGroupId);
 
     ResponseEntity<GenericResponse> getGroupSharePosts(String currentUserId, String postGroupId, Pageable pageable);
@@ -41,4 +41,5 @@ public interface GroupService {
     List<FilesOfGroupDTO> findLatestFilesByGroupId(Integer groupId);
 
     Page<PhotosOfGroupDTO> findLatestPhotosByGroupId(Integer groupId, Pageable pageable);
+    Optional<Group> findById(String id);
 }

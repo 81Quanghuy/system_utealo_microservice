@@ -1,4 +1,5 @@
-package vn.iostar.postservice.jwt.util.impl;
+package jwt.util.impl;
+
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
@@ -7,7 +8,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import vn.iostar.postservice.constant.AppConstant;
 import vn.iostar.postservice.jwt.util.JwtUtil;
-
 
 import java.security.Key;
 import java.util.Date;

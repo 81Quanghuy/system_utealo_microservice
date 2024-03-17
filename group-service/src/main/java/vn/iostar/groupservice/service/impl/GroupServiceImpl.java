@@ -322,4 +322,9 @@ public class GroupServiceImpl implements GroupService {
         }
         return group;
     }
+
+    @Override
+    public Optional<Group> findById(String id) {
+        return groupRepository.findById(id);
+    }
 }

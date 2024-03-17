@@ -1016,7 +1016,6 @@ public class UserServiceImpl implements UserService {
 //		profileResponse.setPostGroup(groupPostResponses);
         return new UserProfileResponse(user);
     }
-
     @Override
     public List<FriendResponse> getFriendByListUserId(UserIds listUserId) {
 
@@ -1035,5 +1034,4 @@ public class UserServiceImpl implements UserService {
         }
         return listFriend;
     }
-
 }

@@ -10,12 +10,9 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 
 @SpringBootApplication
 @EnableFeignClients
-@OpenAPIDefinition(info =
-@Info(title = "Group API", version = "1.0", description = "Documentation Friend API v1.0")
-)
+@OpenAPIDefinition(info = @Info(title = "Group API", version = "1.0", description = "Documentation Friend API v1.0"))
 @EnableScheduling
 @EnableAsync
-
 public class GroupServiceApplication {
 
     public static void main(String[] args) {

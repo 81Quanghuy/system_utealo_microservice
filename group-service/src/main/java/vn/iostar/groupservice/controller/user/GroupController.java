@@ -13,11 +13,15 @@ import vn.iostar.groupservice.dto.PhotosOfGroupDTO;
 import vn.iostar.groupservice.dto.PostGroupDTO;
 import vn.iostar.groupservice.dto.request.GroupCreateRequest;
 import vn.iostar.groupservice.dto.response.GenericResponse;
+import vn.iostar.groupservice.dto.response.GroupProfileResponse;
+import vn.iostar.groupservice.entity.Group;
 import vn.iostar.groupservice.jwt.service.JwtService;
 import vn.iostar.groupservice.service.GroupRequestService;
 import vn.iostar.groupservice.service.GroupService;
+import vn.iostar.groupservice.service.MapperService;
 
 import java.util.List;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/v1/groupPost")
@@ -26,6 +30,7 @@ import java.util.List;
 public class GroupController {
 
     private final GroupService groupService;
+    private final MapperService mapperService;
     private final JwtService jwtService;
     private final GroupRequestService groupRequestService;
 
@@ -229,5 +234,18 @@ public class GroupController {
                                                         @RequestParam(defaultValue = "5") int size, @PathVariable("groupId") Integer groupId) {
         Pageable pageable = PageRequest.of(page, size);
         return groupService.findLatestPhotosByGroupId(groupId, pageable);
+    }
+
+
+    // Group Client
+    @GetMapping("/getGroup/{groupId}")
+    public GroupProfileResponse getGroup(@PathVariable String groupId) {
+        Optional<Group> group = groupService.findById(groupId);
+
+        if (group.isEmpty()) {
+            throw new RuntimeException("Group not found.");
+        }
+        return mapperService.mapToGroupProfileResponse(group.get());
+
     }
 }

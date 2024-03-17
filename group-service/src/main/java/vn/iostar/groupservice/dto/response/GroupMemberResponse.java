@@ -11,7 +11,7 @@ public class GroupMemberResponse {
 
     private String id;
     @JsonProperty("user")
-    private SimpleUserDto userDto;
+    private UserProfileResponse userDto;
     private Boolean isLocked;
     private String lockedAt;
     private String lockedReason;

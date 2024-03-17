@@ -1,278 +1,309 @@
 package vn.iostar.groupservice.service.impl;
 
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import vn.iostar.groupservice.constant.GroupMemberRoleType;
-import vn.iostar.groupservice.constant.StateType;
-import vn.iostar.groupservice.dto.request.*;
+import vn.iostar.groupservice.constant.RoleName;
+import vn.iostar.groupservice.dto.PostGroupDTO;
+import vn.iostar.groupservice.dto.UserIds;
+import vn.iostar.groupservice.dto.request.PostGroupRequest;
+import vn.iostar.groupservice.dto.response.FriendResponse;
 import vn.iostar.groupservice.dto.response.GenericResponse;
-import vn.iostar.groupservice.dto.response.GroupMemberResponse;
+import vn.iostar.groupservice.dto.response.MemberGroupResponse;
+import vn.iostar.groupservice.dto.response.UserProfileResponse;
 import vn.iostar.groupservice.entity.Group;
 import vn.iostar.groupservice.entity.GroupMember;
 import vn.iostar.groupservice.entity.GroupRequest;
 import vn.iostar.groupservice.exception.wrapper.BadRequestException;
 import vn.iostar.groupservice.exception.wrapper.ForbiddenException;
 import vn.iostar.groupservice.exception.wrapper.NotFoundException;
-import vn.iostar.groupservice.repository.*;
+import vn.iostar.groupservice.repository.GroupMemberRepository;
+import vn.iostar.groupservice.repository.GroupRepository;
+import vn.iostar.groupservice.repository.GroupRequestRepository;
 import vn.iostar.groupservice.service.GroupMemberService;
-import vn.iostar.groupservice.service.MapperService;
 import vn.iostar.groupservice.service.client.UserClientService;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
-import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Service;
-import vn.iostar.groupservice.service.GroupMemberService;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+import java.util.Optional;
 
 @Service
 @Slf4j
 @RequiredArgsConstructor
 public class GroupMemberServiceImpl implements GroupMemberService {
 
-	private final GroupRepository groupRepository;
-	private final GroupMemberRepository groupMemberRepository;
-	private final GroupMemberRequestRepository groupMemberRequestRepository;
-	private final MapperService mapperService;
+    private final GroupRepository groupRepository;
+    private final GroupMemberRepository groupMemberRepository;
+    private final GroupRequestRepository groupRequestRepository;
+    private final UserClientService userClientService;
 
+    @Override
+    @Transactional
+    public ResponseEntity<GenericResponse> acceptMemberPostGroup(PostGroupDTO postGroup, String currentUserId) {
+        log.info("GroupMemberServiceImpl, acceptMemberPostGroup");
+        Optional<Group> optionalGroup = groupRepository.findById(postGroup.getPostGroupId());
+        if (optionalGroup.isPresent()) {
+            Group group = optionalGroup.get();
+            Optional<GroupMember> optionalGroupMember = groupMemberRepository.findByUserIdAndGroupId(currentUserId, group.getId());
+            if (optionalGroupMember.isPresent()) {
+                GroupMember groupMember = optionalGroupMember.get();
+                if (groupMember.getRole().equals(GroupMemberRoleType.Admin) || groupMember.getRole().equals(GroupMemberRoleType.Deputy)) {
+                    for (String userId : postGroup.getUserId()) {
+                        Optional<GroupRequest> optionalGroupRequest = groupRequestRepository.findByGroupIdAndInvitedUser(group.getId(), userId);
+                        if (optionalGroupRequest.isPresent()) {
+                            GroupRequest groupRequest = optionalGroupRequest.get();
+                            GroupMember newGroupMember = GroupMember.builder()
+                                    .group(group)
+                                    .userId(userId)
+                                    .memberRequestId(groupRequest.getInvitingUser())
+                                    .role(GroupMemberRoleType.Member)
+                                    .createdAt(new Date())
+                                    .updatedAt(new Date())
+                                    .build();
+                            groupMemberRepository.save(newGroupMember);
+                            groupRequestRepository.delete(groupRequest);
+                            return ResponseEntity.ok(GenericResponse.builder()
+                                    .success(true)
+                                    .statusCode(200)
+                                    .message("Chấp nhận thành viên vào nhóm thành công!")
+                                    .result(null)
+                                    .build());
+                        }
+                    }
+                    throw new NotFoundException("Yêu cầu tham gia nhóm không tồn tại!");
+                }
+                throw new ForbiddenException("Bạn không có quyền chấp nhận thành viên vào nhóm!");
+            }
+            throw new BadRequestException("Bạn không phải là thành viên của nhóm!");
+        }
+        throw new NotFoundException("Nhóm không tồn tại!");
+    }
 
-	@Override
-	public ResponseEntity<GenericResponse> inivteGroupMember(String userId, InviteGroupMemberRequest groupMemberRequest) {
-		return null;
-	}
+    @Override
+    public ResponseEntity<GenericResponse> getMemberByPostId(String postGroupId, String currentUserId) {
+        log.info("GroupMemberServiceImpl, getMemberByPostId");
+        Optional<Group> optionalGroup = groupRepository.findById(postGroupId);
+        if (optionalGroup.isPresent()) {
+            Group group = optionalGroup.get();
+            List<GroupMember> optionalGroupMember = groupMemberRepository.findAllByGroupId(group.getId());
+            List<String> userIds = new ArrayList<>();
+            for (GroupMember groupMember : optionalGroupMember) {
+                userIds.add(groupMember.getUserId());
+            }
 
-	@Override
-	public ResponseEntity<GenericResponse> requestGroupMember(String userId, String groupId) {
-		log.info("GroupMemberServiceImpl, ResponseEntity<GenericResponse> requestGroupMember");
-		Group group = groupRepository.findById(groupId).orElseThrow(() -> new NotFoundException("Nhóm không tồn tại"));
-		Optional<GroupMember> existGroupMember = groupMemberRepository.findByUserIdAndGroupId(userId, group.getId());
-		if (existGroupMember.isPresent()) {
-			throw new BadRequestException("Bạn đã là thành viên của nhóm này");
-		}
-		GroupRequest groupMemberRequest = groupMemberRequestRepository
-				.save(GroupRequest.builder().id(UUID.randomUUID().toString()).group(group).invitedUser(userId)
-						.state(StateType.PENDING).createdAt(new Date()).build());
+            return ResponseEntity.ok(GenericResponse.builder()
+                    .success(true)
+                    .statusCode(200)
+                    .message("Lấy danh sách thành viên trong nhóm thành công!")
+                    .result(GetInfoListUserByListUserId(group, userIds))
+                    .build());
+        }
+        throw new NotFoundException("Nhóm không tồn tại!");
+    }
 
-		if (group.getIsApprovalRequired()) {
-			groupMemberRequest.setState(StateType.ACCEPTED);
-			groupMemberRequestRepository.save(groupMemberRequest);
-			groupMemberRepository.save(GroupMember.builder().id(UUID.randomUUID().toString()).userId(userId)
-					.group(group).role(GroupMemberRoleType.Member).createdAt(new Date()).build());
-			return ResponseEntity.ok(GenericResponse.builder().success(true).statusCode(201)
-					.message("Đã trở thành thành viên của nhóm!").result(null).build());
-		}
-		return ResponseEntity.ok(GenericResponse.builder().success(true).statusCode(200)
-				.message("Yêu cầu tham gia nhóm thành công").result(null).build());
-	}
+    @Override
+    public ResponseEntity<GenericResponse> getMemberRequiredByPostId(String postGroupId, String currentUserId) {
+        log.info("GroupMemberServiceImpl, getMemberRequiredByPostId");
+        Optional<Group> optionalGroup = groupRepository.findById(postGroupId);
+        if (optionalGroup.isPresent()) {
+            Group group = optionalGroup.get();
+            List<GroupRequest> optionalGroupRequest = groupRequestRepository.findAllByGroupIdAndIsAccept(group.getId(), true);
+            List<String> userIds = new ArrayList<>();
+            for (GroupRequest groupRequest : optionalGroupRequest) {
+                userIds.add(groupRequest.getInvitedUser());
+            }
+            return ResponseEntity.ok(GenericResponse.builder()
+                    .success(true)
+                    .statusCode(200)
+                    .message("Lấy danh sách yêu cầu tham gia nhóm thành công!")
+                    .result(GetInfoListUserByListUserId(group, userIds))
+                    .build());
+        }
+        throw new NotFoundException("Nhóm không tồn tại!");
+    }
 
-	@Override
-	public ResponseEntity<GenericResponse> responseGroupMemberInvitation(String userId, String groupMemberInvitationId, StateRequest inviteResponseGroupMember) {
-		return null;
-	}
+    @Override
+    public ResponseEntity<GenericResponse> assignDeputyByUserIdAndGroupId(PostGroupRequest postGroup, String currentUserId) {
+        log.info("GroupMemberServiceImpl, assignDeputyByUserIdAndGroupId");
+        Optional<Group> optionalGroup = groupRepository.findById(postGroup.getPostGroupId());
+        if (optionalGroup.isPresent()) {
+            Group group = optionalGroup.get();
+            Optional<GroupMember> optionalGroupMember = groupMemberRepository.findByUserIdAndRoleAndGroupId(currentUserId, GroupMemberRoleType.Admin, group.getId());
+            if (optionalGroupMember.isPresent()) {
+                Optional<GroupMember> optionalGroupMemberDeputy = groupMemberRepository.findByUserIdAndGroupId(postGroup.getUserId(), group.getId());
+                if (optionalGroupMemberDeputy.isPresent()) {
+                    GroupMember groupMemberDeputy = optionalGroupMemberDeputy.get();
+                    groupMemberDeputy.setRole(GroupMemberRoleType.Deputy);
+                    groupMemberRepository.save(groupMemberDeputy);
+                    return ResponseEntity.ok(GenericResponse.builder()
+                            .success(true)
+                            .statusCode(200)
+                            .message("Phân quyền thành công!")
+                            .result(null)
+                            .build());
+                }
+                throw new NotFoundException("Thành viên không tồn tại!");
+            }
+            throw new BadRequestException("Bạn không phải là quản trị viên của nhóm!");
+        }
+        throw new NotFoundException("Nhóm không tồn tại!");
+    }
 
-	@Override
-	public ResponseEntity<GenericResponse> responseGroupMemberRequest(String userId, String groupMemberRequestId,
-			StateRequest stateRequest) {
-		log.info("GroupMemberServiceImpl, ResponseEntity<GenericResponse> responseGroupMemberRequest");
-		GroupRequest groupMemberRequest = groupMemberRequestRepository.findById(groupMemberRequestId)
-				.orElseThrow(() -> new NotFoundException("Yêu cầu không tồn tại"));
-		Group group = groupMemberRequest.getGroup();
-		GroupMember user = groupMemberRepository.findByUserIdAndGroupId(userId, group.getId())
-				.orElseThrow(() -> new ForbiddenException("Bạn không có quyền thực hiện hành động này"));
-		if (user.getRole().equals(GroupMemberRoleType.Member)) {
-			throw new ForbiddenException("Bạn không có quyền thực hiện hành động này");
-		}
-		if (stateRequest.getIsAccept()) {
-			// change state to ACCEPT and create GroupMember
-			groupMemberRequest.setState(StateType.ACCEPTED);
-			groupMemberRequest.setUpdatedAt(new Date());
-			groupMemberRequestRepository.save(groupMemberRequest);
-			groupMemberRepository.save(GroupMember.builder().id(UUID.randomUUID().toString())
-					.userId(groupMemberRequest.getInvitedUser()).group(group).role(GroupMemberRoleType.Member)
-					.groupMemberRequest(groupMemberRequest).createdAt(new Date()).build());
-			return ResponseEntity.ok(GenericResponse.builder().success(true).statusCode(200)
-					.message("Yêu cầu đã được chấp nhận").result(null).build());
-		} else {
-			// change state to REJECT
-			groupMemberRequest.setState(StateType.REJECTED);
-			groupMemberRequest.setUpdatedAt(new Date());
-			groupMemberRequestRepository.save(groupMemberRequest);
-			return ResponseEntity.ok(GenericResponse.builder().success(true).statusCode(200)
-					.message("Yêu cầu đã bị từ chối").result(null).build());
-		}
-	}
+    @Override
+    public ResponseEntity<GenericResponse> assignAdminByUserIdAndGroupId(PostGroupRequest postGroup, String currentUserId) {
+        log.info("GroupMemberServiceImpl, assignAdminByUserIdAndGroupId");
+        Optional<Group> optionalGroup = groupRepository.findById(postGroup.getPostGroupId());
+        if (optionalGroup.isPresent()) {
+            Group group = optionalGroup.get();
+            Optional<GroupMember> optionalGroupMember = groupMemberRepository.findByUserIdAndRoleAndGroupId(currentUserId, GroupMemberRoleType.Admin, group.getId());
+            if (optionalGroupMember.isPresent()) {
+                Optional<GroupMember> optionalGroupMemberAdmin = groupMemberRepository.findByUserIdAndGroupId(postGroup.getUserId(), group.getId());
+                if (optionalGroupMemberAdmin.isPresent()) {
+                    GroupMember groupMemberAdmin = optionalGroupMemberAdmin.get();
+                    groupMemberAdmin.setRole(GroupMemberRoleType.Admin);
+                    optionalGroupMember.get().setRole(GroupMemberRoleType.Member);
+                    groupMemberRepository.save(optionalGroupMember.get());
+                    groupMemberRepository.save(groupMemberAdmin);
+                    return ResponseEntity.ok(GenericResponse.builder()
+                            .success(true)
+                            .statusCode(200)
+                            .message("Phân quyền thành công!")
+                            .result(null)
+                            .build());
+                }
+                throw new NotFoundException("Thành viên không tồn tại!");
+            }
+            throw new BadRequestException("Bạn không phải là quản trị viên của nhóm!");
+        }
+        throw new NotFoundException("Nhóm không tồn tại!");
+    }
 
-	@Override
-	public ResponseEntity<GenericResponse> changeRole(String userId, String groupMemberId, String role) {
-		log.info("GroupMemberServiceImpl, ResponseEntity<GenericResponse> changeRole");
-		GroupMember groupMember = groupMemberRepository.findById(groupMemberId)
-				.orElseThrow(() -> new NotFoundException("Thành viên không tồn tại"));
-		Group group = groupMember.getGroup();
+    @Override
+    public ResponseEntity<GenericResponse> removeDeputyByUserIdAndGroupId(PostGroupRequest postGroup, String currentUserId) {
+        log.info("GroupMemberServiceImpl, removeDeputyByUserIdAndGroupId");
+        Optional<Group> optionalGroup = groupRepository.findById(postGroup.getPostGroupId());
+        if (optionalGroup.isPresent()) {
+            Group group = optionalGroup.get();
+            Optional<GroupMember> optionalGroupMember = groupMemberRepository.findByUserIdAndRoleAndGroupId(currentUserId, GroupMemberRoleType.Admin, group.getId());
+            if (optionalGroupMember.isPresent()) {
+                Optional<GroupMember> optionalGroupMemberDeputy = groupMemberRepository.findByUserIdAndGroupId(postGroup.getUserId(), group.getId());
+                if (optionalGroupMemberDeputy.isPresent()) {
+                    GroupMember groupMemberDeputy = optionalGroupMemberDeputy.get();
+                    groupMemberDeputy.setRole(GroupMemberRoleType.Member);
+                    groupMemberRepository.save(groupMemberDeputy);
+                    return ResponseEntity.ok(GenericResponse.builder()
+                            .success(true)
+                            .statusCode(200)
+                            .message("Phân quyền thành công!")
+                            .result(null)
+                            .build());
+                }
+                throw new NotFoundException("Thành viên không tồn tại!");
+            }
+            throw new BadRequestException("Bạn không phải là quản trị viên của nhóm!");
+        }
+        throw new NotFoundException("Không tìm thấy nhóm!");
+    }
 
-		if (!userId.equals(group.getAuthorId())) {
-			throw new ForbiddenException("Bạn không có quyền thay đổi quyền thành viên");
-		}
-		try {
-			groupMember.setRole(GroupMemberRoleType.valueOf(role));
-			groupMember.setUpdatedAt(new Date());
-			groupMemberRepository.save(groupMember);
-			return ResponseEntity.ok(GenericResponse.builder().success(true).statusCode(200)
-					.message("Thay đổi quyền thành viên thành công")
-					.result(mapperService.mapToGroupMemberResponse(groupMember)).build());
-		} catch (IllegalArgumentException e) {
-			throw new BadRequestException("Quyền thành viên không hợp lệ");
-		} catch (Exception e) {
-			throw new BadRequestException(e.getMessage());
-		}
-	}
+    @Override
+    public ResponseEntity<GenericResponse> deleteMemberByPostId(PostGroupRequest postGroup, String currentUserId) {
+        log.info("GroupMemberServiceImpl, deleteMemberByPostId");
+        Optional<Group> optionalGroup = groupRepository.findById(postGroup.getPostGroupId());
+        if (optionalGroup.isPresent()) {
+            Group group = optionalGroup.get();
+            GroupMember groupMember = groupMemberRepository.findByUserIdAndGroupId(currentUserId, group.getId())
+                    .orElseThrow(() -> new BadRequestException("Bạn không phải là thành viên của nhóm!"));
+            List<GroupMember> optionalGroupMember = groupMemberRepository.findAllByGroupIdAndRoleIn(group.getId(), List.of(GroupMemberRoleType.Admin, GroupMemberRoleType.Deputy));
+            if (optionalGroupMember.contains(groupMember)) {
+                Optional<GroupMember> optionalGroupMemberDelete = groupMemberRepository.findByUserIdAndGroupId(postGroup.getUserId(), group.getId());
+                if (optionalGroupMemberDelete.isPresent() && !optionalGroupMember.contains(optionalGroupMemberDelete.get())) {
+                    groupMemberRepository.delete(optionalGroupMemberDelete.get());
+                    return ResponseEntity.ok(GenericResponse.builder()
+                            .success(true)
+                            .statusCode(200)
+                            .message("Xóa thành viên khỏi nhóm thành công!")
+                            .result(null)
+                            .build());
+                }
+                throw new NotFoundException("Thành viên không tồn tại hoặc không thể xóa quản trị viên!");
+            }
+            throw new BadRequestException("Bạn không phải là quản trị viên của nhóm!");
+        }
+        throw new NotFoundException("Nhóm không tồn tại!");
+    }
 
-	@Override
-	public ResponseEntity<GenericResponse> deleteGroupMember(String userId, String groupMemberId) {
-		log.info("GroupMemberServiceImpl, ResponseEntity<GenericResponse> deleteGroupMember");
-		GroupMember groupMember = groupMemberRepository.findById(groupMemberId)
-				.orElseThrow(() -> new NotFoundException("Thành viên không tồn tại"));
-		Group group = groupMember.getGroup();
-		if (!userId.equals(group.getAuthorId())) {
-			throw new ForbiddenException("Bạn không có quyền xóa thành viên");
-		}
-		groupMemberRepository.delete(groupMember);
-		return ResponseEntity.ok(GenericResponse.builder().success(true).statusCode(200)
-				.message("Xóa thành viên thành công").result(null).build());
-	}
+    @Override
+    public ResponseEntity<GenericResponse> leaveGroup(String currentUserId, String postGroupId) {
+        log.info("GroupMemberServiceImpl, leaveGroup");
+        Optional<Group> optionalGroup = groupRepository.findById(postGroupId);
+        if (optionalGroup.isPresent()) {
+            Group group = optionalGroup.get();
+            GroupMember groupMember = groupMemberRepository.findByUserIdAndGroupId(currentUserId, group.getId())
+                    .orElseThrow(() -> new BadRequestException("Bạn không phải là thành viên của nhóm!"));
+            List<GroupMember> optionalGroupMember = groupMemberRepository.findAllByGroupIdAndRoleIn(group.getId(), List.of(GroupMemberRoleType.Admin, GroupMemberRoleType.Deputy));
+            if (!optionalGroupMember.contains(groupMember)) {
+                groupMemberRepository.delete(groupMember);
+                return ResponseEntity.ok(GenericResponse.builder()
+                        .success(true)
+                        .statusCode(200)
+                        .message("Rời khỏi nhóm thành công!")
+                        .result(null)
+                        .build());
+            }
+            throw new BadRequestException("Bạn không thể rời khỏi nhóm vì bạn là quản trị viên hoặc phó quản trị viên!");
+        }
+        throw new NotFoundException("Nhóm không tồn tại!");
 
-	@Override
-	public ResponseEntity<GenericResponse> addGroupMember(String userId, AddGroupMemberRequest addGroupMemberRequest) {
-		log.info("GroupMemberServiceImpl, ResponseEntity<GenericResponse> addGroupMember");
-		Group group = groupRepository.findById(addGroupMemberRequest.getGroupId())
-				.orElseThrow(() -> new NotFoundException("Nhóm không tồn tại"));
-		Optional<GroupMember> newOptionalGroupMember = groupMemberRepository
-				.findByUserIdAndGroupId(addGroupMemberRequest.getUserId(), group.getId());
-		if (newOptionalGroupMember.isPresent()) {
-			throw new BadRequestException("Thành viên đã tồn tại trong nhóm");
-		}
-		GroupMember user = groupMemberRepository.findByUserIdAndGroupId(userId, group.getId())
-				.orElseThrow(() -> new ForbiddenException("Bạn không có quyền thêm thành viên vào nhóm này"));
-		if (user.getRole().equals(GroupMemberRoleType.Member)) {
-			throw new ForbiddenException("Bạn không có quyền thêm thành viên vào nhóm này");
-		}
-		try {
-			GroupMember groupMember = groupMemberRepository.save(
-					GroupMember.builder().id(UUID.randomUUID().toString()).userId(addGroupMemberRequest.getUserId())
-							.group(group).role(GroupMemberRoleType.valueOf(addGroupMemberRequest.getRoleCode()))
-							.createdAt(new Date()).build());
-			return ResponseEntity.ok(GenericResponse.builder().success(true).statusCode(200)
-					.message("Thêm thành viên vào nhóm thành công")
-					.result(mapperService.mapToGroupMemberResponse(groupMember)).build());
-		} catch (IllegalArgumentException e) {
-			throw new BadRequestException("Quyền thành viên không hợp lệ");
-		} catch (Exception e) {
-			throw new BadRequestException(e.getMessage());
-		}
-	}
+    }
 
-	@Override
-	public ResponseEntity<GenericResponse> getGroupMemberByGroupId(String userId, String groupId) {
-		log.info("GroupMemberServiceImpl, ResponseEntity<GenericResponse> getGroupMemberByGroupId");
-		List<GroupMemberResponse> groupMembers = groupMemberRepository.findAllByGroupId(groupId).stream()
-				.map(mapperService::mapToGroupMemberResponse).toList();
-		return ResponseEntity.ok(GenericResponse.builder().success(true).statusCode(200)
-				.message("Lấy danh sách thành viên thành công!").result(groupMembers).build());
-	}
+    @Override
+    public ResponseEntity<GenericResponse> addAdminRoleInGroup(String groupId, String userId, String currentUserId) {
+        log.info("GroupMemberServiceImpl, addAdminRoleInGroup");
+        UserProfileResponse userProfileResponse =  userClientService.getProfileByUserId(currentUserId);
+        if (userProfileResponse.getRoleName().equals(RoleName.Admin)) {
+            throw new BadRequestException("Không thể thực hiện chức năng này!!!");
+        }
+        Optional<Group> optionalGroup = groupRepository.findById(groupId);
+        if (optionalGroup.isPresent()) {
+            //Chwa xong
+        }
+        throw new NotFoundException("Nhóm không tồn tại!");
+    }
 
-	@Override
-	public ResponseEntity<GenericResponse> lockGroupMember(String userId, LockMemberRequest lockMemberRequest) {
-		log.info("GroupMemberServiceImpl, ResponseEntity<GenericResponse> lockGroupMember");
-		GroupMember groupMember = groupMemberRepository.findById(lockMemberRequest.getGroupMemberId())
-				.orElseThrow(() -> new NotFoundException("Thành viên không tồn tại"));
-		Group group = groupMember.getGroup();
+    private List<MemberGroupResponse> GetInfoListUserByListUserId(Group group, List<String> userIds) {
+        List<FriendResponse> friendResponses = userClientService.getFriendByListUserId(new UserIds(userIds));
+        List<MemberGroupResponse> meList = new ArrayList<>();
+        for (FriendResponse member : friendResponses) {
+            meList.add(MemberGroupResponse.builder()
+                    .userId(member.getUserId())
+                    .backgroundUser(member.getBackground())
+                    .avatarUser(member.getAvatar())
+                    .username(member.getUsername())
+                    .groupName(group.getPostGroupName())
+                    .roleName(getRoleName(member.getUserId(), group.getId()))
+                    .build());
+        }
+        return meList;
+    }
 
-		GroupMember user = groupMemberRepository.findByUserIdAndGroupId(userId, group.getId())
-				.orElseThrow(() -> new ForbiddenException("Ban không có quyền thực hiện hành động này"));
-		if (user.getRole().equals(GroupMemberRoleType.Member)) {
-			throw new ForbiddenException("Ban không có quyền thực hiện hành động này");
-		}
-		groupMember.setIsLocked(true);
-		groupMember.setLockedAt(new Date());
-		groupMember.setLockedReason(lockMemberRequest.getLockedReason());
-		groupMemberRepository.save(groupMember);
-		return ResponseEntity
-				.ok(GenericResponse.builder().success(true).statusCode(200).message("Khóa thành viên thành công")
-						.result(mapperService.mapToGroupMemberResponse(groupMember)).build());
-	}
-
-	@Override
-	public ResponseEntity<GenericResponse> unlockGroupMember(String userId, UnlockMemberRequest unlockMemberRequest) {
-		log.info("GroupMemberServiceImpl, ResponseEntity<GenericResponse> unlockGroupMember");
-		GroupMember groupMember = groupMemberRepository.findById(unlockMemberRequest.getGroupMemberId())
-				.orElseThrow(() -> new NotFoundException("Thành viên không tồn tại"));
-		Group group = groupMember.getGroup();
-
-		GroupMember user = groupMemberRepository.findByUserIdAndGroupId(userId, group.getId())
-				.orElseThrow(() -> new ForbiddenException("Ban không có quyền thực hiện hành động này"));
-		if (user.getRole().equals(GroupMemberRoleType.Member)) {
-			throw new ForbiddenException("Ban không có quyền thực hiện hành động này");
-		}
-		groupMember.setIsLocked(false);
-		groupMember.setLockedAt(null);
-		groupMember.setLockedReason(null);
-		groupMemberRepository.save(groupMember);
-		return ResponseEntity
-				.ok(GenericResponse.builder().success(true).statusCode(200).message("Mở khóa thành viên thành công")
-						.result(mapperService.mapToGroupMemberResponse(groupMember)).build());
-	}
-
-	@Override
-	public String getGroupMemberRoleByGroupIdAndUserId(String groupId, String userId) {
-		log.info("GroupMemberServiceImpl, String getGroupMemberRoleByGroupIdAndUserId");
-		GroupMember groupMember = groupMemberRepository.findByUserIdAndGroupId(userId, groupId)
-				.orElseThrow(() -> new NotFoundException("Thành viên không tồn tại"));
-		return groupMember.getRole().name();
-	}
-
-	@Override
-	public ResponseEntity<GenericResponse> getAllGroupMembers(String authorizationHeader, String groupId, Integer page,
-			Integer size) {
-		log.info("GroupMemberServiceImpl, ResponseEntity<GenericResponse> getAllGroupMembers");
-
-		if (groupId != null) {
-			
-			Group group = groupRepository.findById(groupId).orElse(null);
-
-			Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
-
-			Page<GroupMember> groupMembers = groupMemberRepository.findAllByGroupId(group.getId(), pageable);
-
-			List<GroupMemberResponse> groupMemberDtos = groupMembers.stream()
-					.map(mapperService::mapToGroupMemberResponse).toList();
-
-			Map<String, Object> result = new HashMap<>();
-			result.put("groupMembers", groupMemberDtos);
-			result.put("totalPages", groupMembers.getTotalPages());
-			result.put("totalElements", groupMembers.getTotalElements());
-			result.put("currentPage", groupMembers.getNumber());
-			result.put("currentElements", groupMembers.getNumberOfElements());
-
-			return ResponseEntity.ok(GenericResponse.builder().success(true).statusCode(200)
-					.message("Lấy danh sách thành viên thành công!").result(result).build());
-		} else {
-			Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
-
-			Page<GroupMember> groupMembers = groupMemberRepository.findAll(pageable);
-
-			List<GroupMemberResponse> groupMemberDtos = groupMembers.stream()
-					.map(mapperService::mapToGroupMemberResponse).toList();
-
-			Map<String, Object> result = new HashMap<>();
-			result.put("groupMembers", groupMemberDtos);
-			result.put("totalPages", groupMembers.getTotalPages());
-			result.put("totalElements", groupMembers.getTotalElements());
-			result.put("currentPage", groupMembers.getNumber());
-			result.put("currentElements", groupMembers.getNumberOfElements());
-
-			return ResponseEntity.ok(GenericResponse.builder().success(true).statusCode(200)
-					.message("Lấy danh sách thành viên thành công!").result(result).build());
-		}
-	}
+    /**
+     * Get role name of user in group by userId and groupId from GroupMember
+     *
+     * @param userId  : userId
+     * @param groupId : groupId
+     * @return GroupMemberRoleType : Role name of user in group
+     */
+    private GroupMemberRoleType getRoleName(String userId, String groupId) {
+        log.info("GroupMemberServiceImpl, getRoleName");
+        Optional<GroupMember> optionalGroupMember = groupMemberRepository.findByUserIdAndGroupId(userId, groupId);
+        if (optionalGroupMember.isPresent()) {
+            GroupMember groupMember = optionalGroupMember.get();
+            return groupMember.getRole();
+        }
+        return null;
+    }
 }

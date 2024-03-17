@@ -92,14 +92,15 @@ public class UserController {
         String currentUserId = jwtService.extractUserId(token);
 
         Optional<User> user = userService.findById(userId);
-        Pageable pageable = PageRequest.of(0, 5);
-        UserProfileResponse profileResponse = userService.getFullProfile(user, pageable);
         if (user.isEmpty()) {
             throw new RuntimeException("User not found.");
         } else {
+            UserProfileResponse profileResponse = userService.getFullProfile(user.get());
             return ResponseEntity.ok(GenericResponse.builder().success(true).message("Successfully")
                     .result(profileResponse).statusCode(HttpStatus.OK.value()).build());
         }
+
+
     }
 
     @PutMapping("/update")
@@ -286,9 +287,7 @@ public class UserController {
         if (user.isEmpty()) {
             throw new RuntimeException("User not found.");
         }
-        Pageable pageable = PageRequest.of(0, 5);
-        UserProfileResponse profileResponse = userService.getFullProfile(user, pageable);
-        return profileResponse;
+        return userService.getFullProfile(user.get());
     }
 
 
@@ -307,5 +306,15 @@ public class UserController {
     @PostMapping("/getProfileByListUserId")
     public List<FriendResponse> getFriendByListUserId(@RequestBody UserIds list_userId) {
         return userService.getFriendByListUserId(list_userId);
+    }
+    // get information of user by userId
+    @GetMapping("/getProfileByUserId/{userId}")
+    public UserProfileResponse getProfileByUserId(@PathVariable String userId) {
+        Optional<User> user = userService.findById(userId);
+        if (user.isEmpty()) {
+            throw new RuntimeException("User not found.");
+        }
+
+        return new UserProfileResponse(user.get());
     }
 }

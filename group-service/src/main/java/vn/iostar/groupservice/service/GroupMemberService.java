@@ -1,31 +1,27 @@
 package vn.iostar.groupservice.service;
 
+import vn.iostar.groupservice.dto.PostGroupDTO;
 import vn.iostar.groupservice.dto.request.*;
 import vn.iostar.groupservice.dto.response.GenericResponse;
 import org.springframework.http.ResponseEntity;
 
 public interface GroupMemberService {
-    ResponseEntity<GenericResponse> inivteGroupMember(String userId, InviteGroupMemberRequest groupMemberRequest);
 
-    ResponseEntity<GenericResponse> requestGroupMember(String userId, String groupId);
+    ResponseEntity<GenericResponse> acceptMemberPostGroup(PostGroupDTO postGroup, String currentUserId);
 
-    ResponseEntity<GenericResponse> responseGroupMemberInvitation(String userId, String groupMemberInvitationId, StateRequest inviteResponseGroupMember);
+    ResponseEntity<GenericResponse> getMemberByPostId(String postGroupId, String currentUserId);
 
-    ResponseEntity<GenericResponse> responseGroupMemberRequest(String userId, String groupMemberRequestId, StateRequest stateRequest);
+    ResponseEntity<GenericResponse> getMemberRequiredByPostId(String postGroupId, String currentUserId);
 
-    ResponseEntity<GenericResponse> changeRole(String userId, String groupMemberId, String role);
+    ResponseEntity<GenericResponse> assignDeputyByUserIdAndGroupId(PostGroupRequest postGroup, String currentUserId);
 
-    ResponseEntity<GenericResponse> deleteGroupMember(String userId, String groupMemberId);
+    ResponseEntity<GenericResponse> assignAdminByUserIdAndGroupId(PostGroupRequest postGroup, String currentUserId);
 
-    ResponseEntity<GenericResponse> addGroupMember(String userId, AddGroupMemberRequest addGroupMemberRequest);
+    ResponseEntity<GenericResponse> removeDeputyByUserIdAndGroupId(PostGroupRequest postGroup, String currentUserId);
 
-    ResponseEntity<GenericResponse> getGroupMemberByGroupId(String userId, String groupId);
+    ResponseEntity<GenericResponse> deleteMemberByPostId(PostGroupRequest postGroup, String currentUserId);
 
-    ResponseEntity<GenericResponse> lockGroupMember(String userId, LockMemberRequest lockMemberRequest);
+    ResponseEntity<GenericResponse> leaveGroup(String currentUserId, String postGroupId);
 
-    ResponseEntity<GenericResponse> unlockGroupMember(String userId, UnlockMemberRequest unlockMemberRequest);
-
-    String getGroupMemberRoleByGroupIdAndUserId(String groupId, String userId);
-
-    ResponseEntity<GenericResponse> getAllGroupMembers(String authorizationHeader, String groupId, Integer page, Integer size);
+    ResponseEntity<GenericResponse> addAdminRoleInGroup(String groupId, String userId, String currentUserId);
 }

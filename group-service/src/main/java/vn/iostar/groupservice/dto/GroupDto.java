@@ -3,26 +3,27 @@ package vn.iostar.groupservice.dto;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Builder;
 import lombok.Data;
+import vn.iostar.groupservice.dto.response.UserProfileResponse;
 
 import java.io.Serializable;
+import java.util.Set;
 
 @Data
 @Builder
 public class GroupDto implements Serializable {
 
     private String id;
-    private String name;
-    private String description;
+    private String postGroupName;
+    private String bio;
     @JsonProperty("author")
-    private SimpleUserDto userDto;
+    private UserProfileResponse userDto;
     private String avatarUrl;
     private String coverUrl;
-    private Boolean isClass;
+    private Boolean isSystem;
     private Boolean isPublic;
-    private Boolean isAcceptAllRequest;
-    private String subject;
-    private Integer grade;
+    private Boolean isApprovalRequired;
     private String createdAt;
     private String updatedAt;
+    private Boolean isActive;
 
 }

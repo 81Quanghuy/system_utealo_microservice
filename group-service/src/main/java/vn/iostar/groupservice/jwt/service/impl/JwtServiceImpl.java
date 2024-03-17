@@ -14,21 +14,21 @@ import java.util.function.Function;
 @Slf4j
 @RequiredArgsConstructor
 public class JwtServiceImpl implements JwtService {
-	
+
 	private final JwtUtil jwtUtil;
-	
+
 	@Override
 	public String extractUserId(final String token) {
 		log.info("JwtServiceImpl, String, extractCredentialId");
 		return this.jwtUtil.extractUserId(token);
 	}
-	
+
 	@Override
 	public Date extractExpiration(final String token) {
 		log.info("JwtServiceImpl, Date, extractExpiration");
 		return this.jwtUtil.extractExpiration(token);
 	}
-	
+
 	@Override
 	public <T> T extractClaims(final String token, final Function<Claims, T> claimsResolver) {
 		log.info("JwtServiceImpl, <T> T, extractClaims");
@@ -40,17 +40,5 @@ public class JwtServiceImpl implements JwtService {
 		log.info("JwtServiceImpl, Boolean, validateToken");
 		return this.jwtUtil.validateToken(token);
 	}
-	
-	
-	
+
 }
-
-
-
-
-
-
-
-
-
-

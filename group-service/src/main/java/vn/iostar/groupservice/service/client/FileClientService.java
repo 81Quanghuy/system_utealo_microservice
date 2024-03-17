@@ -12,16 +12,9 @@ import java.io.IOException;
 @FeignClient(name = "media-service", contextId = "fileClientService", path = "/api/v1/files")
 public interface FileClientService {
 
-    @PostMapping(value = "/uploadGroupAvatar", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    String uploadGroupAvatar(@RequestPart("mediaFile") MultipartFile file);
+    @PostMapping(value = "/uploadPhoto", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    String uploadPhoto(@RequestPart("mediaFile") MultipartFile file);
 
-    @DeleteMapping(value = "/deleteGroupAvatar", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    void deleteGroupAvatar(@RequestPart("refUrl") String refUrl) throws IOException;
-
-    @PostMapping(value = "/uploadGroupCover", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    String uploadGroupCover(@RequestPart("mediaFile") MultipartFile file);
-
-    @DeleteMapping(value = "/deleteGroupCover", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    void deleteGroupCover(@RequestPart("refUrl") String refUrl) throws IOException;
-
+    @DeleteMapping(value = "/deletePhoto", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    void deletePhoto(@RequestPart("refUrl") String refUrl) throws IOException;
 }

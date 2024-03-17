@@ -1,141 +1,233 @@
 package vn.iostar.groupservice.controller.user;
 
-import vn.iostar.groupservice.dto.GroupDto;
-import vn.iostar.groupservice.dto.SimpleGroupDto;
-import vn.iostar.groupservice.dto.request.GroupConfigRequest;
-import vn.iostar.groupservice.dto.request.GroupCreateRequest;
-import vn.iostar.groupservice.dto.request.UpdateDetailRequest;
-import vn.iostar.groupservice.dto.response.GenericResponse;
-import vn.iostar.groupservice.jwt.service.JwtService;
-import vn.iostar.groupservice.service.GroupService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
+import vn.iostar.groupservice.dto.FilesOfGroupDTO;
+import vn.iostar.groupservice.dto.PhotosOfGroupDTO;
+import vn.iostar.groupservice.dto.PostGroupDTO;
+import vn.iostar.groupservice.dto.request.GroupCreateRequest;
+import vn.iostar.groupservice.dto.response.GenericResponse;
+import vn.iostar.groupservice.jwt.service.JwtService;
+import vn.iostar.groupservice.service.GroupRequestService;
+import vn.iostar.groupservice.service.GroupService;
 
-import java.io.IOException;
 import java.util.List;
-import java.util.Optional;
 
 @RestController
-@RequestMapping("/api/v1/groups")
+@RequestMapping("/api/v1/groupPost")
 @Slf4j
 @RequiredArgsConstructor
 public class GroupController {
 
     private final GroupService groupService;
     private final JwtService jwtService;
+    private final GroupRequestService groupRequestService;
 
-    @PostMapping
-    public ResponseEntity<GenericResponse> createGroup(@RequestHeader(HttpHeaders.AUTHORIZATION) String authorizationHeader
-            , @RequestBody @Valid GroupCreateRequest groupCreateRequest) {
-        log.info("AdminGroupController, createGroup");
-        String accessToken = authorizationHeader.substring(7);
-        String userId = jwtService.extractUserId(accessToken);
-        return groupService.createGroup(userId, groupCreateRequest);
-    }
-
-    @GetMapping
-    public ResponseEntity<GenericResponse> getAllGroup(@RequestHeader(HttpHeaders.AUTHORIZATION) String authorizationHeader) {
-        log.info("AdminGroupController, getAllGroup");
-        String accessToken = authorizationHeader.substring(7);
-        String userId = jwtService.extractUserId(accessToken);
-        return groupService.getGroupsByUserId(userId);
-    }
-
-    @GetMapping("/{groupId}")
-    public ResponseEntity<GenericResponse> getGroupById(@RequestHeader(HttpHeaders.AUTHORIZATION) String authorizationHeader
-            , @PathVariable("groupId") String groupId) {
-        log.info("AdminGroupController, getGroupById");
-        String accessToken = authorizationHeader.substring(7);
-        String userId = jwtService.extractUserId(accessToken);
-        return groupService.getGroupById(userId, groupId);
-    }
-
-    @GetMapping("/validate-user-in-group")
-    public ResponseEntity<GenericResponse> validateUserInGroup(@RequestParam("userId") String userId
-            , @RequestParam("groupId") String groupId) {
-        log.info("AdminGroupController, validateUserInGroup");
-        return groupService.valiadateUserInGroup(userId, groupId);
-    }
-
-    @GetMapping("/get-group-by-user")
-    public ResponseEntity<List<String>> getGroupByUserId(@RequestHeader(HttpHeaders.AUTHORIZATION) String authorizationHeader) {
-        log.info("AdminGroupController, getGroupByUserId");
-        String accessToken = authorizationHeader.substring(7);
-        String userId = jwtService.extractUserId(accessToken);
-        return groupService.getGroupByUserId(userId);
-    }
-
-    @PutMapping("/{groupId}/config")
-    public ResponseEntity<GenericResponse> updateGroupConfig(@RequestHeader(HttpHeaders.AUTHORIZATION) String authorizationHeader
-            , @PathVariable("groupId") String groupId
-            , @RequestBody GroupConfigRequest groupConfigRequest) {
-        log.info("AdminGroupController, updateGroupConfig");
-        String accessToken = authorizationHeader.substring(7);
-        String userId = jwtService.extractUserId(accessToken);
-        return groupService.updateGroupConfig(userId, groupId, groupConfigRequest);
-    }
-
-    @PutMapping("/{groupId}/updateDetail")
-    public ResponseEntity<GenericResponse> updateGroupDetail(@RequestHeader(HttpHeaders.AUTHORIZATION) String authorizationHeader
-            , @PathVariable("groupId") String groupId
-            , @RequestBody UpdateDetailRequest updateDetailRequest) {
-        log.info("AdminGroupController, updateGroupDetail");
-        String accessToken = authorizationHeader.substring(7);
-        String userId = jwtService.extractUserId(accessToken);
-        return groupService.updateGroupDetail(userId, groupId, updateDetailRequest);
-    }
-
-    @PutMapping(value = "/{groupId}/updateAvatar", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<GenericResponse> updateGroupAvatar(@RequestHeader(HttpHeaders.AUTHORIZATION) String authorizationHeader
-            , @PathVariable("groupId") String groupId
-            , @RequestPart("mediaFile") MultipartFile avatar) throws IOException {
-        log.info("AdminGroupController, updateGroupAvatar");
-        String accessToken = authorizationHeader.substring(7);
-        String userId = jwtService.extractUserId(accessToken);
-        return groupService.updateGroupAvatar(userId, groupId, avatar);
-    }
-
-    @PutMapping(value = "/{groupId}/updateCover", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<GenericResponse> updateGroupCover(@RequestHeader(HttpHeaders.AUTHORIZATION) String authorizationHeader
-            , @PathVariable("groupId") String groupId
-            , @RequestPart("mediaFile") MultipartFile cover) throws IOException {
-        log.info("AdminGroupController, updateGroupCover");
-        String accessToken = authorizationHeader.substring(7);
-        String userId = jwtService.extractUserId(accessToken);
-        return groupService.updateGroupCover(userId, groupId, cover);
-    }
-
-    @DeleteMapping(value = "/{groupId}")
-    public ResponseEntity<GenericResponse> deleteGroup(@RequestHeader(HttpHeaders.AUTHORIZATION) String authorizationHeader
-            , @PathVariable("groupId") String groupId) {
-        log.info("AdminGroupController, deleteGroup");
-        String accessToken = authorizationHeader.substring(7);
-        String userId = jwtService.extractUserId(accessToken);
-        return groupService.deleteGroup(userId, groupId);
-    }
-
-    @GetMapping("/search")
-    public ResponseEntity<List<GroupDto>> searchGroup(@RequestParam("query") Optional<String> query
-            , @RequestParam("isClass") Optional<Boolean> isClass
-            , @RequestParam("isPublic") Optional<Boolean> isPublic
-            , @RequestParam("grade") Optional<Integer> grade
-            , @RequestParam("subject") Optional<String> subject) {
-        log.info("AdminGroupController, searchGroup");
-        return groupService.searchGroup(query, isClass, isPublic, grade, subject);
-    }
-
-    //create group
+    /**
+     *  Create group by authorized user and GroupCreateRequest
+     * @param postGroup postGroup
+     * @param authorizationHeader authorizationHeader
+     * @return GenericResponse
+     */
     @PostMapping("/create")
-    public ResponseEntity<GenericResponse> createGroup(
-            @RequestBody @Valid GroupCreateRequest groupCreateRequest) {
-        log.info("AdminGroupController, createGroup");
+    public ResponseEntity<GenericResponse> createGroupByUser(@RequestBody  @Valid  GroupCreateRequest postGroup,
+                                                             @RequestHeader("Authorization") String authorizationHeader) {
+        String accessToken = authorizationHeader.substring(7);
+        String userId = jwtService.extractUserId(accessToken);
+        return groupService.createGroup(postGroup, userId);
+    }
 
-        return groupService.createGroupNew(groupCreateRequest);
+    /**
+     * Get group by user id
+     * @param authorizationHeader authorizationHeader
+     * @return GenericResponse
+     */
+    @GetMapping("/list/all")
+    public ResponseEntity<GenericResponse> getPostGroupByUserId(
+            @RequestHeader("Authorization") String authorizationHeader) {
+        return groupService.getPostGroupByUserId(authorizationHeader);
+    }
+
+    /**
+     * Lấy danh sách các group mà user đã được mời tham gia
+     * @param authorizationHeader authorizationHeader
+     * @return GenericResponse
+     */
+    @GetMapping("/list/isInvited")
+    public ResponseEntity<GenericResponse> getPostGroupInvitedByUserId(
+            @RequestHeader("Authorization") String authorizationHeader) {
+        String token = authorizationHeader.substring(7);
+        String currentUserId = jwtService.extractUserId(token);
+        return groupRequestService.getPostGroupInvitedByUserId(currentUserId);
+    }
+
+    /**
+     *  Laay danh sach loi moi nhom da gui di theo user id
+     *
+     * @param authorizationHeader authorizationHeader
+     * @return  GenericResponse
+     */
+    @GetMapping("/list/invited")
+    public ResponseEntity<GenericResponse> getPostGroupRequestsSentByUserId(
+            @RequestHeader("Authorization") String authorizationHeader) {
+        String token = authorizationHeader.substring(7);
+        String currentUserId = jwtService.extractUserId(token);
+        return groupRequestService.getPostGroupRequestsSentByUserId(currentUserId);
+    }
+
+    /**
+     *  Cập nhật description của group theo id
+     * @param authorizationHeader authorizationHeader
+     * @param postGroup postGroup
+     * @return GenericResponse
+     */
+    @PutMapping("/update/bio")
+    public ResponseEntity<GenericResponse> updatePostGroupByPostId(
+            @RequestHeader("Authorization") String authorizationHeader, @RequestBody PostGroupDTO postGroup) {
+        String token = authorizationHeader.substring(7);
+        String currentUserId = jwtService.extractUserId(token);
+        return groupService.updatePostGroupByPostIdAndUserId(postGroup, currentUserId);
+    }
+
+    /**
+     *  Update avatar and background of group by id
+     * @param authorizationHeader authorizationHeader
+     * @param postGroup postGroup
+     * @return GenericResponse
+     */
+    @PutMapping("/update/photo")
+    public ResponseEntity<GenericResponse> updateBackgroundByPostId(
+            @RequestHeader("Authorization") String authorizationHeader, @ModelAttribute PostGroupDTO postGroup) {
+        String token = authorizationHeader.substring(7);
+        String currentUserId = jwtService.extractUserId(token);
+        return groupService.updatePhotoByPostIdAndUserId(postGroup, currentUserId);
+    }
+
+    /**
+     * Delete group by id
+     * @param authorizationHeader  authorizationHeader
+     * @param postGroupId postGroupId
+     * @return GenericResponse
+     */
+    @DeleteMapping("/delete/{postGroupId}")
+    public ResponseEntity<GenericResponse> deletePostGroup(@RequestHeader("Authorization") String authorizationHeader,
+                                                           @PathVariable("postGroupId") String postGroupId) {
+        String token = authorizationHeader.substring(7);
+        String currentUserId = jwtService.extractUserId(token);
+        return groupService.deletePostGroup(postGroupId, currentUserId);
+    }
+
+    /**
+     * Chuyen doi trang thai group by id
+     * @param authorizationHeader authorizationHeader
+     * @param groupId groupId
+     * @return GenericResponse
+     */
+    @PutMapping("/toggleState/{groupId}")
+    public ResponseEntity<GenericResponse> clockGroup(@RequestHeader("Authorization") String authorizationHeader,
+                                                      @PathVariable("groupId") String groupId) {
+        String token = authorizationHeader.substring(7);
+        String currentUserId = jwtService.extractUserId(token);
+        return groupService.clockGroup(groupId, currentUserId);
+    }
+
+    /**
+     * Get inf group by ID
+     * @param authorizationHeader authorizationHeader
+     * @param postGroupId postGroupId
+     * @return GenericResponse
+     */
+    @GetMapping("/get/{postGroupId}")
+    public ResponseEntity<GenericResponse> getPostGroupById(@RequestHeader("Authorization") String authorizationHeader,
+                                                            @PathVariable("postGroupId") String postGroupId) {
+        String token = authorizationHeader.substring(7);
+        String currentUserId = jwtService.extractUserId(token);
+        return groupService.getPostGroupById(currentUserId, postGroupId);
+    }
+
+    /**
+     * Lấy những bài share của group theo id chưa xong
+     * @param authorizationHeader authorizationHeader
+     * @param postGroupId postGroupId
+     * @param page page
+     * @param size size
+     * @return GenericResponse
+     */
+    @GetMapping("/{postGroupId}/shares")
+    public ResponseEntity<GenericResponse> getGroupSharePosts(
+            @RequestHeader("Authorization") String authorizationHeader,
+            @PathVariable("postGroupId") String postGroupId, @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        String token = authorizationHeader.substring(7);
+        String currentUserId = jwtService.extractUserId(token);
+        Pageable pageable = Pageable.ofSize(size).withPage(page);
+        return groupService.getGroupSharePosts(currentUserId, postGroupId, pageable);
+    }
+
+    /**
+     * Lấy tất cả bài viết của group mà user đã tham gia theo id Chưa xong
+     * @param authorizationHeader authorizationHeader
+     * @param page page
+     * @param size size
+     * @return GenericResponse
+     */
+
+    @GetMapping("/posts")
+    public ResponseEntity<GenericResponse> getPostOfUserPostGroup(
+            @RequestHeader("Authorization") String authorizationHeader, @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        String token = authorizationHeader.substring(7);
+        String currentUserId = jwtService.extractUserId(token);
+        Pageable pageable = PageRequest.of(page, size);
+        return groupService.getPostOfPostGroup(currentUserId, pageable);
+    }
+
+    /**
+     * Lấy tất cả bài viết của group theo id chua lam
+     * @param authorizationHeader authorizationHeader
+     * @param postGroupId postGroupId
+     * @param page page
+     * @param size size
+     * @return GenericResponse
+     */
+    @GetMapping("/{postGroupId}/posts")
+    public ResponseEntity<GenericResponse> getPostOfPostGroup(
+            @RequestHeader("Authorization") String authorizationHeader, @PathVariable Integer postGroupId,
+            @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "20") int size) {
+        String token = authorizationHeader.substring(7);
+        String currentUserId = jwtService.extractUserId(token);
+        Pageable pageable = PageRequest.of(page, size);
+        return groupService.getGroupPosts(currentUserId, postGroupId,pageable);
+    }
+
+    /**
+     * Lấy tất cả file trong bài viết của group theo id chua lam
+     * @param groupId groupId
+     * @return FilesOfGroupDTO
+     */
+
+    @GetMapping("/files/{groupId}")
+    public List<FilesOfGroupDTO> getLatestFilesOfGroup(@PathVariable("groupId") Integer groupId) {
+        return groupService.findLatestFilesByGroupId(groupId);
+    }
+
+    /**
+     *    Lấy tất cả file trong bài viết của group theo id chua lam
+     * @param page page
+     * @param size size
+     * @param groupId groupId
+     * @return PhotosOfGroupDTO
+     */
+    @GetMapping("/photos/{groupId}")
+    public Page<PhotosOfGroupDTO> getLatestPhotoOfGroup(@RequestParam(defaultValue = "0") int page,
+                                                        @RequestParam(defaultValue = "5") int size, @PathVariable("groupId") Integer groupId) {
+        Pageable pageable = PageRequest.of(page, size);
+        return groupService.findLatestPhotosByGroupId(groupId, pageable);
     }
 }

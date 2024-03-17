@@ -11,7 +11,6 @@ import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.DocumentReference;
 import org.springframework.data.mongodb.core.mapping.Field;
-import vn.iostar.groupservice.constant.StateType;
 
 import java.io.Serializable;
 import java.util.Date;
@@ -32,13 +31,13 @@ public class GroupRequest implements Serializable {
     private Group group;
 
     @Field(name = "inviting_user_id")
-    private String invitingUser;
+    private String invitingUser; // nguời mời
 
     @Field(name = "invited_user_id")
-    private String invitedUser;
+    private String invitedUser; // nguời được mời
 
-    @Field(name = "state")
-    private StateType state;
+    @Field(name = "isAccept")
+    private Boolean isAccept;
 
     @CreatedDate
     @JsonFormat(shape = JsonFormat.Shape.STRING)

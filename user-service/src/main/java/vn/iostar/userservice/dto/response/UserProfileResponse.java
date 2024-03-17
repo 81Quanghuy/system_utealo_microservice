@@ -42,9 +42,9 @@ public class UserProfileResponse {
         this.dayOfBirth = user.getDayOfBirth();
         this.about = user.getProfile().getBio();
         this.gender = user.getGender();
-        if(user.getIsActive()==true) {
+        if(user.getIsActive()) {
             this.isActive = "Hoạt động";
-        } else if (user.getIsActive()==false) {
+        } else  {
             this.isActive = "Bị khóa";
         }
         this.isAccountActive = user.getAccount().getIsActive();

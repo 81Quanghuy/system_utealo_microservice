@@ -49,7 +49,7 @@ public class GroupMember implements Serializable {
 
     @DocumentReference
     @Field(name = "group_member_request_id")
-    private GroupRequest groupMemberRequest;
+    private String memberRequestId; // nguoi moi vao nhom
 
     @CreatedDate
     @JsonFormat(shape = JsonFormat.Shape.STRING)

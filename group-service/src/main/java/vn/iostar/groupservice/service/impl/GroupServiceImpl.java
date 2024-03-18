@@ -15,6 +15,7 @@ import vn.iostar.groupservice.dto.PhotosOfGroupDTO;
 import vn.iostar.groupservice.dto.PostGroupDTO;
 import vn.iostar.groupservice.dto.request.GroupCreateRequest;
 import vn.iostar.groupservice.dto.response.GenericResponse;
+import vn.iostar.groupservice.dto.response.GroupPostResponse;
 import vn.iostar.groupservice.dto.response.PostGroupResponse;
 import vn.iostar.groupservice.entity.Group;
 import vn.iostar.groupservice.entity.GroupMember;
@@ -49,18 +50,15 @@ public class GroupServiceImpl implements GroupService {
         log.info("GroupServiceImpl, getPostGroupByUserId");
         String token = authorizationHeader.substring(7);
         String userId = jwtService.extractUserId(token);
-        List<Group> groups = groupRepository.findAllByAuthorIdAndIsActive(userId,true);
-        // sap xep theo role cua user trong nhom : admin, Deputy, Member
-        groups.sort(Comparator.comparing(group -> {
-            Optional<GroupMember> groupMember = groupMemberRepository.findByUserIdAndGroupId(userId, group.getId());
-            return groupMember.map(member -> member.getRole().ordinal()).orElseGet(() -> 0);
-        }));
+        List<GroupMember> groupMembers = groupMemberRepository.findByUserIdAndIsLocked(userId,false);
+        List<GroupPostResponse> groupPostResponses = new ArrayList<>();
+        for (GroupMember member : groupMembers) {
+            groupPostResponses.add(mapperService.mapToGroupPostResponse(member));
+        }
         return ResponseEntity.ok(GenericResponse.builder()
                 .success(true)
                 .message("Lấy danh sách nhóm thành công!")
-                .result(groups.stream()
-                        .map(mapperService::mapToGroupDto)
-                        .toList())
+                .result(groupPostResponses)
                 .statusCode(HttpStatus.OK.value())
                 .build());
     }
@@ -68,6 +66,10 @@ public class GroupServiceImpl implements GroupService {
     @Override
     public ResponseEntity<GenericResponse> createGroup(GroupCreateRequest postGroup, String userId) {
         log.info("GroupServiceImpl, createGroup");
+        Optional<Group> groupExist = groupRepository.findByPostGroupName(postGroup.getPostGroupName());
+        if (groupExist.isPresent()) {
+            throw new ForbiddenException("Tên nhóm đã tồn tại!");
+        }
         Group group = Group.builder()
                 .id(UUID.randomUUID().toString())
                 .postGroupName(postGroup.getPostGroupName())
@@ -87,12 +89,16 @@ public class GroupServiceImpl implements GroupService {
                 .id(UUID.randomUUID().toString())
                 .userId(userId)
                 .group(group)
+                .isLocked(false)
+                .memberRequestId(userId)
+                .createdAt(new Date())
+                .updatedAt(new Date())
                 .role(GroupMemberRoleType.Admin)
                 .build();
         groupMemberRepository.save(groupMember);
 
         //add group request to user
-        if(!postGroup.getUserRequestId().isEmpty()){
+        if (!postGroup.getUserRequestId().isEmpty()) {
             for (String userRequest : postGroup.getUserRequestId()) {
                 GroupRequest groupRequest = GroupRequest.builder()
                         .id(UUID.randomUUID().toString())
@@ -117,7 +123,7 @@ public class GroupServiceImpl implements GroupService {
 
     @Override
     public ResponseEntity<GenericResponse> updatePostGroupByPostIdAndUserId(PostGroupDTO postGroup, String currentUserId) {
-       log.info("GroupServiceImpl, updatePostGroupByPostIdAndUserId");
+        log.info("GroupServiceImpl, updatePostGroupByPostIdAndUserId");
         Optional<Group> optionalGroup = groupRepository.findById(postGroup.getPostGroupId());
         if (optionalGroup.isEmpty()) {
             throw new NotFoundException("Không tìm thấy nhóm này!");
@@ -216,8 +222,8 @@ public class GroupServiceImpl implements GroupService {
         for (GroupMember groupMember : listAdminAndDeputy) {
             listAdminAndDeputyId.add(groupMember.getUserId());
         }
-        PostGroupResponse postGroupResponse = mapperService.mapToPostGroupResponse(group,countMember, listAdminAndDeputyId);
-                return ResponseEntity.ok(GenericResponse.builder()
+        PostGroupResponse postGroupResponse = mapperService.mapToPostGroupResponse(group, countMember, listAdminAndDeputyId);
+        return ResponseEntity.ok(GenericResponse.builder()
                 .success(true)
                 .message("Lấy thông tin nhóm thành công!")
                 .result(postGroupResponse)
@@ -295,6 +301,7 @@ public class GroupServiceImpl implements GroupService {
 
     /**
      * Cập nhật ảnh vào cloudinary và xóa ảnh cũ
+     *
      * @param oldImage oldImage
      * @param newImage newImage
      * @return String url ảnh mới
@@ -311,6 +318,7 @@ public class GroupServiceImpl implements GroupService {
         }
         return result;
     }
+
     public Group CheckNullGroup(String groupId, String currentUserId) {
         Optional<Group> optionalGroup = groupRepository.findById(groupId);
         if (optionalGroup.isEmpty()) {

@@ -47,7 +47,6 @@ public class GroupMember implements Serializable {
     @Field(name = "group_member_role")
     private GroupMemberRoleType role;
 
-    @DocumentReference
     @Field(name = "group_member_request_id")
     private String memberRequestId; // nguoi moi vao nhom
 
@@ -60,5 +59,4 @@ public class GroupMember implements Serializable {
     @JsonFormat(shape = JsonFormat.Shape.STRING)
     @Field(name = "updated_at")
     private Date updatedAt;
-
 }

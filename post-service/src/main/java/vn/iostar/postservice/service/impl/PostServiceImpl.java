@@ -123,7 +123,7 @@ public class PostServiceImpl implements PostService {
 
         PostsResponse postsResponse = new PostsResponse(post, userOfPostResponse, groupProfileResponse);
 
-        List<Integer> count = new ArrayList<>();
+        List<String> count = new ArrayList<>();
         postsResponse.setComments(count);
         postsResponse.setLikes(count);
 
@@ -140,7 +140,8 @@ public class PostServiceImpl implements PostService {
 
         String accessToken = token.substring(7);
         String currentUserId = jwtService.extractUserId(accessToken);
-        String a = userId.replace("\"", "").replace("\r\n\r\n", "");;
+        String a = userId.replace("\"", "").replace("\r\n\r\n", "");
+        ;
         if (!currentUserId.equals(userId.replace("\"", "").replace("\r\n\r\n", ""))) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .body(new GenericResponse(false, "Delete denied!", null, HttpStatus.NOT_FOUND.value()));
@@ -183,7 +184,7 @@ public class PostServiceImpl implements PostService {
         post.setLocation(request.getLocation());
         post.setPrivacyLevel(request.getPrivacyLevel());
         post.setUpdatedAt(new Date());
-        if(post.getGroupId() != null) {
+        if (post.getGroupId() != null) {
             groupProfileResponse = groupClientService.getGroup(post.getGroupId());
         }
         try {
@@ -226,33 +227,10 @@ public class PostServiceImpl implements PostService {
                     .statusCode(HttpStatus.NOT_FOUND.value()).build());
 
         PostsResponse postsResponse = new PostsResponse(post.get(), userOfPostResponse, groupProfileResponse);
-        postsResponse.setComments(getIdComment(post.get().getCommentIds()));
-        postsResponse.setLikes(getIdLikes(post.get().getLikeIds()));
+
 
         return ResponseEntity.ok(GenericResponse.builder().success(true).message("Retrieving user profile successfully")
                 .result(postsResponse).statusCode(HttpStatus.OK.value()).build());
-    }
-
-    private List<Integer> getIdLikes(List<Like> likes) {
-        if (likes == null) {
-            return Collections.emptyList();
-        }
-        List<Integer> idLikes = new ArrayList<>();
-        for (Like like : likes) {
-            idLikes.add(Integer.valueOf(like.getId()));
-        }
-        return idLikes;
-    }
-
-    private List<Integer> getIdComment(List<Comment> comments) {
-        if (comments == null) {
-            return Collections.emptyList();
-        }
-        List<Integer> idComments = new ArrayList<>();
-        for (Comment cmt : comments) {
-            idComments.add(Integer.valueOf(cmt.getId()));
-        }
-        return idComments;
     }
 
 
@@ -272,8 +250,6 @@ public class PostServiceImpl implements PostService {
         for (Post post : userPosts) {
 
             PostsResponse postsResponse = new PostsResponse(post, userOfPostResponse, null);
-            postsResponse.setComments(getIdComment(post.getCommentIds()));
-            postsResponse.setLikes(getIdLikes(post.getLikeIds()));
             simplifiedUserPosts.add(postsResponse);
         }
         return simplifiedUserPosts;

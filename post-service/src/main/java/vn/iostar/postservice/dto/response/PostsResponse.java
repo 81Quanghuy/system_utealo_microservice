@@ -25,8 +25,8 @@ public class PostsResponse {
 	private String postGroupName;
 	private String avatarGroup;
 	private String groupType;
-	private List<Integer> comments;
-	private List<Integer> likes;
+	private List<String> comments;
+	private List<String> likes;
 	private RoleName roleName;
 	private PrivacyLevel privacyLevel;
 
@@ -51,5 +51,7 @@ public class PostsResponse {
 			this.groupType = group.getGroupType();
 		}
 		this.privacyLevel = post.getPrivacyLevel();
+		this.comments = post.getComments();
+		this.likes = post.getLikes();
 	}
 }

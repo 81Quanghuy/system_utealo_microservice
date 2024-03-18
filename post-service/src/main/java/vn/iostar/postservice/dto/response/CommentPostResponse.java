@@ -4,6 +4,7 @@ import java.util.Date;
 import java.util.List;
 
 import lombok.Data;
+import vn.iostar.postservice.entity.Comment;
 
 
 @Data
@@ -21,17 +22,17 @@ public class CommentPostResponse {
     private String userOwner;
 	
 	
-//	public CommentPostResponse(Comment comment) {
-//		super();
-//		this.commentId = comment.getId();
-//		this.content = comment.getContent();
-//		this.createTime = comment.getCreateTime();
-//		this.photos = comment.getPhotos();
-//		this.userName = comment.get;
-//		this.postId = comment.getPost().getId();
-//		this.userAvatar = comment.getUser().getProfile().getAvatar();
-//		this.userId = comment.getUserId();
-//	}
+	public CommentPostResponse(Comment comment, UserProfileResponse userProfileResponse) {
+		super();
+		this.commentId = comment.getId();
+		this.content = comment.getContent();
+		this.createTime = comment.getCreateTime();
+		this.photos = comment.getPhotos();
+		this.userName = userProfileResponse.getUserName();
+		this.postId = comment.getPost().getId();
+		this.userAvatar = userProfileResponse.getAvatar();
+		this.userId = comment.getUserId();
+	}
 
 	public CommentPostResponse(String commentId, String content, Date createTime, String photos, String userName,
 			String postId) {

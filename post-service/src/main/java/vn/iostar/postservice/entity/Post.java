@@ -58,12 +58,12 @@ public class Post implements Serializable {
     private Date updatedAt;
 
     @Field(name = "shares")
-    private List<Share> shareIds;
+    private List<String> shares;
 
     @Field(name = "likes")
-    private List<Like> likeIds;
+    private List<String> likes;
 
     @Field(name = "comments")
-    private List<Comment> commentIds;
+    private List<String> comments;
 
 }

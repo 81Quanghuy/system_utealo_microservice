@@ -58,5 +58,7 @@ public class Comment implements Serializable {
     @Field(name = "comment_reply")
     private Comment commentReply;
 
+    @Field(name = "likes")
+    private List<String> likes;
 
 }

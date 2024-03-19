@@ -1,10 +1,22 @@
 package vn.iostar.postservice.repository;
 
 import org.springframework.data.mongodb.repository.MongoRepository;
+import org.springframework.data.mongodb.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+import vn.iostar.postservice.dto.response.ListUserLikePost;
+import vn.iostar.postservice.dto.response.UserProfileResponse;
 import vn.iostar.postservice.entity.Like;
+import vn.iostar.postservice.entity.Post;
+
+import java.util.List;
+import java.util.Optional;
 
 
 @Repository
 public interface LikeRepository extends MongoRepository<Like, String> {
+    List<Like> findByPostId(String postId);
+    Optional<Like> findByPostAndUserId(Post post, String userId);
+    @Query("SELECT NEW vn.iostar.dto.ListUserLikePost(l.user.userName, l.user.userId, l.user.profile.avatar) FROM Like l WHERE l.post.postId = ?1")
+    List<ListUserLikePost> findUsersLikedPost(@Param("postId") String postId);
 }

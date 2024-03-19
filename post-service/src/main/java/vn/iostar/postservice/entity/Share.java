@@ -8,6 +8,7 @@ import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
+import org.springframework.data.mongodb.core.mapping.DocumentReference;
 import org.springframework.data.mongodb.core.mapping.Field;
 import vn.iostar.postservice.constant.PrivacyLevel;
 
@@ -28,6 +29,7 @@ public class Share implements Serializable {
     @Field(name = "content")
     private String content;
 
+    @DocumentReference
     @Field(name = "post_id")
     private Post post;
 

@@ -50,17 +50,8 @@ public class GroupServiceImpl implements GroupService {
         log.info("GroupServiceImpl, getPostGroupByUserId");
         String token = authorizationHeader.substring(7);
         String userId = jwtService.extractUserId(token);
-        List<GroupMember> groupMembers = groupMemberRepository.findByUserIdAndIsLocked(userId,false);
-        List<GroupPostResponse> groupPostResponses = new ArrayList<>();
-        for (GroupMember member : groupMembers) {
-            groupPostResponses.add(mapperService.mapToGroupPostResponse(member));
-        }
-        return ResponseEntity.ok(GenericResponse.builder()
-                .success(true)
-                .message("Lấy danh sách nhóm thành công!")
-                .result(groupPostResponses)
-                .statusCode(HttpStatus.OK.value())
-                .build());
+        List<GroupMember> groupMembers = groupMemberRepository.findByUserIdAndIsLocked(userId, false);
+        return getGenericResponseResponseEntity(groupMembers);
     }
 
     @Override
@@ -70,55 +61,22 @@ public class GroupServiceImpl implements GroupService {
         if (groupExist.isPresent()) {
             throw new ForbiddenException("Tên nhóm đã tồn tại!");
         }
-        Group group = Group.builder()
-                .id(UUID.randomUUID().toString())
-                .postGroupName(postGroup.getPostGroupName())
-                .bio(postGroup.getBio() == null ?
-                        "" : postGroup.getBio())
-                .authorId(userId)
-                .isSystem(postGroup.getIsSystem())
-                .isPublic(postGroup.getIsPublic())
-                .isApprovalRequired(postGroup.getIsApprovalRequired())
-                .isActive(postGroup.getIsActive())
-                .createdAt(new Date())
-                .build();
+        Group group = Group.builder().id(UUID.randomUUID().toString()).postGroupName(postGroup.getPostGroupName()).bio(postGroup.getBio() == null ? "" : postGroup.getBio()).authorId(userId).isSystem(postGroup.getIsSystem()).isPublic(postGroup.getIsPublic()).isApprovalRequired(postGroup.getIsApprovalRequired()).isActive(postGroup.getIsActive()).createdAt(new Date()).build();
         groupRepository.save(group);
 
         // Add author to group
-        GroupMember groupMember = GroupMember.builder()
-                .id(UUID.randomUUID().toString())
-                .userId(userId)
-                .group(group)
-                .isLocked(false)
-                .memberRequestId(userId)
-                .createdAt(new Date())
-                .updatedAt(new Date())
-                .role(GroupMemberRoleType.Admin)
-                .build();
+        GroupMember groupMember = GroupMember.builder().id(UUID.randomUUID().toString()).userId(userId).group(group).isLocked(false).memberRequestId(userId).createdAt(new Date()).updatedAt(new Date()).role(GroupMemberRoleType.Admin).build();
         groupMemberRepository.save(groupMember);
 
         //add group request to user
         if (!postGroup.getUserRequestId().isEmpty()) {
             for (String userRequest : postGroup.getUserRequestId()) {
-                GroupRequest groupRequest = GroupRequest.builder()
-                        .id(UUID.randomUUID().toString())
-                        .group(group)
-                        .invitedUser(userRequest)
-                        .invitingUser(userId)
-                        .isAccept(false)
-                        .group(group)
-                        .createdAt(new Date())
-                        .build();
+                GroupRequest groupRequest = GroupRequest.builder().id(UUID.randomUUID().toString()).group(group).invitedUser(userRequest).invitingUser(userId).isAccept(false).group(group).createdAt(new Date()).build();
                 groupRequestRepository.save(groupRequest);
             }
         }
 
-        return ResponseEntity.ok(GenericResponse.builder()
-                .success(true)
-                .message("Tạo nhóm thành công!")
-                .result(group.getId())
-                .statusCode(HttpStatus.OK.value())
-                .build());
+        return ResponseEntity.ok(GenericResponse.builder().success(true).message("Tạo nhóm thành công!").result(group.getId()).statusCode(HttpStatus.OK.value()).build());
     }
 
     @Override
@@ -130,12 +88,7 @@ public class GroupServiceImpl implements GroupService {
         }
         Group group = updateGroup(postGroup, currentUserId, optionalGroup.get());
         groupRepository.save(group);
-        return ResponseEntity.ok(GenericResponse.builder()
-                .success(true)
-                .message("Cập nhật nhóm thành công!")
-                .result(group.getId())
-                .statusCode(HttpStatus.OK.value())
-                .build());
+        return ResponseEntity.ok(GenericResponse.builder().success(true).message("Cập nhật nhóm thành công!").result(group.getId()).statusCode(HttpStatus.OK.value()).build());
     }
 
     @Override
@@ -151,21 +104,16 @@ public class GroupServiceImpl implements GroupService {
         }
         if (postGroup.getAvatar() != null) {
             String avatarOld = group.getAvatarGroup();
-            group.setAvatarGroup(updateImage(avatarOld, postGroup.getAvatar()));
+            group.setAvatarGroup(updateImage(avatarOld, postGroup.getAvatar(), true));
             groupRepository.save(group);
         } else if (postGroup.getBackground() != null) {
             String backgroundOld = group.getBackgroundGroup();
-            group.setBackgroundGroup(updateImage(backgroundOld, postGroup.getBackground()));
+            group.setBackgroundGroup(updateImage(backgroundOld, postGroup.getBackground(), false));
             groupRepository.save(group);
         }
         group.setUpdatedAt(new Date());
         groupRepository.save(group);
-        return ResponseEntity.ok(GenericResponse.builder()
-                .success(true)
-                .message("Cập nhật ảnh nhóm thành công!")
-                .result(group.getId())
-                .statusCode(HttpStatus.OK.value())
-                .build());
+        return ResponseEntity.ok(GenericResponse.builder().success(true).message("Cập nhật ảnh nhóm thành công!").result(group.getId()).statusCode(HttpStatus.OK.value()).build());
     }
 
     @Override
@@ -179,12 +127,7 @@ public class GroupServiceImpl implements GroupService {
         groupRequestRepository.deleteAll(groupRequest);
         groupRepository.delete(group);
 
-        return ResponseEntity.ok(GenericResponse.builder()
-                .success(true)
-                .message("Xóa nhóm thành công!")
-                .result(group.getId())
-                .statusCode(HttpStatus.OK.value())
-                .build());
+        return ResponseEntity.ok(GenericResponse.builder().success(true).message("Xóa nhóm thành công!").result(group.getId()).statusCode(HttpStatus.OK.value()).build());
 
     }
 
@@ -196,12 +139,7 @@ public class GroupServiceImpl implements GroupService {
         group.setIsActive(!group.getIsActive());
         group.setUpdatedAt(new Date());
         groupRepository.save(group);
-        return ResponseEntity.ok(GenericResponse.builder()
-                .success(true)
-                .message("Cập nhật trạng thái nhóm thành công!")
-                .result(group.getId())
-                .statusCode(HttpStatus.OK.value())
-                .build());
+        return ResponseEntity.ok(GenericResponse.builder().success(true).message("Cập nhật trạng thái nhóm thành công!").result(group.getId()).statusCode(HttpStatus.OK.value()).build());
     }
 
     @Override
@@ -223,12 +161,7 @@ public class GroupServiceImpl implements GroupService {
             listAdminAndDeputyId.add(groupMember.getUserId());
         }
         PostGroupResponse postGroupResponse = mapperService.mapToPostGroupResponse(group, countMember, listAdminAndDeputyId);
-        return ResponseEntity.ok(GenericResponse.builder()
-                .success(true)
-                .message("Lấy thông tin nhóm thành công!")
-                .result(postGroupResponse)
-                .statusCode(HttpStatus.OK.value())
-                .build());
+        return ResponseEntity.ok(GenericResponse.builder().success(true).message("Lấy thông tin nhóm thành công!").result(postGroupResponse).statusCode(HttpStatus.OK.value()).build());
     }
 
     @Override
@@ -242,34 +175,19 @@ public class GroupServiceImpl implements GroupService {
         if (!group.getIsActive()) {
             throw new NotFoundException("Nhóm này đã bị khóa!");
         }
-        return ResponseEntity.ok(GenericResponse.builder()
-                .success(true)
-                .message("Lấy danh sách bài viết của nhóm thành công!")
-                .result(null)
-                .statusCode(HttpStatus.OK.value())
-                .build());
+        return ResponseEntity.ok(GenericResponse.builder().success(true).message("Lấy danh sách bài viết của nhóm thành công!").result(null).statusCode(HttpStatus.OK.value()).build());
     }
 
     @Override
     public ResponseEntity<GenericResponse> getPostOfPostGroup(String currentUserId, Pageable pageable) {
         log.info("GroupServiceImpl, getPostOfPostGroup");
-        return ResponseEntity.ok(GenericResponse.builder()
-                .success(true)
-                .message("Lấy danh sách bài viết của nhóm thành công!")
-                .result(null)
-                .statusCode(HttpStatus.OK.value())
-                .build());
+        return ResponseEntity.ok(GenericResponse.builder().success(true).message("Lấy danh sách bài viết của nhóm thành công!").result(null).statusCode(HttpStatus.OK.value()).build());
     }
 
     @Override
     public ResponseEntity<GenericResponse> getGroupPosts(String currentUserId, Integer postGroupId, Pageable pageable) {
         log.info("GroupServiceImpl, getGroupPosts");
-        return ResponseEntity.ok(GenericResponse.builder()
-                .success(true)
-                .message("Lấy danh sách bài viết của nhóm thành công!")
-                .result(null)
-                .statusCode(HttpStatus.OK.value())
-                .build());
+        return ResponseEntity.ok(GenericResponse.builder().success(true).message("Lấy danh sách bài viết của nhóm thành công!").result(null).statusCode(HttpStatus.OK.value()).build());
     }
 
     @Override
@@ -306,15 +224,26 @@ public class GroupServiceImpl implements GroupService {
      * @param newImage newImage
      * @return String url ảnh mới
      */
-    public String updateImage(String oldImage, MultipartFile newImage) {
+    public String updateImage(String oldImage, MultipartFile newImage, boolean isAvatar) {
         String result = null;
-        try {
-            result = fileClientService.uploadPhoto(newImage);
-            if (oldImage != null) {
-                fileClientService.deletePhoto(oldImage);
+        if (isAvatar) {
+            try {
+                result = fileClientService.uploadGroupAvatar(newImage);
+                if (oldImage != null) {
+                    fileClientService.deleteGroupAvatar(oldImage);
+                }
+            } catch (IOException e) {
+                log.error("Error when update image: {}", e.getMessage());
             }
-        } catch (IOException e) {
-            log.error("Error when update image: {}", e.getMessage());
+        } else {
+            try {
+                result = fileClientService.uploadGroupCover(newImage);
+                if (oldImage != null) {
+                    fileClientService.deleteGroupCover(oldImage);
+                }
+            } catch (IOException e) {
+                log.error("Error when update image: {}", e.getMessage());
+            }
         }
         return result;
     }
@@ -334,5 +263,28 @@ public class GroupServiceImpl implements GroupService {
     @Override
     public Optional<Group> findById(String id) {
         return groupRepository.findById(id);
+    }
+
+    @Override
+    public ResponseEntity<GenericResponse> getPostGroupJoinByUserId(String currentUserId) {
+        log.info("GroupServiceImpl, getPostGroupJoinByUserId");
+        List<GroupMember> groupMembers = groupMemberRepository.findByUserIdAndIsLockedAndRole(currentUserId, false, GroupMemberRoleType.Member);
+        return getGenericResponseResponseEntity(groupMembers);
+    }
+
+    @Override
+    public ResponseEntity<GenericResponse> getPostGroupOwnerByUserId(String currentUserId) {
+        log.info("GroupServiceImpl, getPostGroupOwnerByUserId");
+        List<GroupMember> groupMembers = groupMemberRepository.findByUserIdAndIsLockedAndRoleIn(currentUserId, false, List.of(GroupMemberRoleType.Admin, GroupMemberRoleType.Deputy));
+        return getGenericResponseResponseEntity(groupMembers);
+    }
+
+    @NotNull
+    private ResponseEntity<GenericResponse> getGenericResponseResponseEntity(List<GroupMember> groupMembers) {
+        List<GroupPostResponse> groupPostResponses = new ArrayList<>();
+        for (GroupMember member : groupMembers) {
+            groupPostResponses.add(mapperService.mapToGroupPostResponse(member));
+        }
+        return ResponseEntity.ok(GenericResponse.builder().success(true).message("Lấy danh sách nhóm thành công!").result(groupPostResponses).statusCode(HttpStatus.OK.value()).build());
     }
 }

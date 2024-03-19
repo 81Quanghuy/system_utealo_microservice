@@ -1,11 +1,11 @@
 package vn.iostar.mediaservice.config.feign;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.trvankiet.app.dto.response.GenericResponse;
-import com.trvankiet.app.exception.wrapper.MyFeignException;
 import feign.Response;
 import feign.codec.ErrorDecoder;
 import org.apache.http.HttpStatus;
+import vn.iostar.mediaservice.dto.response.GenericResponse;
+import vn.iostar.mediaservice.exception.wrapper.MyFeignException;
 
 import java.io.IOException;
 import java.io.InputStream;

@@ -65,6 +65,9 @@ public class GroupRequestServiceImpl implements GroupRequestService {
         List<GroupRequest> list = groupRequestRepository.findAllByInvitedUser(currentUserId);
         // chuyển đổi từ entity sang dto
         List<InvitedPostGroupResponse> invitedPostGroupResponses = list.stream().map(groupRequest -> {
+            if(groupRequest.getInvitedUser().equals(groupRequest.getInvitingUser())){
+                throw new NotFoundException("Group request not found");
+            }
             Optional<Group> group = groupRepository.findById(groupRequest.getGroup().getId());
             if (group.isEmpty()) {
                 throw new NotFoundException("Group not found");
@@ -225,7 +228,23 @@ public class GroupRequestServiceImpl implements GroupRequestService {
         return ResponseEntity.ok(GenericResponse.builder().success(true).message("Decline successfully")
                 .statusCode(HttpStatus.OK.value()).build());
     }
-     private Boolean CheckGroupRole(String currentUserId, String postGroupId) {
+
+    @Override
+    public ResponseEntity<GenericResponse> cancelPostGroupInvitation(String postGroupRequestId, String currentUserId) {
+        log.info("GroupMemberRequestServiceImpl, cancelPostGroupInvitation");
+        Optional<GroupRequest> optionalGroupRequest = groupRequestRepository.findByIdAndIsAccept(postGroupRequestId,false);
+        if (optionalGroupRequest.isEmpty() ) {
+            throw new NotFoundException("Group request not found");
+        }
+        if (!optionalGroupRequest.get().getInvitingUser().equals(currentUserId)) {
+            throw new NotFoundException("You are not the owner of the invitation");
+        }
+        groupRequestRepository.delete(optionalGroupRequest.get());
+        return ResponseEntity.ok(GenericResponse.builder().success(true).message("Cancel successfully")
+                .statusCode(HttpStatus.OK.value()).build());
+    }
+
+    private Boolean CheckGroupRole(String currentUserId, String postGroupId) {
          Optional<GroupMember> groupMember = groupMemberRepository.findByUserIdAndGroupId(currentUserId, postGroupId);
          if (groupMember.isEmpty()) {
              throw new NotFoundException("Group member not found");

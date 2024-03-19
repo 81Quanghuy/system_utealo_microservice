@@ -18,4 +18,5 @@ public interface MapperService {
 
     GroupPostResponse mapToGroupPostResponse(GroupMember groupMember);
 
+
 }

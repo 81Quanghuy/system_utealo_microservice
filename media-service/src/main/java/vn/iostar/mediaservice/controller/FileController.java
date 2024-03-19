@@ -27,39 +27,6 @@ public class FileController {
     private final FileService fileService;
     private final JwtService jwtService;
 
-    @PostMapping(value = "/test", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public Map<String, String> test(@RequestHeader(HttpHeaders.AUTHORIZATION) String authorizationHeader,
-                    @RequestPart("mediaFiles") List<MultipartFile> mediaFiles,
-                    @RequestPart("groupId") String groupId) throws IOException {
-        log.info("FileController, uploadPostFiles");
-        String accessToken = authorizationHeader.substring(7);
-        String userId = jwtService.extractUserId(accessToken);
-        Map<String, String> map = new HashMap<>();
-        map.put("userId", userId);
-        map.put("groupId", groupId);
-        map.put("mediaFiles", String.valueOf(mediaFiles.size()));
-        return map;
-    }
-
-    @PostMapping(value = "/exams", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public List<FileDto> uploadExamFiles(@RequestHeader(HttpHeaders.AUTHORIZATION) String authorizationHeader,
-                                         @RequestPart("mediaFiles") List<MultipartFile> mediaFiles,
-                                         @RequestPart("groupId") String groupId) throws IOException {
-        log.info("FileController, uploadExamFiles");
-        String accessToken = authorizationHeader.substring(7);
-        String userId = jwtService.extractUserId(accessToken);
-        return fileService.uploadExamFiles(userId, mediaFiles, groupId);
-    }
-
-    @DeleteMapping("/exams")
-    public ResponseEntity<GenericResponse> deleteExamFiles(@RequestHeader(HttpHeaders.AUTHORIZATION) String authorizationHeader,
-                                                           @RequestBody DeleteRequest deleteRequest) {
-        log.info("FileController, deleteCommentFiles");
-        String accessToken = authorizationHeader.substring(7);
-        String userId = jwtService.extractUserId(accessToken);
-        return fileService.deleteExamFiles(userId, deleteRequest);
-    }
-
     @PostMapping(value = "/posts", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public List<FileDto> uploadPostFiles(@RequestHeader(HttpHeaders.AUTHORIZATION) String authorizationHeader,
                                          @RequestPart("mediaFiles") List<MultipartFile> mediaFiles,
@@ -147,8 +114,8 @@ public class FileController {
         fileService.deleteGroupAvatar(refUrl);
     }
 
-    @PostMapping("/uploadGroupCover")
-    public String uploadGroupCover(@RequestPart("mediaFile") MultipartFile file) throws IOException {
+    @PostMapping("/uploadPhoto")
+    public String uploadPhoto(@RequestPart("mediaFile") MultipartFile file) throws IOException {
         return fileService.uploadGroupCover(file);
     }
 

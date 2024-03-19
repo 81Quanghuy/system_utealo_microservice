@@ -42,4 +42,8 @@ public interface GroupService {
 
     Page<PhotosOfGroupDTO> findLatestPhotosByGroupId(Integer groupId, Pageable pageable);
     Optional<Group> findById(String id);
+
+    ResponseEntity<GenericResponse> getPostGroupJoinByUserId(String currentUserId);
+
+    ResponseEntity<GenericResponse> getPostGroupOwnerByUserId(String currentUserId);
 }

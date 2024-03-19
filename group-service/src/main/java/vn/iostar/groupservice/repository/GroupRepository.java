@@ -17,5 +17,8 @@ public interface GroupRepository extends MongoRepository<Group, String> {
     // find group by user id
     List<Group> findAllByAuthorIdAndIsActive(String authorId, Boolean isActive);
 
-    //find group by userID and
+    //find group by name
+    Optional<Group> findByPostGroupName(String name);
+
+    List<Group> findAllByIsActive(Boolean isActive);
 }

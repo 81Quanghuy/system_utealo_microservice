@@ -19,8 +19,9 @@ public class GroupRequestController {
 
     /**
      * Chap nhan loi moi vao nhom theo Group Id
-     * @param authorizationHeader  :authorizationHeader
-     * @param postGroupId  :postGroupId
+     *
+     * @param authorizationHeader :authorizationHeader
+     * @param postGroupId         :postGroupId
      * @return GenericResponse
      */
     @PostMapping("/accept/{postGroupId}")
@@ -42,9 +43,10 @@ public class GroupRequestController {
     }
 
     /**
-     *  Từ chối lời mời tham gia nhóm
-     * @param authorizationHeader  :authorizationHeader
-     * @param postGroupId : postGroupId
+     * Từ chối lời mời tham gia nhóm
+     *
+     * @param authorizationHeader :authorizationHeader
+     * @param postGroupId         : postGroupId
      * @return GenericResponse
      */
     @PostMapping("/decline/{postGroupId}")
@@ -57,8 +59,9 @@ public class GroupRequestController {
 
     /**
      * Mời nhóm hoặc cá nhân tham gia nhóm theo Group Id
-     * @param authorizationHeader  :authorizationHeader
-     * @param postGroup : postGroup
+     *
+     * @param authorizationHeader :authorizationHeader
+     * @param postGroup           : postGroup
      * @return GenericResponse
      */
     @PostMapping("/invite")
@@ -70,9 +73,10 @@ public class GroupRequestController {
     }
 
     /**
-     *  Gửi yêu cầu vào nhóm
+     * Gửi yêu cầu vào nhóm
+     *
      * @param authorizationHeader :authorizationHeader
-     * @param postGroupId : postGroupId
+     * @param postGroupId         : postGroupId
      * @return GenericResponse
      */
     @PostMapping("/joinGroup/{postGroupId}")
@@ -85,7 +89,8 @@ public class GroupRequestController {
 
     /**
      * Quan tri vien Từ chối yêu cầu tham gia nhóm của ca nhan hoac nhom nguoi
-     * @param postGroup postGroup
+     *
+     * @param postGroup           postGroup
      * @param authorizationHeader authorizationHeader
      * @return GenericResponse
      */
@@ -97,4 +102,19 @@ public class GroupRequestController {
         return groupRequestService.declineMemberRequiredByPostId(postGroup, currentUserId);
     }
 
+    /**
+     * Hủy những lời mời vào nhóm mà mình đã gửi
+     *
+     * @param authorizationHeader authorizationHeader
+     * @param postGroupRequestId postGroupRequestId
+     * @return GenericResponse
+     */
+    @PutMapping("/request/cancel/{postGroupRequestId}")
+    public ResponseEntity<GenericResponse> cancelRequestJoinInGroup(
+            @RequestHeader("Authorization") String authorizationHeader,
+            @PathVariable("postGroupRequestId") String postGroupRequestId) {
+        String token = authorizationHeader.substring(7);
+        String currentUserId = jwtService.extractUserId(token);
+        return groupRequestService.cancelPostGroupInvitation(postGroupRequestId, currentUserId);
+    }
 }

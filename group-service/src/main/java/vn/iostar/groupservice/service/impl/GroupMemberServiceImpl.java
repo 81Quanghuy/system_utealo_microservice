@@ -285,6 +285,7 @@ public class GroupMemberServiceImpl implements GroupMemberService {
                     .username(member.getUsername())
                     .groupName(group.getPostGroupName())
                     .roleName(getRoleName(member.getUserId(), group.getId()))
+                    .createAt(group.getCreatedAt())
                     .build());
         }
         return meList;

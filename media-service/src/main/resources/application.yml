@@ -1,1 +1,38 @@
+eureka:
+  instance:
+    hostname: localhost
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
 
+server:
+  port: 8400
+
+spring:
+  application:
+    name: media-service
+  servlet:
+    multipart:
+      max-file-size: 20MB
+      max-request-size: 20MB
+  data:
+    mongodb:
+      database: media_service
+      uri: mongodb+srv://huy:huyvff111@cluster0.wteenm1.mongodb.net/testmongo?retryWrites=true&w=majority
+
+
+springdoc:
+  packages-to-scan:
+    vn.iostar.groupservice
+  api-docs:
+    path: /v3/api-docs/mediaservice
+
+cloudinary:
+  cloud-name: ddccjvlbf
+  api-key: 135792485217745
+  api-secret: 6XXhPgTw6dZ3x7d43S_x5tIF7oU
+
+#management:
+#  tracing:
+#    sampling:
+#      probability: 1.0

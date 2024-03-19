@@ -60,6 +60,33 @@ public class GroupController {
     }
 
     /**
+     * Get group join by user id
+     * @param authorizationHeader authorizationHeader
+     * @return GenericResponse
+     */
+    @GetMapping("/list/join")
+    public ResponseEntity<GenericResponse> getPostGroupJoinByUserId(
+            @RequestHeader("Authorization") String authorizationHeader) {
+        String token = authorizationHeader.substring(7);
+        String currentUserId = jwtService.extractUserId(token);
+        return groupService.getPostGroupJoinByUserId(currentUserId);
+    }
+
+    /**
+     * Get group owner by user id
+     * @param authorizationHeader authorizationHeader
+     * @return GenericResponse
+     */
+    @GetMapping("/list/owner")
+    public ResponseEntity<GenericResponse> getPostGroupOwenrByUserId(
+            @RequestHeader("Authorization") String authorizationHeader) {
+        String token = authorizationHeader.substring(7);
+        String currentUserId = jwtService.extractUserId(token);
+        return groupService.getPostGroupOwnerByUserId(currentUserId);
+    }
+
+
+    /**
      * Lấy danh sách các group mà user đã được mời tham gia
      * @param authorizationHeader authorizationHeader
      * @return GenericResponse

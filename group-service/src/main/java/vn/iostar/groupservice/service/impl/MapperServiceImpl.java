@@ -4,26 +4,28 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import vn.iostar.groupservice.constant.AppConstant;
-import vn.iostar.groupservice.dto.*;
-import vn.iostar.groupservice.dto.response.GroupMemberResponse;
+import vn.iostar.groupservice.dto.GroupDto;
+import vn.iostar.groupservice.dto.response.GroupPostResponse;
 import vn.iostar.groupservice.dto.response.GroupProfileResponse;
 import vn.iostar.groupservice.dto.response.PostGroupResponse;
 import vn.iostar.groupservice.dto.response.UserProfileResponse;
-import vn.iostar.groupservice.entity.Event;
 import vn.iostar.groupservice.entity.Group;
 import vn.iostar.groupservice.entity.GroupMember;
-import vn.iostar.groupservice.entity.GroupRequest;
+import vn.iostar.groupservice.repository.GroupMemberRepository;
+import vn.iostar.groupservice.service.GroupMemberService;
 import vn.iostar.groupservice.service.MapperService;
 import vn.iostar.groupservice.service.client.UserClientService;
 import vn.iostar.groupservice.util.DateUtil;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @Slf4j
 @RequiredArgsConstructor
 public class MapperServiceImpl implements MapperService {
     private final  UserClientService userClientService;
+    private final GroupMemberRepository groupMemberRepository;
 
     @Override
     public GroupDto mapToGroupDto(Group group) {
@@ -62,94 +64,13 @@ public class MapperServiceImpl implements MapperService {
                 .managerId(managerId)
                 .build();
     }
-
-    @Override
-    public GroupMemberDto mapToGroupMemberDto(GroupMember groupMember) {
-        return GroupMemberDto.builder()
-                .id(groupMember.getId())
-                .userDto(this.mapToSimpleUserDto(groupMember.getUserId()))
-                .isLocked(groupMember.getIsLocked())
-                .lockedAt(groupMember.getLockedAt() == null ?
-                        null : DateUtil.date2String(groupMember.getLockedAt(), AppConstant.LOCAL_DATE_TIME_FORMAT))
-                .lockedReason(groupMember.getLockedReason() == null ?
-                        null : groupMember.getLockedReason())
-                .groupDto(this.mapToGroupDto(groupMember.getGroup()))
-                .role(groupMember.getRole().name())
-                .groupMemberRequest(groupMember.getMemberRequestId() == null ?
-                        null : groupMember.getMemberRequestId())
-                .createdAt(groupMember.getCreatedAt() == null ?
-                        null : DateUtil.date2String(groupMember.getCreatedAt(), AppConstant.LOCAL_DATE_TIME_FORMAT))
-                .updatedAt(groupMember.getUpdatedAt() == null ?
-                        null : DateUtil.date2String(groupMember.getUpdatedAt(), AppConstant.LOCAL_DATE_TIME_FORMAT))
-                .build();
-    }
-
-    @Override
-    public UserDto mapToUserDto(String userId) {
-        return null;
-    }
-
-    @Override
-    public GroupMemberRequestDto mapToGroupMemberRequestDto(GroupRequest groupMemberRequest) {
-        return null;
-    }
-
-
-    @Override
-    public EventDto mapToEventDto(Event event) {
-        return EventDto.builder()
-                .id(event.getId())
-                .groupDto(this.mapToGroupDto(event.getGroup()))
-                .userDto(this.mapToSimpleUserDto(event.getAuthorId()))
-                .name(event.getTitle())
-                .description(event.getDescription() == null ?
-                        null : event.getDescription())
-                .startedAt(event.getStartedAt() == null ?
-                        null : DateUtil.date2String(event.getStartedAt(), AppConstant.LOCAL_DATE_TIME_FORMAT))
-                .endedAt(event.getEndedAt() == null ?
-                        null : DateUtil.date2String(event.getEndedAt(), AppConstant.LOCAL_DATE_TIME_FORMAT))
-                .createdAt(event.getCreatedAt() == null ?
-                        null : DateUtil.date2String(event.getCreatedAt(), AppConstant.LOCAL_DATE_TIME_FORMAT))
-                .updatedAt(event.getUpdatedAt() == null ?
-                        null : DateUtil.date2String(event.getUpdatedAt(), AppConstant.LOCAL_DATE_TIME_FORMAT))
-                .build();
-    }
-
     @Override
     public UserProfileResponse mapToSimpleUserDto(String userId) {
        return userClientService.getProfileByUserId(userId);
     }
 
-    @Override
-    public GroupMemberResponse mapToGroupMemberResponse(GroupMember groupMember) {
-        return GroupMemberResponse.builder()
-                .id(groupMember.getId())
-                .userDto(this.mapToSimpleUserDto(groupMember.getUserId()))
-                .isLocked(groupMember.getIsLocked())
-                .lockedAt(groupMember.getLockedAt() == null ?
-                        null : DateUtil.date2String(groupMember.getLockedAt(), AppConstant.LOCAL_DATE_TIME_FORMAT))
-                .lockedReason(groupMember.getLockedReason() == null ?
-                        null : groupMember.getLockedReason())
-                .role(groupMember.getRole().name())
-                .createdAt(groupMember.getCreatedAt() == null ?
-                        null : DateUtil.date2String(groupMember.getCreatedAt(), AppConstant.LOCAL_DATE_TIME_FORMAT))
-                .updatedAt(groupMember.getUpdatedAt() == null ?
-                        null : DateUtil.date2String(groupMember.getUpdatedAt(), AppConstant.LOCAL_DATE_TIME_FORMAT))
-                .build();
-    }
 
-    @Override
-    public SimpleGroupDto mapToSimpleGroupDto(Group group) {
-        return SimpleGroupDto.builder()
-                .id(group.getId())
-                .name(group.getPostGroupName())
-                .description(group.getBio() == null ?
-                        null : group.getBio())
-                .avatarUrl(group.getAvatarGroup())
-                .coverUrl(group.getBackgroundGroup())
-                .isPublic(group.getIsPublic())
-                .build();
-    }
+
 
     @Override
     public GroupProfileResponse mapToGroupProfileResponse(Group group) {
@@ -158,6 +79,17 @@ public class MapperServiceImpl implements MapperService {
                 .groupName(group.getPostGroupName())
                 .groupAvatar(group.getAvatarGroup())
                 .groupType(group.getIsPublic() ? "public" : "private")
+                .build();
+    }
+
+    @Override
+    public GroupPostResponse mapToGroupPostResponse(GroupMember groupMember) {
+        return GroupPostResponse.builder()
+                .postGroupId(groupMember.getGroup().getId())
+                .postGroupName(groupMember.getGroup().getPostGroupName())
+                .avatarGroup(groupMember.getGroup().getAvatarGroup())
+                .backgroundGroup(groupMember.getGroup().getBackgroundGroup())
+                .role(groupMember.getRole())
                 .build();
     }
 

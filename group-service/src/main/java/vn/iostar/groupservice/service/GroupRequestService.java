@@ -22,4 +22,6 @@ public interface GroupRequestService {
     ResponseEntity<GenericResponse> joinPostGroup(String postGroupId, String currentUserId);
 
     ResponseEntity<GenericResponse> declineMemberRequiredByPostId(PostGroupDTO postGroup, String currentUserId);
+
+    ResponseEntity<GenericResponse> cancelPostGroupInvitation(String postGroupRequestId, String currentUserId);
 }

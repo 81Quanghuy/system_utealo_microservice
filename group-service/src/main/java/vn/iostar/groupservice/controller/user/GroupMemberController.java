@@ -3,9 +3,6 @@ package vn.iostar.groupservice.controller.user;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import vn.iostar.groupservice.dto.PostGroupDTO;
@@ -13,9 +10,6 @@ import vn.iostar.groupservice.dto.request.PostGroupRequest;
 import vn.iostar.groupservice.dto.response.GenericResponse;
 import vn.iostar.groupservice.jwt.service.JwtService;
 import vn.iostar.groupservice.service.GroupMemberService;
-
-import java.util.List;
-import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/v1/group-members")
@@ -25,6 +19,7 @@ public class GroupMemberController {
 
     private final JwtService jwtService;
     private final GroupMemberService groupMemberService;
+
     @PostMapping("/acceptMember")
     public ResponseEntity<GenericResponse> acceptMemberPostGroup(
             @RequestHeader("Authorization") String authorizationHeader, @RequestBody PostGroupDTO postGroup) {
@@ -35,7 +30,8 @@ public class GroupMemberController {
 
     /**
      * Lay danh sach thanh vien trong nhom theo Group Id
-     * @param postGroupId postGroupId
+     *
+     * @param postGroupId         postGroupId
      * @param authorizationHeader authorizationHeader
      * @return GenericResponse
      */
@@ -49,7 +45,8 @@ public class GroupMemberController {
 
     /**
      * Danh sach member yeu cau vao nhom
-     * @param postGroupId postGroupId
+     *
+     * @param postGroupId         postGroupId
      * @param authorizationHeader authorizationHeader
      * @return GenericResponse
      */
@@ -64,7 +61,8 @@ public class GroupMemberController {
 
     /**
      * Phân quyền phó quản trị viên theo Group Id
-     * @param postGroup postGroup
+     *
+     * @param postGroup           postGroup
      * @param authorizationHeader authorizationHeader
      * @return GenericResponse
      */
@@ -77,8 +75,9 @@ public class GroupMemberController {
     }
 
     /**
-     *  CHuyển quyền admin cho user
-     * @param postGroup postGroup
+     * CHuyển quyền admin cho user
+     *
+     * @param postGroup           postGroup
      * @param authorizationHeader authorizationHeader
      * @return GenericResponse
      */
@@ -91,8 +90,9 @@ public class GroupMemberController {
     }
 
     /**
-     *  Hủy quyền phó quản trị viên theo Group Id
-     * @param postGroup param postGroup
+     * Hủy quyền phó quản trị viên theo Group Id
+     *
+     * @param postGroup           param postGroup
      * @param authorizationHeader authorizationHeader
      * @return GenericResponse
      */
@@ -106,7 +106,8 @@ public class GroupMemberController {
 
     /**
      * Xóa thành viên trong nhóm theo Group Id
-     * @param postGroup postGroup
+     *
+     * @param postGroup           postGroup
      * @param authorizationHeader authorizationHeader
      * @return GenericResponse
      */
@@ -120,8 +121,9 @@ public class GroupMemberController {
 
     /**
      * Rời khỏi nhóm theo id
+     *
      * @param authorizationHeader authorizationHeader
-     * @param postGroupId postGroupId
+     * @param postGroupId         postGroupId
      * @return GenericResponse
      */
     @PutMapping("/leaveGroup/{postGroupId}")
@@ -134,15 +136,15 @@ public class GroupMemberController {
 
     /**
      * thêm quyền admin cho thành viên trong nhóm
-     *     Các trường hợp : 1 Nó chưa tham gia nhóm đó và nhóm đó chưa có admin : Thêm
-     *    thẳng thành viên đó vào nhóm là admin
-     *   2 : Nó chưa tham gia và đã có admin: Chuyển quyền admin cho user này
-     *   3 Nó đã tham gia và chưa có admin: Thay đổi quyền
-     *  4 Nó đã tham gia và đã có admin : Chuyển quyền
+     * Các trường hợp : 1 Nó chưa tham gia nhóm đó và nhóm đó chưa có admin : Thêm
+     * thẳng thành viên đó vào nhóm là admin
+     * 2 : Nó chưa tham gia và đã có admin: Chuyển quyền admin cho user này
+     * 3 Nó đã tham gia và chưa có admin: Thay đổi quyền
+     * 4 Nó đã tham gia và đã có admin : Chuyển quyền
      *
      * @param authorizationHeader authorizationHeader
-     * @param groupId groupId
-     * @param userId userId
+     * @param groupId             groupId
+     * @param userId              userId
      * @return GenericResponse
      */
     @PostMapping("/addAdmin")

@@ -11,6 +11,7 @@ import java.util.Optional;
 @Repository
 public interface GroupRequestRepository extends MongoRepository<GroupRequest, String> {
     List<GroupRequest> findAllByGroupId(String groupId);
+    Optional<GroupRequest> findByIdAndIsAccept(String id, Boolean isAccept);
 
     //Tim kiem tat ca nhom ma user duoc moi
     List<GroupRequest> findAllByInvitedUser(String invitedUser);

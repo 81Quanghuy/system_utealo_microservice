@@ -25,9 +25,11 @@ public class Comment implements Serializable {
     @Field(name = "comment_id")
     private String id;
 
+    @DocumentReference
     @Field(name = "post_id")
     private Post post;
 
+    @DocumentReference
     @Field(name = "share_id")
     private Share share;
 

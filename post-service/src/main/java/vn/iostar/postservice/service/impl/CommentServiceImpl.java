@@ -139,7 +139,7 @@ public class CommentServiceImpl implements CommentService {
         if (!post.isPresent()) {
             return ResponseEntity.badRequest().body("Post not found");
         }
-        Optional<Comment> commentReply = findById(requestDTO.getCommentId());
+        Optional<Comment> commentReply = findById(String.valueOf(requestDTO.getCommentId()));
         if (!commentReply.isPresent()) {
             return ResponseEntity.badRequest().body("Comment not found");
         }
@@ -249,6 +249,10 @@ public class CommentServiceImpl implements CommentService {
 
                     // Cập nhật lại danh sách comments của post
                     post.setComments(postComments);
+
+                    for (Comment c : commentsWithReply) {
+                        postComments.remove(c.getId());
+                    }
 
                     // Cập nhật lại post vào MongoDB
                     postRepository.save(post);

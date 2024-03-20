@@ -4,7 +4,10 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import vn.iostar.postservice.dto.GenericResponse;
+import vn.iostar.postservice.entity.Like;
 import vn.iostar.postservice.service.LikeService;
+
+import java.util.Optional;
 
 @RestController
 @RequiredArgsConstructor
@@ -28,7 +31,6 @@ public class LikePostController {
     }
 
     // Like hoặc unlike bài post
-    // Unlike chua duoc
     @PostMapping("/toggleLike/{postId}")
     public ResponseEntity<Object> toggleLikePost(@PathVariable("postId") String postId,
                                                  @RequestHeader("Authorization") String token) {
@@ -46,5 +48,15 @@ public class LikePostController {
     @GetMapping("/listUser/{postId}")
     public ResponseEntity<Object> listUserLikePost(@PathVariable("postId") String postId) {
         return likeService.listUserLikePost(postId);
+    }
+
+
+
+    @DeleteMapping("/delete")
+    public ResponseEntity<?> deleteLikePost() {
+       Optional<Like> like = likeService.findById("65faf126a9cf2d3581315e56");
+       likeService.delete(like.get());
+       return ResponseEntity.ok().build();
+
     }
 }

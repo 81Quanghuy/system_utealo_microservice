@@ -1,6 +1,7 @@
 package vn.iostar.postservice.service.impl;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -11,6 +12,7 @@ import vn.iostar.postservice.dto.SharePostRequestDTO;
 import vn.iostar.postservice.dto.response.GroupProfileResponse;
 import vn.iostar.postservice.dto.response.SharesResponse;
 import vn.iostar.postservice.dto.response.UserProfileResponse;
+import vn.iostar.postservice.entity.Like;
 import vn.iostar.postservice.entity.Post;
 import vn.iostar.postservice.entity.Share;
 import vn.iostar.postservice.jwt.service.JwtService;
@@ -30,6 +32,7 @@ public class ShareServiceImpl implements ShareService {
     private final ShareRepository shareRepository;
     private final PostRepository postRepository;
     private final PostService postService;
+    private final ShareService shareService;
     private final JwtService jwtService;
     private final UserClientService userClientService;
     private final GroupClientService groupClientService;
@@ -58,7 +61,9 @@ public class ShareServiceImpl implements ShareService {
         GroupProfileResponse postGroup = null;
         UserProfileResponse userProfileResponse = userClientService.getUser(userId);
 
+        String shareId = UUID.randomUUID().toString();
         Share share = new Share();
+        share.setId(shareId);
         share.setContent(requestDTO.getContent());
         share.setCreateAt(requestDTO.getCreateAt());
         share.setUpdateAt(requestDTO.getCreateAt());
@@ -135,5 +140,35 @@ public class ShareServiceImpl implements ShareService {
                     .body(new GenericResponse(false, "Cannot found share post!", null, HttpStatus.NOT_FOUND.value()));
         }
     }
+
+    @Override
+    public List<SharesResponse> findUserSharePosts(String currentUserId, String userId, Pageable pageable) {
+        List<PrivacyLevel> privacyLevels = Arrays.asList(PrivacyLevel.PUBLIC, PrivacyLevel.FRIENDS);
+        List<Share> userSharePosts = shareRepository.findByUserIdAndPrivacyLevelInOrderByCreateAtDesc(userId,
+                privacyLevels, pageable);
+        List<SharesResponse> sharesResponses = new ArrayList<>();
+        UserProfileResponse userProfileResponse = userClientService.getUser(userId);
+        GroupProfileResponse groupProfileResponse = null;
+        for (Share share : userSharePosts) {
+            if (share.getPostGroupId() != null) {
+                groupProfileResponse = groupClientService.getGroup(share.getPostGroupId());
+            }
+            SharesResponse sharesResponse = new SharesResponse(share, userProfileResponse, groupProfileResponse);
+            sharesResponses.add(sharesResponse);
+        }
+        return sharesResponses;
+    }
+
+    @Override
+    public SharesResponse getSharePost(Share share, String currentUserId) {
+        UserProfileResponse userProfileResponse = userClientService.getUser(share.getUserId());
+        GroupProfileResponse groupProfileResponse = null;
+        if (share.getPostGroupId() != null) {
+            groupProfileResponse = groupClientService.getGroup(share.getPostGroupId());
+        }
+        SharesResponse sharesResponse = new SharesResponse(share, userProfileResponse, groupProfileResponse);
+        return sharesResponse;
+    }
+
 
 }

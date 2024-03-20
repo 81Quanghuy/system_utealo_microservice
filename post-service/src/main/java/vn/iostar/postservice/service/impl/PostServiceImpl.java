@@ -244,12 +244,14 @@ public class PostServiceImpl implements PostService {
                 privacyLevels, pageable);
 
         UserProfileResponse userOfPostResponse = userClientService.getUser(userId);
-
+        GroupProfileResponse groupProfileResponse = null;
 
         List<PostsResponse> simplifiedUserPosts = new ArrayList<>();
         for (Post post : userPosts) {
-
-            PostsResponse postsResponse = new PostsResponse(post, userOfPostResponse, null);
+            if (post.getGroupId() != null) {
+                groupProfileResponse = groupClientService.getGroup(post.getGroupId());
+            }
+            PostsResponse postsResponse = new PostsResponse(post, userOfPostResponse, groupProfileResponse);
             simplifiedUserPosts.add(postsResponse);
         }
         return simplifiedUserPosts;

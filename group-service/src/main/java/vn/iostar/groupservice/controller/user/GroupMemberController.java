@@ -20,6 +20,12 @@ public class GroupMemberController {
     private final JwtService jwtService;
     private final GroupMemberService groupMemberService;
 
+    /**
+     * Chap nhan thanh vien vao nhom theo Group Id
+     * @param authorizationHeader authorizationHeader
+     * @param postGroup postGroup
+     * @return GenericResponse
+     */
     @PostMapping("/acceptMember")
     public ResponseEntity<GenericResponse> acceptMemberPostGroup(
             @RequestHeader("Authorization") String authorizationHeader, @RequestBody PostGroupDTO postGroup) {

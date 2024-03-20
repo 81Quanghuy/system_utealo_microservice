@@ -23,6 +23,7 @@ import vn.iostar.groupservice.service.client.UserClientService;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 @Service
 @Slf4j
@@ -36,7 +37,7 @@ public class GroupRequestServiceImpl implements GroupRequestService {
     @Override
     public ResponseEntity<GenericResponse> acceptPostGroup(String postGroupId, String currentUserId) {
         log.info("GroupMemberRequestServiceImpl, acceptPostGroup");
-        Optional<GroupRequest> optionalGroupRequest = groupRequestRepository.findByGroupIdAndInvitedUser(postGroupId, currentUserId);
+        Optional<GroupRequest> optionalGroupRequest = groupRequestRepository.findByGroupIdAndInvitedUserAndIsAccept(postGroupId, currentUserId,false);
         if (optionalGroupRequest.isEmpty()) {
             throw new NotFoundException("Group request not found");
         }
@@ -46,6 +47,7 @@ public class GroupRequestServiceImpl implements GroupRequestService {
             groupRequestRepository.save(optionalGroupRequest.get());
         }
         GroupMember groupMember = GroupMember.builder()
+                .id(UUID.randomUUID().toString())
                 .group(optionalGroupRequest.get().getGroup())
                 .role(GroupMemberRoleType.Member)
                 .userId(currentUserId)
@@ -133,7 +135,7 @@ public class GroupRequestServiceImpl implements GroupRequestService {
     @Override
     public ResponseEntity<GenericResponse> declinePostGroup(String postGroupId, String currentUserId) {
         log.info("GroupMemberRequestServiceImpl, declinePostGroup");
-        Optional<GroupRequest> optionalGroupRequest = groupRequestRepository.findByGroupIdAndInvitedUser(postGroupId, currentUserId);
+        Optional<GroupRequest> optionalGroupRequest = groupRequestRepository.findByGroupIdAndInvitedUserAndIsAccept(postGroupId, currentUserId,false);
         if (optionalGroupRequest.isEmpty()) {
             throw new NotFoundException("Group request not found");
         }
@@ -155,6 +157,7 @@ public class GroupRequestServiceImpl implements GroupRequestService {
                 throw new NotFoundException("Đã gửi lời mời vào nhóm trước đó!");
             }
             GroupRequest groupRequest = GroupRequest.builder()
+                    .id(UUID.randomUUID().toString())
                     .group(group.get())
                     .invitedUser(userId)
                     .invitingUser(currentUserId)
@@ -180,6 +183,7 @@ public class GroupRequestServiceImpl implements GroupRequestService {
         }
         if(group.get().getIsApprovalRequired()){
             GroupRequest groupRequest = GroupRequest.builder()
+                    .id(UUID.randomUUID().toString())
                     .group(group.get())
                     .invitedUser(currentUserId)
                     .invitingUser(currentUserId)
@@ -191,6 +195,7 @@ public class GroupRequestServiceImpl implements GroupRequestService {
                     .result("Waiting Accept").statusCode(HttpStatus.OK.value()).build());
         }else{
             GroupMember groupMember = GroupMember.builder()
+                    .id(UUID.randomUUID().toString())
                     .group(group.get())
                     .role(GroupMemberRoleType.Member)
                     .userId(currentUserId)

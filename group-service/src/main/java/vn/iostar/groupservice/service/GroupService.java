@@ -46,4 +46,6 @@ public interface GroupService {
     ResponseEntity<GenericResponse> getPostGroupJoinByUserId(String currentUserId);
 
     ResponseEntity<GenericResponse> getPostGroupOwnerByUserId(String currentUserId);
+
+    ResponseEntity<GenericResponse> findByPostGroupNameContainingIgnoreCase(String search, String currentUserId);
 }

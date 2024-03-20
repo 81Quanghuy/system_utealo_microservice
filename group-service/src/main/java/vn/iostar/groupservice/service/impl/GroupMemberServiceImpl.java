@@ -26,10 +26,7 @@ import vn.iostar.groupservice.repository.GroupRequestRepository;
 import vn.iostar.groupservice.service.GroupMemberService;
 import vn.iostar.groupservice.service.client.UserClientService;
 
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 @Service
 @Slf4j
@@ -53,19 +50,19 @@ public class GroupMemberServiceImpl implements GroupMemberService {
                 GroupMember groupMember = optionalGroupMember.get();
                 if (groupMember.getRole().equals(GroupMemberRoleType.Admin) || groupMember.getRole().equals(GroupMemberRoleType.Deputy)) {
                     for (String userId : postGroup.getUserId()) {
-                        Optional<GroupRequest> optionalGroupRequest = groupRequestRepository.findByGroupIdAndInvitedUser(group.getId(), userId);
+                        Optional<GroupRequest> optionalGroupRequest = groupRequestRepository.findByGroupIdAndInvitedUserAndIsAccept(group.getId(), userId, true);
                         if (optionalGroupRequest.isPresent()) {
-                            GroupRequest groupRequest = optionalGroupRequest.get();
                             GroupMember newGroupMember = GroupMember.builder()
+                                    .id(UUID.randomUUID().toString())
                                     .group(group)
                                     .userId(userId)
-                                    .memberRequestId(groupRequest.getInvitingUser())
+                                    .memberRequestId(optionalGroupRequest.get().getInvitingUser())
                                     .role(GroupMemberRoleType.Member)
                                     .createdAt(new Date())
                                     .updatedAt(new Date())
                                     .build();
+                            groupRequestRepository.delete(optionalGroupRequest.get());
                             groupMemberRepository.save(newGroupMember);
-                            groupRequestRepository.delete(groupRequest);
                             return ResponseEntity.ok(GenericResponse.builder()
                                     .success(true)
                                     .statusCode(200)
@@ -263,15 +260,55 @@ public class GroupMemberServiceImpl implements GroupMemberService {
     @Override
     public ResponseEntity<GenericResponse> addAdminRoleInGroup(String groupId, String userId, String currentUserId) {
         log.info("GroupMemberServiceImpl, addAdminRoleInGroup");
-        UserProfileResponse userProfileResponse =  userClientService.getProfileByUserId(currentUserId);
+        UserProfileResponse userProfileResponse = userClientService.getProfileByUserId(currentUserId);
         if (userProfileResponse.getRoleName().equals(RoleName.Admin)) {
             throw new BadRequestException("Không thể thực hiện chức năng này!!!");
         }
         Optional<Group> optionalGroup = groupRepository.findById(groupId);
-        if (optionalGroup.isPresent()) {
-            //Chwa xong
+        if (optionalGroup.isEmpty()) {
+            throw new NotFoundException("Nhóm không tồn tại!");
         }
-        throw new NotFoundException("Nhóm không tồn tại!");
+        List<GroupMember> optionalGroupMember = groupMemberRepository.findAllByGroupIdAndRoleIn(groupId, List.of(GroupMemberRoleType.Admin));
+        if (optionalGroupMember.isEmpty()) {
+            createAdminInGroup(groupId, userId, optionalGroup.get());
+            return ResponseEntity.ok(GenericResponse.builder()
+                    .success(true)
+                    .statusCode(200)
+                    .message("Thêm quyền admin cho thành viên thành công!")
+                    .result(null)
+                    .build());
+        } else {
+            createAdminInGroup(groupId, userId, optionalGroup.get());
+            optionalGroupMember.getFirst().setRole(GroupMemberRoleType.Member);
+            groupMemberRepository.save(optionalGroupMember.getFirst());
+            return ResponseEntity.ok(GenericResponse.builder()
+                    .success(true)
+                    .statusCode(200)
+                    .message("Thêm quyền admin cho thành viên thành công!")
+                    .result(null)
+                    .build());
+        }
+
+    }
+
+    private void createAdminInGroup(String groupId, String userId, Group optionalGroup) {
+        Optional<GroupMember> optionalGroupMember1 = groupMemberRepository.findByUserIdAndGroupId(userId, groupId);
+        if (optionalGroupMember1.isPresent()) {
+            GroupMember groupMember = optionalGroupMember1.get();
+            groupMember.setRole(GroupMemberRoleType.Admin);
+            groupMemberRepository.save(groupMember);
+
+        } else {
+            GroupMember groupMember = GroupMember.builder()
+                    .id(UUID.randomUUID().toString())
+                    .group(optionalGroup)
+                    .userId(userId)
+                    .role(GroupMemberRoleType.Admin)
+                    .createdAt(new Date())
+                    .updatedAt(new Date())
+                    .build();
+            groupMemberRepository.save(groupMember);
+        }
     }
 
     private List<MemberGroupResponse> GetInfoListUserByListUserId(Group group, List<String> userIds) {

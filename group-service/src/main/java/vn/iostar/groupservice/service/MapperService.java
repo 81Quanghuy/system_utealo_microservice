@@ -1,6 +1,7 @@
 package vn.iostar.groupservice.service;
 
 import vn.iostar.groupservice.dto.GroupDto;
+import vn.iostar.groupservice.dto.SearchPostGroup;
 import vn.iostar.groupservice.dto.response.GroupPostResponse;
 import vn.iostar.groupservice.dto.response.GroupProfileResponse;
 import vn.iostar.groupservice.dto.response.PostGroupResponse;
@@ -18,5 +19,6 @@ public interface MapperService {
 
     GroupPostResponse mapToGroupPostResponse(GroupMember groupMember);
 
+    SearchPostGroup mapToSearchPostGroup(Group group);
 
 }

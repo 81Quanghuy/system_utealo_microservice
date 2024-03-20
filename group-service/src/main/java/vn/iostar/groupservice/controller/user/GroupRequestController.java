@@ -29,7 +29,7 @@ public class GroupRequestController {
                                                            @PathVariable("postGroupId") String postGroupId) {
         String token = authorizationHeader.substring(7);
         String currentUserId = jwtService.extractUserId(token);
-        return groupRequestService.acceptPostGroup(currentUserId, postGroupId);
+        return groupRequestService.acceptPostGroup(postGroupId,currentUserId );
     }
 
     // Hủy yêu cầu tham gia nhóm

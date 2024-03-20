@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import vn.iostar.groupservice.constant.AppConstant;
 import vn.iostar.groupservice.dto.GroupDto;
+import vn.iostar.groupservice.dto.SearchPostGroup;
 import vn.iostar.groupservice.dto.response.GroupPostResponse;
 import vn.iostar.groupservice.dto.response.GroupProfileResponse;
 import vn.iostar.groupservice.dto.response.PostGroupResponse;
@@ -90,6 +91,17 @@ public class MapperServiceImpl implements MapperService {
                 .avatarGroup(groupMember.getGroup().getAvatarGroup())
                 .backgroundGroup(groupMember.getGroup().getBackgroundGroup())
                 .role(groupMember.getRole())
+                .build();
+    }
+
+    @Override
+    public SearchPostGroup mapToSearchPostGroup(Group group) {
+        return SearchPostGroup.builder()
+                .postGroupId(group.getId())
+                .postGroupName(group.getPostGroupName())
+                .avatarGroup(group.getAvatarGroup())
+                .bio(group.getBio())
+                .isPublic(group.getIsPublic())
                 .build();
     }
 

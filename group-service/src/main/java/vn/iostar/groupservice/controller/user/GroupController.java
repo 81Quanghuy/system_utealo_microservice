@@ -275,4 +275,18 @@ public class GroupController {
         return mapperService.mapToGroupProfileResponse(group.get());
 
     }
+
+    /**
+     * Tìm kiếm nhóm theo tên
+     * @param authorizationHeader authorizationHeader
+     * @param search search
+     * @return GenericResponse
+     */
+    @GetMapping("/getPostGroups/key")
+    public ResponseEntity<GenericResponse> searchPostGroups(@RequestHeader("Authorization") String authorizationHeader,
+                                                            @RequestParam("search") String search) {
+        String token = authorizationHeader.substring(7);
+        String currentUserId = jwtService.extractUserId(token);
+        return groupService.findByPostGroupNameContainingIgnoreCase(search, currentUserId);
+    }
 }

@@ -13,6 +13,7 @@ import vn.iostar.groupservice.constant.GroupMemberRoleType;
 import vn.iostar.groupservice.dto.FilesOfGroupDTO;
 import vn.iostar.groupservice.dto.PhotosOfGroupDTO;
 import vn.iostar.groupservice.dto.PostGroupDTO;
+import vn.iostar.groupservice.dto.SearchPostGroup;
 import vn.iostar.groupservice.dto.request.GroupCreateRequest;
 import vn.iostar.groupservice.dto.response.GenericResponse;
 import vn.iostar.groupservice.dto.response.GroupPostResponse;
@@ -277,6 +278,14 @@ public class GroupServiceImpl implements GroupService {
         log.info("GroupServiceImpl, getPostGroupOwnerByUserId");
         List<GroupMember> groupMembers = groupMemberRepository.findByUserIdAndIsLockedAndRoleIn(currentUserId, false, List.of(GroupMemberRoleType.Admin, GroupMemberRoleType.Deputy));
         return getGenericResponseResponseEntity(groupMembers);
+    }
+
+    @Override
+    public ResponseEntity<GenericResponse> findByPostGroupNameContainingIgnoreCase(String search, String currentUserId) {
+        log.info("GroupServiceImpl, findByPostGroupNameContainingIgnoreCase");
+        List<SearchPostGroup> groups = groupRepository.findByPostGroupNameContainingIgnoreCase(search);
+        //map to response
+        return ResponseEntity.ok(GenericResponse.builder().success(true).message("Tìm kiếm nhóm thành công!").result(groups).statusCode(HttpStatus.OK.value()).build());
     }
 
     @NotNull

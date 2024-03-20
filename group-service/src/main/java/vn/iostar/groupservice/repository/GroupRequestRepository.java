@@ -20,7 +20,7 @@ public interface GroupRequestRepository extends MongoRepository<GroupRequest, St
     List<GroupRequest> findAllByInvitingUser(String invitingUser);
 
     // Lấy request theo group id và invited user
-    Optional<GroupRequest> findByGroupIdAndInvitedUser(String groupId, String invitedUser);
+    Optional<GroupRequest> findByGroupIdAndInvitedUserAndIsAccept(String groupId, String invitedUser, Boolean isAccept);
 
     // Lay tat ca yeu cau tham gia nhom theo groupid va IsAccept
     List<GroupRequest> findAllByGroupIdAndIsAccept(String groupId, Boolean isAccept);

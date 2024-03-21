@@ -10,5 +10,6 @@ import java.util.List;
 public interface CommentRepository extends MongoRepository<Comment, String>{
     List<Comment> findByPostIdAndCommentReplyIsNullOrderByCreateTimeDesc(String postId);
     List<Comment> findCommentRepliesByIdOrderByCreateTimeDesc(String commentId);
-    List<Comment> findByCommentReplyId(String commentId);
+    List<Comment> findByCommentReplyIdOrderByCreateTimeDesc(String commentId);
+    List<Comment> findByShareIdAndCommentReplyIsNullOrderByCreateTimeDesc(String shareId);
 }

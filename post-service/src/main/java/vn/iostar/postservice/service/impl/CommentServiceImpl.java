@@ -6,19 +6,21 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import vn.iostar.postservice.dto.GenericResponse;
-import vn.iostar.postservice.dto.request.CommentUpdateRequest;
-import vn.iostar.postservice.dto.request.CreateCommentPostRequestDTO;
-import vn.iostar.postservice.dto.request.ReplyCommentPostRequestDTO;
+import vn.iostar.postservice.dto.request.*;
 import vn.iostar.postservice.dto.response.CommentPostResponse;
+import vn.iostar.postservice.dto.response.CommentShareResponse;
 import vn.iostar.postservice.dto.response.UserProfileResponse;
 import vn.iostar.postservice.entity.Comment;
 import vn.iostar.postservice.entity.Post;
+import vn.iostar.postservice.entity.Share;
 import vn.iostar.postservice.jwt.service.JwtService;
 import vn.iostar.postservice.repository.CommentRepository;
 import vn.iostar.postservice.repository.PostRepository;
+import vn.iostar.postservice.repository.ShareRepository;
 import vn.iostar.postservice.service.CloudinaryService;
 import vn.iostar.postservice.service.CommentService;
 import vn.iostar.postservice.service.PostService;
+import vn.iostar.postservice.service.ShareService;
 import vn.iostar.postservice.service.client.UserClientService;
 
 import java.io.IOException;
@@ -30,10 +32,12 @@ public class CommentServiceImpl implements CommentService {
 
     private final CommentRepository commentRepository;
     private final PostRepository postRepository;
+    private final ShareRepository shareRepository;
     private final CloudinaryService cloudinaryService;
     private final UserClientService userClientService;
     private final JwtService jwtService;
     private final PostService postService;
+    private final ShareService shareService;
 
     @Override
     public <S extends Comment> S save(S entity) {
@@ -224,7 +228,7 @@ public class CommentServiceImpl implements CommentService {
             Comment comment = optionalComment.get();
 
             // Xóa các comments có commentReply là id của comment vừa xóa
-            List<Comment> commentsWithReply = commentRepository.findByCommentReplyId(commentId);
+            List<Comment> commentsWithReply = commentRepository.findByCommentReplyIdOrderByCreateTimeDesc(commentId);
             commentRepository.deleteAll(commentsWithReply);
 
             // Xóa comment
@@ -288,7 +292,7 @@ public class CommentServiceImpl implements CommentService {
         List<CommentPostResponse> commentPostResponses = new ArrayList<>();
 
         // Tìm các comment reply trực tiếp cho commentId
-        List<Comment> directReplies = commentRepository.findByCommentReplyId(commentId);
+        List<Comment> directReplies = commentRepository.findByCommentReplyIdOrderByCreateTimeDesc(commentId);
 
         // Lấy comment reply của commentId
         for (Comment directReply : directReplies) {
@@ -319,4 +323,166 @@ public class CommentServiceImpl implements CommentService {
                 GenericResponse.builder().success(true).message("Retrieving number of comments of Post successfully")
                         .result(commentPostResponses.size()).statusCode(HttpStatus.OK.value()).build());
     }
+
+    @Override
+    public ResponseEntity<GenericResponse> getCommentOfShare(String shareId) {
+        Optional<Share> share = shareService.findById(shareId);
+        if (share.isEmpty())
+            return ResponseEntity.ok(GenericResponse.builder().success(false).message("Share not found").result(false)
+                    .statusCode(HttpStatus.OK.value()).build());
+        List<CommentShareResponse> comments = getCommentsOfShare(shareId);
+        if (comments.isEmpty())
+            return ResponseEntity.ok(GenericResponse.builder().success(false).message("This share has no comment")
+                    .result(false).statusCode(HttpStatus.OK.value()).build());
+        return ResponseEntity
+                .ok(GenericResponse.builder().success(true).message("Retrieving comment of share post successfully")
+                        .result(comments).statusCode(HttpStatus.OK.value()).build());
+    }
+
+    public List<CommentShareResponse> getCommentsOfShare(String shareId) {
+        List<Comment> commentPost = commentRepository
+                .findByShareIdAndCommentReplyIsNullOrderByCreateTimeDesc(shareId);
+
+        List<CommentShareResponse> commentPostResponses = new ArrayList<>();
+        for (Comment comment : commentPost) {
+            UserProfileResponse userProfileResponse = userClientService.getUser(comment.getUserId());
+            CommentShareResponse cPostResponse = new CommentShareResponse(comment, userProfileResponse);
+            commentPostResponses.add(cPostResponse);
+        }
+        return commentPostResponses;
+    }
+
+    @Override
+    public ResponseEntity<GenericResponse> getCommentReplyOfCommentShare(String commentId) {
+        Optional<Comment> comment = findById(commentId);
+        if (comment.isEmpty())
+            return ResponseEntity.ok(GenericResponse.builder().success(false).message("Comment not found").result(false)
+                    .statusCode(HttpStatus.OK.value()).build());
+        List<CommentShareResponse> comments = getCommentsOfCommentShare(commentId);
+        if (comments.isEmpty())
+            return ResponseEntity
+                    .ok(GenericResponse.builder().success(false).message("This comment has no comment reply")
+                            .result(false).statusCode(HttpStatus.OK.value()).build());
+        return ResponseEntity
+                .ok(GenericResponse.builder().success(true).message("Retrieving comment of share post successfully")
+                        .result(comments).statusCode(HttpStatus.OK.value()).build());
+    }
+
+    public List<CommentShareResponse> getCommentsOfCommentShare(String commentId) {
+
+        List<CommentShareResponse> commentPostResponses = new ArrayList<>();
+
+        // Tìm các comment reply trực tiếp cho commentId
+        List<Comment> directReplies = commentRepository.findByCommentReplyIdOrderByCreateTimeDesc(commentId);
+
+        // Lấy comment reply của commentId
+        for (Comment directReply : directReplies) {
+            UserProfileResponse userProfileResponse = userClientService.getUser(directReply.getUserId());
+            CommentShareResponse directReplyResponse = new CommentShareResponse(directReply,userProfileResponse);
+            directReplyResponse.setUserOwner(userProfileResponse.getUserName());
+            commentPostResponses.add(directReplyResponse);
+        }
+
+        return commentPostResponses;
+    }
+
+    @Override
+    public ResponseEntity<Object> createCommentShare(String token, CreateCommentShareRequestDTO requestDTO) {
+        String jwt = token.substring(7);
+        String userId = jwtService.extractUserId(jwt);
+        UserProfileResponse user = userClientService.getUser(userId);
+        if (user == null) {
+            return ResponseEntity.badRequest().body("User not found");
+        }
+        Optional<Share> share = shareService.findById(requestDTO.getShareId());
+        if (!share.isPresent()) {
+            return ResponseEntity.badRequest().body("Share not found");
+        }
+
+        String commentId = UUID.randomUUID().toString();
+        Comment comment = new Comment();
+        comment.setId(commentId);
+        comment.setShare(share.get());
+        comment.setCreateTime(new Date());
+        comment.setUpdatedAt(new Date());
+        comment.setContent(requestDTO.getContent());
+        try {
+            if (requestDTO.getPhotos() == null || requestDTO.getPhotos().getContentType() == null) {
+                comment.setPhotos("");
+            } else {
+
+                comment.setPhotos(cloudinaryService.uploadImage(requestDTO.getPhotos()));
+            }
+        } catch (IOException e) {
+            // Xử lý ngoại lệ nếu có
+            e.printStackTrace();
+        }
+        comment.setUserId(user.getUserId());
+        save(comment);
+
+        // Thêm commentId mới vào danh sách comments của post
+        List<String> shareComments = share.get().getComments();
+        if (shareComments == null) {
+            shareComments = new ArrayList<>();
+        }
+        shareComments.add(commentId);
+        share.get().setComments(shareComments);
+
+        // Cập nhật lại share vào MongoDB
+        shareRepository.save(share.get());
+
+        GenericResponse response = GenericResponse.builder().success(true).message("Comment Share Successfully")
+                .result(new CommentShareResponse(comment.getId(), comment.getContent(), comment.getCreateTime(),
+                        comment.getPhotos(), user.getUserName(), comment.getShare().getId(),
+                        user.getAvatar(), user.getUserId()))
+                .statusCode(200).build();
+
+        return ResponseEntity.ok(response);
+    }
+
+    @Override
+    public ResponseEntity<Object> replyCommentShare(String token, ReplyCommentShareRequestDTO requestDTO) {
+        String jwt = token.substring(7);
+        String userId = jwtService.extractUserId(jwt);
+        UserProfileResponse user = userClientService.getUser(userId);
+        if (user == null) {
+            return ResponseEntity.badRequest().body("User not found");
+        }
+        Optional<Share> share = shareService.findById(requestDTO.getShareId());
+        if (!share.isPresent()) {
+            return ResponseEntity.badRequest().body("Share post not found");
+        }
+        Optional<Comment> commentReply = findById(requestDTO.getCommentId());
+        if (!commentReply.isPresent()) {
+            return ResponseEntity.badRequest().body("Comment not found");
+        }
+
+        Comment comment = new Comment();
+        comment.setShare(share.get());
+        comment.setCreateTime(new Date());
+        comment.setUpdatedAt(new Date());
+        comment.setContent(requestDTO.getContent());
+        try {
+            if (requestDTO.getPhotos() == null || requestDTO.getPhotos().getContentType() == null) {
+                comment.setPhotos("");
+            } else {
+
+                comment.setPhotos(cloudinaryService.uploadImage(requestDTO.getPhotos()));
+            }
+        } catch (IOException e) {
+            // Xử lý ngoại lệ nếu có
+            e.printStackTrace();
+        }
+        comment.setUserId(user.getUserId());
+        comment.setCommentReply(commentReply.get());
+        save(comment);
+        GenericResponse response = GenericResponse.builder().success(true).message("Reply Comment Share Post Successfully")
+                .result(new CommentShareResponse(comment.getId(), comment.getContent(), comment.getCreateTime(),
+                        comment.getPhotos(), user.getUserName(), comment.getShare().getId(),
+                        user.getAvatar(), user.getUserId()))
+                .statusCode(200).build();
+
+        return ResponseEntity.ok(response);
+    }
+
 }

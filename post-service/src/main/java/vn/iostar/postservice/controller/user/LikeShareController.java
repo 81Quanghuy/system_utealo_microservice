@@ -18,17 +18,20 @@ public class LikeShareController {
     private final LikeService likeService;
     private final ShareRepository shareRepository;
 
+    // Lấy danh sách những người đã like share post
     @GetMapping("/{shareId}")
     public ResponseEntity<GenericResponse> getLikeOfShare(@PathVariable("shareId") String shareId) {
         return likeService.getLikeOfShare(shareId);
     }
 
+    // Like hoặc unlike share post
     @PostMapping("/toggleLike/{shareId}")
     public ResponseEntity<Object> toggleLikeShare(@PathVariable("shareId") String shareId,
                                                   @RequestHeader("Authorization") String token) {
         return likeService.toggleLikeShare(token, shareId);
     }
 
+    // Kiểm tra người dùng đã like share post chưa
     @GetMapping("/checkUser/{shareId}")
     public ResponseEntity<Object> checkUserLikePost(@PathVariable("shareId") String shareId,
                                                     @RequestHeader("Authorization") String token) {

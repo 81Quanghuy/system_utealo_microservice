@@ -30,9 +30,7 @@ import java.util.*;
 public class ShareServiceImpl implements ShareService {
 
     private final ShareRepository shareRepository;
-    private final PostRepository postRepository;
     private final PostService postService;
-    private final ShareService shareService;
     private final JwtService jwtService;
     private final UserClientService userClientService;
     private final GroupClientService groupClientService;

@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import vn.iostar.dto.LikePostResponse;
 import vn.iostar.postservice.dto.GenericResponse;
+import vn.iostar.postservice.dto.response.LikeCommentResponse;
 import vn.iostar.postservice.dto.response.ListUserLikePost;
 import vn.iostar.postservice.dto.response.UserProfileResponse;
 import vn.iostar.postservice.entity.Comment;
@@ -15,10 +16,8 @@ import vn.iostar.postservice.entity.Like;
 import vn.iostar.postservice.entity.Post;
 import vn.iostar.postservice.entity.Share;
 import vn.iostar.postservice.jwt.service.JwtService;
-import vn.iostar.postservice.repository.LikeRepository;
-import vn.iostar.postservice.repository.LikeShareResponse;
-import vn.iostar.postservice.repository.PostRepository;
-import vn.iostar.postservice.repository.ShareRepository;
+import vn.iostar.postservice.repository.*;
+import vn.iostar.postservice.service.CommentService;
 import vn.iostar.postservice.service.LikeService;
 import vn.iostar.postservice.service.PostService;
 import vn.iostar.postservice.service.ShareService;
@@ -40,6 +39,8 @@ public class LikeServiceImpl implements LikeService {
     private final JwtService jwtService;
     private final ShareService shareService;
     private final ShareRepository shareRepository;
+    private final CommentService commentService;
+    private final CommentRepository commentRepository;
 
     @Override
     public void delete(Like entity) {
@@ -199,22 +200,20 @@ public class LikeServiceImpl implements LikeService {
 
     @Override
     public ResponseEntity<Object> listUserLikePost(String postId) {
-        List<ListUserLikePost> listUser = likeRepository.findUsersLikedPost(postId);
+        List<Like> listUser = likeRepository.findLikeIdsByPostId(postId);
 
-        for (ListUserLikePost userLikePost : listUser) {
-            // Lấy thông tin user từ userId
-            UserProfileResponse user = userClientService.getUser(userLikePost.getUserId());
+        List<ListUserLikePost> listUserLikePost = new ArrayList<>();
+        for (Like like : listUser) {
+            UserProfileResponse user = userClientService.getUser(like.getUserId());
             if (user != null) {
-                // Gán tên và avatar của user vào ListUserLikePost
-                userLikePost.setUserName(user.getUserName());
-                userLikePost.setAvatar(user.getAvatar());
+                listUserLikePost.add(new ListUserLikePost(user.getUserName(), user.getUserId(), user.getAvatar()));
             }
         }
 
         GenericResponse response = GenericResponse.builder()
                 .success(true)
                 .message("List User Like Post")
-                .result(listUser)
+                .result(listUserLikePost)
                 .statusCode(200)
                 .build();
 
@@ -234,7 +233,7 @@ public class LikeServiceImpl implements LikeService {
         for (Like like : likes) {
             likeShareResponses.add(new LikeShareResponse(like,user));
         }
-        return ResponseEntity.ok(GenericResponse.builder().success(true).message("Retrieving like of post successfully")
+        return ResponseEntity.ok(GenericResponse.builder().success(true).message("Retrieving like of share post successfully")
                 .result(likeShareResponses).statusCode(HttpStatus.OK.value()).build());
     }
 
@@ -254,11 +253,11 @@ public class LikeServiceImpl implements LikeService {
         if (!share.isPresent()) {
             return ResponseEntity.badRequest().body("Share not found");
         }
-        // Kiểm tra xem cặp giá trị postId và userId đã tồn tại trong bảng Like chưa
+        // Kiểm tra xem cặp giá trị shareId và userId đã tồn tại trong bảng Like chưa
         Optional<Like> existingLike = findByShareAndUser(share.get(), user);
 
         if (existingLike.isPresent()) {
-            // Lấy post của like
+            // Lấy share của like
             Share shareLike = existingLike.get().getShare();
             // Nếu đã tồn tại, thực hiện xóa
             delete(existingLike.get());
@@ -273,13 +272,13 @@ public class LikeServiceImpl implements LikeService {
                         shareLikes = new ArrayList<>();
                     }
 
-                    // Xóa commentId khỏi danh sách comments của post
+                    // Xóa likeId khỏi danh sách likes của share
                     shareLikes.remove(existingLike.get().getId());
 
-                    // Cập nhật lại danh sách comments của post
+                    // Cập nhật lại danh sách likes của share
                     shareLike.setLikes(shareLikes);
 
-                    // Cập nhật lại post vào MongoDB
+                    // Cập nhật lại share vào MongoDB
                     shareRepository.save(shareLike);
                 }
             }
@@ -294,7 +293,18 @@ public class LikeServiceImpl implements LikeService {
             like.setStatus(null); // Cập nhật status nếu cần
             save(like);
 
-            GenericResponse response = GenericResponse.builder().success(true).message("Like Post Successfully").result(
+            // Thêm likeId mới vào danh sách likes của share
+            List<String> shareLikes = share.get().getLikes();
+            if (shareLikes == null) {
+                shareLikes = new ArrayList<>();
+            }
+            shareLikes.add(like.getId());
+            share.get().setLikes(shareLikes);
+
+            // Cập nhật lại share vào MongoDB
+            shareRepository.save(share.get());
+
+            GenericResponse response = GenericResponse.builder().success(true).message("Like Share Post Successfully").result(
                             new LikePostResponse(like.getId(), like.getShare().getId(), user.getUserName()))
                     .statusCode(200).build();
 
@@ -331,9 +341,184 @@ public class LikeServiceImpl implements LikeService {
 
     @Override
     public ResponseEntity<Object> listUserLikeShare(String shareId) {
-        List<ListUserLikePost> listUser = likeRepository.findUsersLikedShare(shareId);
-        GenericResponse response = GenericResponse.builder().success(true).message("List User Like Share").result(listUser)
-                .statusCode(200).build();
+
+        List<Like> listUser = likeRepository.findLikeIdsByShareId(shareId);
+        List<ListUserLikePost> listUserLikeShare = new ArrayList<>();
+        for (Like like : listUser) {
+            UserProfileResponse user = userClientService.getUser(like.getUserId());
+            if (user != null) {
+                listUserLikeShare.add(new ListUserLikePost(user.getUserName(), user.getUserId(), user.getAvatar()));
+            }
+        }
+
+        GenericResponse response = GenericResponse.builder()
+                .success(true)
+                .message("List User Like Share Post")
+                .result(listUserLikeShare)
+                .statusCode(200)
+                .build();
+
+        return ResponseEntity.ok(response);
+    }
+
+    @Override
+    public ResponseEntity<GenericResponse> getLikeOfComment(String commentId) {
+        Optional<Comment> comment = commentService.findById(commentId);
+        if (comment.isEmpty())
+            throw new RuntimeException("Comment not found");
+        List<Like> likes = likeRepository.findByCommentId(commentId);
+        if (likes.isEmpty())
+            throw new RuntimeException("This comment has no like");
+        UserProfileResponse user = userClientService.getUser(comment.get().getUserId());
+        List<LikeCommentResponse> likePostResponses = new ArrayList<>();
+        for (Like like : likes) {
+            likePostResponses.add(new LikeCommentResponse(like, user));
+        }
+        return ResponseEntity
+                .ok(GenericResponse.builder().success(true).message("Retrieving like of comment successfully")
+                        .result(likePostResponses).statusCode(HttpStatus.OK.value()).build());
+    }
+
+    @Override
+    public ResponseEntity<GenericResponse> getCountLikeOfComment(String commentId) {
+        Optional<Comment> comment = commentService.findById(commentId);
+        if (comment.isEmpty())
+            throw new RuntimeException("Comment not found");
+        List<Like> likes = likeRepository.findByCommentId(commentId);
+        if (likes.isEmpty())
+            throw new RuntimeException("This comment has no like");
+        UserProfileResponse user = userClientService.getUser(comment.get().getUserId());
+        List<LikeCommentResponse> likePostResponses = new ArrayList<>();
+        for (Like like : likes) {
+            likePostResponses.add(new LikeCommentResponse(like, user));
+        }
+        return ResponseEntity.ok(
+                GenericResponse.builder().success(true).message("Retrieving number of comments of Post successfully")
+                        .result(likePostResponses.size()).statusCode(HttpStatus.OK.value()).build());
+    }
+
+    @Override
+    public Optional<Like> findByCommentAndUser(Comment comment, UserProfileResponse user) {
+        return likeRepository.findByCommentAndUserId(comment, user.getUserId());
+    }
+
+    @Override
+    public ResponseEntity<Object> toggleLikeComment(String token, String commentId) {
+        String jwt = token.substring(7);
+        String userId = jwtService.extractUserId(jwt);
+        UserProfileResponse user = userClientService.getUser(userId);
+        if (user == null) {
+            return ResponseEntity.badRequest().body("User not found");
+        }
+        Optional<Comment> comment = commentService.findById(commentId);
+        if (!comment.isPresent()) {
+            return ResponseEntity.badRequest().body("Comment not found");
+        }
+        // Kiểm tra xem cặp giá trị commentId và userId đã tồn tại trong bảng Like chưa
+        Optional<Like> existingLike = findByCommentAndUser(comment.get(), user);
+
+        if (existingLike.isPresent()) {
+            // Lấy comment của like
+            Comment commentLike = existingLike.get().getComment();
+            // Nếu đã tồn tại, thực hiện xóa
+            delete(existingLike.get());
+            if (commentLike != null) {
+                // Lấy danh sách likes của comment
+                List<String> commentLikes = commentLike.getLikes();
+
+                if (commentLikes != null) {
+                    // Kiểm tra xem danh sách likes của comment có null hay không
+                    // Nếu là null, khởi tạo một danh sách mới
+                    if (commentLikes == null) {
+                        commentLikes = new ArrayList<>();
+                    }
+
+                    // Xóa commentId khỏi danh sách likes của comment
+                    commentLikes.remove(existingLike.get().getId());
+
+                    // Cập nhật lại danh sách likes của comment
+                    commentLike.setLikes(commentLikes);
+
+                    // Cập nhật lại comment vào MongoDB
+                    commentRepository.save(commentLike);
+                }
+            }
+            return ResponseEntity.ok("Like comment removed successfully");
+        } else {
+            // Nếu chưa tồn tại, tạo và lưu Like mới
+            String likeId = UUID.randomUUID().toString();
+            Like like = new Like();
+            like.setId(likeId);
+            like.setComment(comment.get());
+            like.setUserId(user.getUserId());
+            like.setStatus(null); // Cập nhật status nếu cần
+            save(like);
+
+            // Thêm likeId mới vào danh sách likes của share
+            List<String> commentLikes = comment.get().getLikes();
+            if (commentLikes == null) {
+                commentLikes = new ArrayList<>();
+            }
+            commentLikes.add(like.getId());
+            comment.get().setLikes(commentLikes);
+
+            // Cập nhật lại comment vào MongoDB
+            commentRepository.save(comment.get());
+
+            GenericResponse response = GenericResponse.builder().success(true).message("Like Comment Successfully")
+                    .result(new LikeCommentResponse(like.getId(), like.getComment().getId(),
+                           user.getUserName()))
+                    .statusCode(200).build();
+
+            return ResponseEntity.ok(response);
+        }
+    }
+
+    @Override
+    public ResponseEntity<Object> checkUserLikeComment(String token, String commentId) {
+        String jwt = token.substring(7);
+        String userId = jwtService.extractUserId(jwt);
+        UserProfileResponse user = userClientService.getUser(userId);
+        if (user == null) {
+            return ResponseEntity.badRequest().body("User not found");
+        }
+        Optional<Comment> comment = commentService.findById(commentId);
+        if (!comment.isPresent()) {
+            return ResponseEntity.badRequest().body("Comment not found");
+        }
+        // Kiểm tra xem cặp giá trị postId và userId đã tồn tại trong bảng Like chưa
+        Optional<Like> existingLike = findByCommentAndUser(comment.get(), user);
+
+        if (existingLike.isPresent()) {
+            // Nếu đã tồn tại, trả về true
+            GenericResponse response = GenericResponse.builder().success(true).message("Is Liked").result(true)
+                    .statusCode(200).build();
+            return ResponseEntity.ok(response);
+        } else {
+            GenericResponse response = GenericResponse.builder().success(true).message("Not Like").result(false)
+                    .statusCode(200).build();
+            return ResponseEntity.ok(response);
+        }
+    }
+
+    @Override
+    public ResponseEntity<Object> listUserLikeComment(String commentId) {
+        List<Like> listUser = likeRepository.findLikeIdsByCommentId(commentId);
+        List<ListUserLikePost> listUserLikeComment = new ArrayList<>();
+        for (Like like : listUser) {
+            UserProfileResponse user = userClientService.getUser(like.getUserId());
+            if (user != null) {
+                listUserLikeComment.add(new ListUserLikePost(user.getUserName(), user.getUserId(), user.getAvatar()));
+            }
+        }
+
+        GenericResponse response = GenericResponse.builder()
+                .success(true)
+                .message("List User Like Comment")
+                .result(listUserLikeComment)
+                .statusCode(200)
+                .build();
+
         return ResponseEntity.ok(response);
     }
 

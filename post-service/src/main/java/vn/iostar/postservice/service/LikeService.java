@@ -5,6 +5,7 @@ import vn.iostar.postservice.dto.GenericResponse;
 import vn.iostar.postservice.dto.response.UserProfileResponse;
 import vn.iostar.postservice.entity.Like;
 import vn.iostar.postservice.entity.Post;
+import vn.iostar.postservice.entity.Share;
 
 import java.util.Optional;
 
@@ -18,4 +19,9 @@ public interface LikeService {
     Optional<Like> findByPostAndUser(Post post, UserProfileResponse user);
     ResponseEntity<Object> checkUserLikePost(String token,String postId );
     ResponseEntity<Object> listUserLikePost(String postId );
+    ResponseEntity<GenericResponse> getLikeOfShare(String shareId);
+    ResponseEntity<Object> toggleLikeShare(String token,String shareId );
+    Optional<Like> findByShareAndUser(Share share, UserProfileResponse user);
+    ResponseEntity<Object> checkUserLikeShare(String token,String shareId );
+    ResponseEntity<Object> listUserLikeShare(String shareId );
 }

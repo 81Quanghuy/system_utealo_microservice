@@ -14,6 +14,7 @@ import vn.iostar.postservice.constant.PrivacyLevel;
 
 import java.io.Serializable;
 import java.util.Date;
+import java.util.List;
 
 @Document(collection = "shares")
 @AllArgsConstructor
@@ -52,4 +53,9 @@ public class Share implements Serializable {
     @Field(name = "updated_at")
     private Date updateAt;
 
+    @Field(name = "likes")
+    private List<String> likes;
+
+    @Field(name = "comments")
+    private List<String> comments;
 }

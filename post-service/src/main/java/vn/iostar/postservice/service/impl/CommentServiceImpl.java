@@ -1,14 +1,22 @@
 package vn.iostar.postservice.service.impl;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.util.Streamable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import vn.iostar.postservice.constant.RoleName;
 import vn.iostar.postservice.dto.GenericResponse;
+import vn.iostar.postservice.dto.GenericResponseAdmin;
+import vn.iostar.postservice.dto.PaginationInfo;
 import vn.iostar.postservice.dto.request.*;
 import vn.iostar.postservice.dto.response.CommentPostResponse;
 import vn.iostar.postservice.dto.response.CommentShareResponse;
+import vn.iostar.postservice.dto.response.CommentsResponse;
 import vn.iostar.postservice.dto.response.UserProfileResponse;
 import vn.iostar.postservice.entity.Comment;
 import vn.iostar.postservice.entity.Post;
@@ -24,6 +32,9 @@ import vn.iostar.postservice.service.ShareService;
 import vn.iostar.postservice.service.client.UserClientService;
 
 import java.io.IOException;
+import java.time.LocalDateTime;
+import java.time.Month;
+import java.time.ZoneId;
 import java.util.*;
 
 @Service
@@ -263,6 +274,33 @@ public class CommentServiceImpl implements CommentService {
                 }
             }
 
+            Share share = comment.getShare();
+            if (share != null) {
+                // Lấy danh sách comments của share
+                List<String> shareComments = share.getComments();
+
+                if (shareComments != null) {
+                    // Kiểm tra xem danh sách comments của share có null hay không
+                    // Nếu là null, khởi tạo một danh sách mới
+                    if (shareComments == null) {
+                        shareComments = new ArrayList<>();
+                    }
+
+                    // Xóa commentId khỏi danh sách comments của share
+                    shareComments.remove(commentId);
+
+                    // Cập nhật lại danh sách comments của share
+                    share.setComments(shareComments);
+
+                    for (Comment c : commentsWithReply) {
+                        shareComments.remove(c.getId());
+                    }
+
+                    // Cập nhật lại share vào MongoDB
+                    shareRepository.save(share);
+                }
+            }
+
             return ResponseEntity.ok()
                     .body(new GenericResponse(true, "Delete Successful!", null, HttpStatus.OK.value()));
         } else {
@@ -457,7 +495,9 @@ public class CommentServiceImpl implements CommentService {
             return ResponseEntity.badRequest().body("Comment not found");
         }
 
+        String commentId = UUID.randomUUID().toString();
         Comment comment = new Comment();
+        comment.setId(commentId);
         comment.setShare(share.get());
         comment.setCreateTime(new Date());
         comment.setUpdatedAt(new Date());
@@ -476,6 +516,18 @@ public class CommentServiceImpl implements CommentService {
         comment.setUserId(user.getUserId());
         comment.setCommentReply(commentReply.get());
         save(comment);
+
+        // Thêm commentId mới vào danh sách comments của share
+        List<String> shareComments = share.get().getComments();
+        if (shareComments == null) {
+            shareComments = new ArrayList<>();
+        }
+        shareComments.add(commentId);
+        share.get().setComments(shareComments);
+
+        // Cập nhật lại share vào MongoDB
+        shareRepository.save(share.get());
+
         GenericResponse response = GenericResponse.builder().success(true).message("Reply Comment Share Post Successfully")
                 .result(new CommentShareResponse(comment.getId(), comment.getContent(), comment.getCreateTime(),
                         comment.getPhotos(), user.getUserName(), comment.getShare().getId(),
@@ -483,6 +535,284 @@ public class CommentServiceImpl implements CommentService {
                 .statusCode(200).build();
 
         return ResponseEntity.ok(response);
+    }
+
+    @Override
+    public Streamable<Object> findAllComments(int page, int itemsPerPage) {
+        Pageable pageable = PageRequest.of(page - 1, itemsPerPage);
+        Page<Comment> commentsPage = commentRepository.findAllByOrderByCreateTimeDesc(pageable);
+
+        Streamable<Object> commentResponsesPage = commentsPage.map(comment -> {
+            if (comment.getPost() != null && comment.getPost().getId() != null) {
+                UserProfileResponse userProfileResponse = userClientService.getUser(comment.getUserId());
+                CommentPostResponse cPostResponse = new CommentPostResponse(comment, userProfileResponse);
+                return cPostResponse;
+            } else if (comment.getShare() != null && comment.getShare().getId() != null) {
+                UserProfileResponse userProfileResponse = userClientService.getUser(comment.getUserId());
+                CommentShareResponse cShareResponse = new CommentShareResponse(comment, userProfileResponse);
+                return cShareResponse;
+            }
+            return null;
+        }); // Lọc bất kỳ giá trị null nào nếu có
+        return commentResponsesPage;
+    }
+
+    @Override
+    public ResponseEntity<GenericResponseAdmin> getAllComments(String authorizationHeader, int page, int itemsPerPage) {
+        String token = authorizationHeader.substring(7);
+        String currentUserId = jwtService.extractUserId(token);
+        UserProfileResponse user = userClientService.getUser(currentUserId);
+        RoleName roleName = user.getRoleName();
+        if (!roleName.name().equals("Admin")) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(GenericResponseAdmin.builder().success(false)
+                    .message("No have access").statusCode(HttpStatus.NOT_FOUND.value()).build());
+        }
+
+        Streamable<Object> commentsPage = findAllComments(page, itemsPerPage);
+        long totalComments = commentRepository.count();
+
+        PaginationInfo pagination = new PaginationInfo();
+        pagination.setPage(page);
+        pagination.setItemsPerPage(itemsPerPage);
+        pagination.setCount(totalComments);
+        pagination.setPages((int) Math.ceil((double) totalComments / itemsPerPage));
+
+        if (commentsPage.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(GenericResponseAdmin.builder().success(false)
+                    .message("No Comments Found").statusCode(HttpStatus.NOT_FOUND.value()).build());
+        } else {
+            return ResponseEntity
+                    .ok(GenericResponseAdmin.builder().success(true).message("Retrieved List Comments Successfully")
+                            .result(commentsPage).pagination(pagination).statusCode(HttpStatus.OK.value()).build());
+        }
+    }
+
+    @Override
+    @Transactional
+    public ResponseEntity<GenericResponse> deleteCommentByAdmin(String commentId, String authorizationHeader) {
+        String token = authorizationHeader.substring(7);
+        String currentUserId = jwtService.extractUserId(token);
+        UserProfileResponse user = userClientService.getUser(currentUserId);
+        RoleName roleName = user.getRoleName();
+        if (!roleName.name().equals("Admin")) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(GenericResponse.builder().success(false)
+                    .message("No have access").statusCode(HttpStatus.NOT_FOUND.value()).build());
+        }
+        Optional<Comment> optionalComment = findById(commentId);
+        Streamable<Object> commentsPage = findAllComments(1, 10);
+        // Tìm thấy bài comment với commentId
+        if (optionalComment.isPresent()) {
+            Comment comment = optionalComment.get();
+            // Xóa các comments có commentReply là id của comment vừa xóa
+            List<Comment> commentsWithReply = commentRepository.findByCommentReplyIdOrderByCreateTimeDesc(commentId);
+            commentRepository.deleteAll(commentsWithReply);
+
+            Post post = comment.getPost();
+            if (post != null) {
+                // Lấy danh sách comments của post
+                List<String> postComments = post.getComments();
+
+                if (postComments != null) {
+                    // Kiểm tra xem danh sách comments của post có null hay không
+                    // Nếu là null, khởi tạo một danh sách mới
+                    if (postComments == null) {
+                        postComments = new ArrayList<>();
+                    }
+
+                    // Xóa commentId khỏi danh sách comments của post
+                    postComments.remove(commentId);
+
+                    // Cập nhật lại danh sách comments của post
+                    post.setComments(postComments);
+
+                    for (Comment c : commentsWithReply) {
+                        postComments.remove(c.getId());
+                    }
+
+                    // Cập nhật lại post vào MongoDB
+                    postRepository.save(post);
+                }
+            }
+            Share share = comment.getShare();
+            if (share != null) {
+                // Lấy danh sách comments của share
+                List<String> shareComments = share.getComments();
+
+                if (shareComments != null) {
+                    // Kiểm tra xem danh sách comments của share có null hay không
+                    // Nếu là null, khởi tạo một danh sách mới
+                    if (shareComments == null) {
+                        shareComments = new ArrayList<>();
+                    }
+
+                    // Xóa commentId khỏi danh sách comments của share
+                    shareComments.remove(commentId);
+
+                    // Cập nhật lại danh sách comments của share
+                    share.setComments(shareComments);
+
+                    for (Comment c : commentsWithReply) {
+                        shareComments.remove(c.getId());
+                    }
+
+                    // Cập nhật lại share vào MongoDB
+                    shareRepository.save(share);
+                }
+            }
+            commentRepository.delete(comment);
+            return ResponseEntity.ok()
+                    .body(new GenericResponse(true, "Delete Successful!", commentsPage, HttpStatus.OK.value()));
+        }
+        // Khi không tìm thấy comment với id
+        else {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(new GenericResponse(false, "Cannot found comment!", null, HttpStatus.NOT_FOUND.value()));
+        }
+    }
+
+    // Đếm số lượng comment từng tháng trong năm
+    @Override
+    public Map<String, Long> countCommentsByMonthInYear() {
+        LocalDateTime now = LocalDateTime.now();
+        int currentYear = now.getYear();
+
+        // Tạo một danh sách các tháng
+        List<Month> months = Arrays.asList(Month.values());
+        Map<String, Long> commentCountsByMonth = new LinkedHashMap<>(); // Sử dụng LinkedHashMap để duy trì thứ tự
+
+        for (Month month : months) {
+            LocalDateTime startDate = LocalDateTime.of(currentYear, month, 1, 0, 0);
+            LocalDateTime endDate = startDate.plusMonths(1).minusSeconds(1);
+
+            Date startDateAsDate = Date.from(startDate.atZone(ZoneId.systemDefault()).toInstant());
+            Date endDateAsDate = Date.from(endDate.atZone(ZoneId.systemDefault()).toInstant());
+
+            long commentCount = commentRepository.countByCreateTimeBetween(startDateAsDate, endDateAsDate);
+            commentCountsByMonth.put(month.toString(), commentCount);
+        }
+
+        return commentCountsByMonth;
+    }
+
+    // Đếm số lượng comment trong 1 năm
+    @Override
+    public long countCommentsInOneYearFromNow() {
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime startDate = now.minusYears(1);
+        LocalDateTime endDate = now;
+        Date startDateAsDate = Date.from(startDate.atZone(ZoneId.systemDefault()).toInstant());
+        Date endDateAsDate = Date.from(endDate.atZone(ZoneId.systemDefault()).toInstant());
+        return commentRepository.countByCreateTimeBetween(startDateAsDate, endDateAsDate);
+    }
+
+    // Chuyển sang giờ bắt đầu của 1 ngày là 00:00:00
+    private Date getStartOfDay(Date date) {
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTime(date);
+        calendar.set(Calendar.HOUR_OF_DAY, 0);
+        calendar.set(Calendar.MINUTE, 0);
+        calendar.set(Calendar.SECOND, 0);
+        calendar.set(Calendar.MILLISECOND, 0);
+        return calendar.getTime();
+    }
+
+    // Chuyển sang giờ kết thức của 1 ngày là 23:59:59
+    private Date getEndOfDay(Date date) {
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTime(date);
+        calendar.set(Calendar.HOUR_OF_DAY, 23);
+        calendar.set(Calendar.MINUTE, 59);
+        calendar.set(Calendar.SECOND, 59);
+        calendar.set(Calendar.MILLISECOND, 999);
+        return calendar.getTime();
+    }
+
+    private Date getNDaysAgo(int days) {
+        Calendar calendar = Calendar.getInstance();
+        calendar.add(Calendar.DAY_OF_MONTH, -days);
+        return calendar.getTime();
+    }
+
+    // Chuyển từ kiểu Comment sang CommentsResponse
+    private List<CommentsResponse> mapToCommentsResponseList(List<Comment> comments) {
+        List<CommentsResponse> responses = new ArrayList<>();
+        for (Comment comment : comments) {
+            UserProfileResponse userProfileResponse = userClientService.getUser(comment.getUserId());
+            CommentsResponse postsResponse = new CommentsResponse(comment, userProfileResponse);
+            responses.add(postsResponse);
+        }
+        return responses;
+    }
+
+    @Override
+    public List<CommentsResponse> getCommentsToday() {
+        Date startDate = getStartOfDay(new Date());
+        Date endDate = getEndOfDay(new Date());
+        List<Comment> comments = commentRepository.findByCreateTimeBetween(startDate, endDate);
+        return mapToCommentsResponseList(comments);
+    }
+
+    @Override
+    public List<CommentsResponse> getCommentsIn7Days() {
+        Date startDate = getStartOfDay(getNDaysAgo(6));
+        Date endDate = getEndOfDay(new Date());
+        List<Comment> comments = commentRepository.findByCreateTimeBetween(startDate, endDate);
+        return mapToCommentsResponseList(comments);
+    }
+
+    @Override
+    public List<CommentsResponse> getCommentsIn1Month() {
+        Date startDate = getStartOfDay(getNDaysAgo(30));
+        Date endDate = getEndOfDay(new Date());
+        List<Comment> comments = commentRepository.findByCreateTimeBetween(startDate, endDate);
+        return mapToCommentsResponseList(comments);
+    }
+
+    @Override
+    public Streamable<Object> findAllCommentsByUserId(int page, int itemsPerPage, String userId) {
+        Pageable pageable = PageRequest.of(page - 1, itemsPerPage);
+        Page<Comment> commentsPage = commentRepository.findAllByUserIdOrderByCreateTimeDesc(userId, pageable);
+
+        Streamable<Object> commentResponsesPage = commentsPage.map(comment -> {
+            if (comment.getPost() != null && comment.getPost().getId() != null) {
+                UserProfileResponse userProfileResponse = userClientService.getUser(comment.getUserId());
+                CommentPostResponse cPostResponse = new CommentPostResponse(comment, userProfileResponse);
+                return cPostResponse;
+            } else if (comment.getShare() != null && comment.getShare().getId() != null) {
+                UserProfileResponse userProfileResponse = userClientService.getUser(comment.getUserId());
+                CommentShareResponse cShareResponse = new CommentShareResponse(comment, userProfileResponse);
+                return cShareResponse;
+            }
+            return null;
+        }); // Lọc bất kỳ giá trị null nào nếu có
+        return commentResponsesPage;
+    }
+
+
+    // Đếm số lượng comment của 1 user từng tháng trong năm
+    @Override
+    public Map<String, Long> countCommentsByUserMonthInYear(String userId) {
+        LocalDateTime now = LocalDateTime.now();
+        int currentYear = now.getYear();
+
+        UserProfileResponse user = userClientService.getUser(userId);
+
+        // Tạo một danh sách các tháng
+        List<Month> months = Arrays.asList(Month.values());
+        Map<String, Long> commentCountsByMonth = new LinkedHashMap<>(); // Sử dụng LinkedHashMap để duy trì thứ tự
+
+        for (Month month : months) {
+            LocalDateTime startDate = LocalDateTime.of(currentYear, month, 1, 0, 0);
+            LocalDateTime endDate = startDate.plusMonths(1).minusSeconds(1);
+
+            Date startDateAsDate = Date.from(startDate.atZone(ZoneId.systemDefault()).toInstant());
+            Date endDateAsDate = Date.from(endDate.atZone(ZoneId.systemDefault()).toInstant());
+
+            long commentCount = commentRepository.countByUserIdAndCreateTimeBetween(user.getUserId(),startDateAsDate, endDateAsDate);
+            commentCountsByMonth.put(month.toString(), commentCount);
+        }
+
+        return commentCountsByMonth;
     }
 
 }

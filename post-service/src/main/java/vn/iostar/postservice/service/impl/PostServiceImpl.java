@@ -3,6 +3,8 @@ package vn.iostar.postservice.service.impl;
 import lombok.RequiredArgsConstructor;
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -10,7 +12,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import vn.iostar.postservice.constant.PrivacyLevel;
+import vn.iostar.postservice.constant.RoleName;
 import vn.iostar.postservice.dto.GenericResponse;
+import vn.iostar.postservice.dto.GenericResponseAdmin;
+import vn.iostar.postservice.dto.PaginationInfo;
 import vn.iostar.postservice.dto.request.CreatePostRequestDTO;
 import vn.iostar.postservice.dto.request.PostUpdateRequest;
 import vn.iostar.postservice.dto.response.GroupProfileResponse;
@@ -18,9 +23,10 @@ import vn.iostar.postservice.dto.response.PhoToResponse;
 import vn.iostar.postservice.dto.response.PostsResponse;
 import vn.iostar.postservice.dto.response.UserProfileResponse;
 import vn.iostar.postservice.entity.Comment;
-import vn.iostar.postservice.entity.Like;
 import vn.iostar.postservice.entity.Post;
 import vn.iostar.postservice.jwt.service.JwtService;
+import vn.iostar.postservice.repository.CommentRepository;
+import vn.iostar.postservice.repository.LikeRepository;
 import vn.iostar.postservice.repository.PostRepository;
 import vn.iostar.postservice.service.CloudinaryService;
 import vn.iostar.postservice.service.PostService;
@@ -29,6 +35,10 @@ import vn.iostar.postservice.service.client.UserClientService;
 
 
 import java.io.IOException;
+import java.time.LocalDateTime;
+import java.time.Month;
+import java.time.ZoneId;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 
 @Service
@@ -36,14 +46,12 @@ import java.util.*;
 public class PostServiceImpl implements PostService {
 
     private final PostRepository postRepository;
-
     private final JwtService jwtService;
-
     private final UserClientService userClientService;
-
     private final GroupClientService groupClientService;
-
     private final CloudinaryService cloudinaryService;
+    private final CommentRepository commentRepository;
+    private final LikeRepository likeRepository;
 
     @Override
     public <S extends Post> S save(S entity) {
@@ -119,10 +127,7 @@ public class PostServiceImpl implements PostService {
 
         // Lấy thông tin người dùng từ user-service
         UserProfileResponse userOfPostResponse = userClientService.getUser(userId);
-
-
         PostsResponse postsResponse = new PostsResponse(post, userOfPostResponse, groupProfileResponse);
-
         List<String> count = new ArrayList<>();
         postsResponse.setComments(count);
         postsResponse.setLikes(count);
@@ -147,10 +152,22 @@ public class PostServiceImpl implements PostService {
                     .body(new GenericResponse(false, "Delete denied!", null, HttpStatus.NOT_FOUND.value()));
         }
         Optional<Post> optionalPost = findById(postId);
-        Optional<Post> optionalPost1 = findById("65f6c6d08295e9313b7aee1c");
         if (optionalPost.isPresent()) {
             Post post = optionalPost.get();
-
+            List<String> comments = post.getComments();
+            if (comments != null) {
+                for (String commentId : comments) {
+                    commentRepository.deleteById(commentId);
+                }
+            }
+            List<String> likes = post.getLikes();
+            if (likes != null) {
+                for (String likeId : likes) {
+                    likeRepository.deleteById(likeId);
+                }
+            }
+            post.setComments(new ArrayList<>());
+            post.setLikes(new ArrayList<>());
             postRepository.delete(post);
 
             return ResponseEntity.ok()
@@ -292,5 +309,343 @@ public class PostServiceImpl implements PostService {
                 .result(list).statusCode(HttpStatus.OK.value()).build());
 
     }
+
+    @Override
+    public ResponseEntity<GenericResponseAdmin> getAllPosts(String authorizationHeader, int page, int itemsPerPage) {
+        String token = authorizationHeader.substring(7);
+        String currentUserId = jwtService.extractUserId(token);
+        UserProfileResponse user = userClientService.getUser(currentUserId);
+        RoleName roleName = user.getRoleName();
+        if (!roleName.name().equals("Admin")) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(GenericResponseAdmin.builder().success(false)
+                    .message("No have access").statusCode(HttpStatus.NOT_FOUND.value()).build());
+        }
+
+        Page<PostsResponse> userPostsPage = findAllPosts(page, itemsPerPage);
+        long totalPosts = postRepository.count();
+
+        PaginationInfo pagination = new PaginationInfo();
+        pagination.setPage(page);
+        pagination.setItemsPerPage(itemsPerPage);
+        pagination.setCount(totalPosts);
+        pagination.setPages((int) Math.ceil((double) totalPosts / itemsPerPage));
+
+        if (userPostsPage.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(GenericResponseAdmin.builder().success(false)
+                    .message("No Posts Found").statusCode(HttpStatus.NOT_FOUND.value()).build());
+        } else {
+            return ResponseEntity
+                    .ok(GenericResponseAdmin.builder().success(true).message("Retrieved List Posts Successfully")
+                            .result(userPostsPage).pagination(pagination).statusCode(HttpStatus.OK.value()).build());
+        }
+    }
+
+    // Lấy tất cả bài post trong hệ thống
+    @Override
+    public Page<PostsResponse> findAllPosts(int page, int itemsPerPage) {
+        Pageable pageable = PageRequest.of(page - 1, itemsPerPage);
+        Page<Post> userPostsPage = postRepository.findAllByOrderByPostTimeDesc(pageable);
+
+        return userPostsPage.map(post -> {
+            UserProfileResponse userOfPostResponse = userClientService.getUser(post.getUserId());
+            GroupProfileResponse groupProfileResponse = null;
+            if (post.getGroupId() != null) {
+                groupProfileResponse = groupClientService.getGroup(post.getGroupId());
+            }
+            PostsResponse postsResponse = new PostsResponse(post, userOfPostResponse, groupProfileResponse);
+            return postsResponse;
+        });
+    }
+
+    // Admin xóa bài post trong hệ thống
+    @Override
+    @Transactional
+    public ResponseEntity<GenericResponse> deletePostByAdmin(String postId, String authorizationHeader) {
+        String token = authorizationHeader.substring(7);
+        String currentUserId = jwtService.extractUserId(token);
+        UserProfileResponse user = userClientService.getUser(currentUserId);
+        RoleName roleName = user.getRoleName();
+        if (!roleName.name().equals("Admin")) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(GenericResponse.builder().success(false)
+                    .message("Delete denied!").statusCode(HttpStatus.NOT_FOUND.value()).build());
+        }
+        Optional<Post> optionalPost = findById(postId);
+        Page<PostsResponse> userPostsPage = findAllPosts(1, 10);
+        // tìm thấy bài post với postId
+        if (optionalPost.isPresent()) {
+            Post post = optionalPost.get();
+            List<String> comments = post.getComments();
+            if (comments != null) {
+                for (String commentId : comments) {
+                    commentRepository.deleteById(commentId);
+                }
+            }
+            List<String> likes = post.getLikes();
+            if (likes != null) {
+                for (String likeId : likes) {
+                    likeRepository.deleteById(likeId);
+                }
+            }
+            post.setComments(new ArrayList<>());
+            post.setLikes(new ArrayList<>());
+            postRepository.delete(post);
+            return ResponseEntity.ok()
+                    .body(new GenericResponse(true, "Delete Successful!", userPostsPage, HttpStatus.OK.value()));
+        }
+        // Khi không tìm thấy bài post với id
+        else {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(new GenericResponse(false, "Cannot found post!", null, HttpStatus.NOT_FOUND.value()));
+        }
+    }
+
+    // Thống kê bài post trong ngày hôm nay
+    @Override
+    public List<PostsResponse> getPostsToday() {
+        Date startDate = getStartOfDay(new Date());
+        Date endDate = getEndOfDay(new Date());
+        List<Post> posts = postRepository.findByPostTimeBetween(startDate, endDate);
+        return mapToPostsResponseList(posts);
+    }
+
+    // Thống kê bài post trong 1 ngày
+    @Override
+    public List<PostsResponse> getPostsInDay(Date day) {
+        Date startDate = getStartOfDay(day);
+        Date endDate = getEndOfDay(day);
+        List<Post> posts = postRepository.findByPostTimeBetween(startDate, endDate);
+        return mapToPostsResponseList(posts);
+    }
+
+    // Thống kê bài post trong 7 ngày
+    @Override
+    public List<PostsResponse> getPostsIn7Days() {
+        Date startDate = getStartOfDay(getNDaysAgo(6));
+        Date endDate = getEndOfDay(new Date());
+        List<Post> posts = postRepository.findByPostTimeBetween(startDate, endDate);
+        return mapToPostsResponseList(posts);
+    }
+
+    @Override
+    public List<PostsResponse> getPostsIn1Month() {
+        Date startDate = getStartOfDay(getNDaysAgo(30));
+        Date endDate = getEndOfDay(new Date());
+        List<Post> posts = postRepository.findByPostTimeBetween(startDate, endDate);
+        return mapToPostsResponseList(posts);
+    }
+
+    // Chuyển từ kiểu Post sang PostsResponse
+    private List<PostsResponse> mapToPostsResponseList(List<Post> posts) {
+        List<PostsResponse> responses = new ArrayList<>();
+        for (Post post : posts) {
+            UserProfileResponse userOfPostResponse = userClientService.getUser(post.getUserId());
+            GroupProfileResponse groupProfileResponse = null;
+            if (post.getGroupId() != null) {
+                groupProfileResponse = groupClientService.getGroup(post.getGroupId());
+            }
+            PostsResponse postsResponse = new PostsResponse(post, userOfPostResponse, groupProfileResponse);
+            responses.add(postsResponse);
+        }
+        return responses;
+    }
+
+    // Chuyển sang giờ bắt đầu của 1 ngày là 00:00:00
+    private Date getStartOfDay(Date date) {
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTime(date);
+        calendar.set(Calendar.HOUR_OF_DAY, 0);
+        calendar.set(Calendar.MINUTE, 0);
+        calendar.set(Calendar.SECOND, 0);
+        calendar.set(Calendar.MILLISECOND, 0);
+        return calendar.getTime();
+    }
+
+    // Chuyển sang giờ kết thức của 1 ngày là 23:59:59
+    private Date getEndOfDay(Date date) {
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTime(date);
+        calendar.set(Calendar.HOUR_OF_DAY, 23);
+        calendar.set(Calendar.MINUTE, 59);
+        calendar.set(Calendar.SECOND, 59);
+        calendar.set(Calendar.MILLISECOND, 999);
+        return calendar.getTime();
+    }
+
+    // Lấy thời gian của ngày cách đây n ngày
+    private Date getNDaysAgo(int days) {
+        Calendar calendar = Calendar.getInstance();
+        calendar.add(Calendar.DAY_OF_MONTH, -days);
+        return calendar.getTime();
+    }
+
+    // Đếm số lượng bài post trong ngày hôm nay
+    @Override
+    public long countPostsToday() {
+        Date startDate = getStartOfDay(new Date());
+        Date endDate = getEndOfDay(new Date());
+        return postRepository.countByPostTimeBetween(startDate, endDate);
+    }
+
+    // Đếm số lượng bài post trong 7 ngày
+    @Override
+    public long countPostsInWeek() {
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime weekAgo = now.minus(1, ChronoUnit.WEEKS);
+        Date startDate = Date.from(weekAgo.atZone(ZoneId.systemDefault()).toInstant());
+        Date endDate = Date.from(now.atZone(ZoneId.systemDefault()).toInstant());
+        return postRepository.countByPostTimeBetween(startDate, endDate);
+    }
+
+    // Đếm số lượng bài post trong 1 tháng
+    @Override
+    public long countPostsInMonthFromNow() {
+        // Lấy thời gian hiện tại
+        LocalDateTime now = LocalDateTime.now();
+
+        // Thời gian bắt đầu là thời điểm hiện tại trừ 1 tháng
+        LocalDateTime startDate = now.minusMonths(1);
+
+        // Thời gian kết thúc là thời điểm hiện tại
+        LocalDateTime endDate = now;
+
+        // Chuyển LocalDateTime sang Date (với ZoneId cụ thể, ở đây là
+        // ZoneId.systemDefault())
+        Date startDateAsDate = Date.from(startDate.atZone(ZoneId.systemDefault()).toInstant());
+        Date endDateAsDate = Date.from(endDate.atZone(ZoneId.systemDefault()).toInstant());
+
+        // Truy vấn số lượng bài post trong khoảng thời gian này
+        return postRepository.countByPostTimeBetween(startDateAsDate, endDateAsDate);
+    }
+
+    // Đếm số lượng bài post trong 3 tháng
+    @Override
+    public long countPostsInThreeMonthsFromNow() {
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime startDate = now.minusMonths(3);
+        Date startDateAsDate = Date.from(startDate.atZone(ZoneId.systemDefault()).toInstant());
+        Date endDateAsDate = Date.from(now.atZone(ZoneId.systemDefault()).toInstant());
+        return postRepository.countByPostTimeBetween(startDateAsDate, endDateAsDate);
+    }
+
+    // Đếm số lượng bài post trong 6 tháng
+    @Override
+    public long countPostsInSixMonthsFromNow() {
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime startDate = now.minusMonths(6);
+        LocalDateTime endDate = now;
+        Date startDateAsDate = Date.from(startDate.atZone(ZoneId.systemDefault()).toInstant());
+        Date endDateAsDate = Date.from(endDate.atZone(ZoneId.systemDefault()).toInstant());
+        return postRepository.countByPostTimeBetween(startDateAsDate, endDateAsDate);
+    }
+
+    // Đếm số lượng bài post trong 9 tháng
+    @Override
+    public long countPostsInNineMonthsFromNow() {
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime startDate = now.minusMonths(9);
+        LocalDateTime endDate = now;
+        Date startDateAsDate = Date.from(startDate.atZone(ZoneId.systemDefault()).toInstant());
+        Date endDateAsDate = Date.from(endDate.atZone(ZoneId.systemDefault()).toInstant());
+        return postRepository.countByPostTimeBetween(startDateAsDate, endDateAsDate);
+    }
+
+    // Đếm số lượng bài post trong 1 năm
+    @Override
+    public long countPostsInOneYearFromNow() {
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime startDate = now.minusYears(1);
+        LocalDateTime endDate = now;
+        Date startDateAsDate = Date.from(startDate.atZone(ZoneId.systemDefault()).toInstant());
+        Date endDateAsDate = Date.from(endDate.atZone(ZoneId.systemDefault()).toInstant());
+        return postRepository.countByPostTimeBetween(startDateAsDate, endDateAsDate);
+    }
+
+    @Override
+    public Map<String, Long> countPostsByUserMonthInYear(String userId) {
+        LocalDateTime now = LocalDateTime.now();
+        int currentYear = now.getYear();
+
+        UserProfileResponse user = userClientService.getUser(userId);
+
+        // Tạo một danh sách các tháng
+        List<Month> months = Arrays.asList(Month.values());
+        Map<String, Long> postCountsByMonth = new LinkedHashMap<>(); // Sử dụng LinkedHashMap để duy trì thứ tự
+
+        for (Month month : months) {
+            LocalDateTime startDate = LocalDateTime.of(currentYear, month, 1, 0, 0);
+            LocalDateTime endDate = startDate.plusMonths(1).minusSeconds(1);
+
+            Date startDateAsDate = Date.from(startDate.atZone(ZoneId.systemDefault()).toInstant());
+            Date endDateAsDate = Date.from(endDate.atZone(ZoneId.systemDefault()).toInstant());
+
+            long postCount = postRepository.countByUserIdAndPostTimeBetween(user.getUserId(), startDateAsDate, endDateAsDate);
+            postCountsByMonth.put(month.toString(), postCount);
+        }
+
+        return postCountsByMonth;
+    }
+
+    // Đếm số lượng bài post từng tháng trong năm
+    @Override
+    public Map<String, Long> countPostsByMonthInYear() {
+        LocalDateTime now = LocalDateTime.now();
+        int currentYear = now.getYear();
+
+        // Tạo một danh sách các tháng
+        List<Month> months = Arrays.asList(Month.values());
+        Map<String, Long> postCountsByMonth = new LinkedHashMap<>(); // Sử dụng LinkedHashMap để duy trì thứ tự
+
+        for (Month month : months) {
+            LocalDateTime startDate = LocalDateTime.of(currentYear, month, 1, 0, 0);
+            LocalDateTime endDate = startDate.plusMonths(1).minusSeconds(1);
+
+            Date startDateAsDate = Date.from(startDate.atZone(ZoneId.systemDefault()).toInstant());
+            Date endDateAsDate = Date.from(endDate.atZone(ZoneId.systemDefault()).toInstant());
+
+            long postCount = postRepository.countByPostTimeBetween(startDateAsDate, endDateAsDate);
+            postCountsByMonth.put(month.toString(), postCount);
+        }
+
+        return postCountsByMonth;
+    }
+    // Thay đổi phương thức findAllPosts để lấy tất cả bài post của một userId
+    @Override
+    public Page<PostsResponse> findAllPostsByUserId(int page, int itemsPerPage, String userId) {
+        Pageable pageable = PageRequest.of(page - 1, itemsPerPage);
+        // Sử dụng postRepository để tìm tất cả bài post của một userId cụ thể
+        Page<Post> userPostsPage = postRepository.findAllByUserIdOrderByPostTimeDesc(userId, pageable);
+
+        return userPostsPage.map(post -> {
+            UserProfileResponse userOfPostResponse = userClientService.getUser(userId);
+            GroupProfileResponse groupProfileResponse = null;
+            if (post.getGroupId() != null) {
+                groupProfileResponse = groupClientService.getGroup(post.getGroupId());
+            }
+            PostsResponse postsResponse = new PostsResponse(post, userOfPostResponse, groupProfileResponse);
+            return postsResponse;
+        });
+    }
+
+    @Override
+    public Page<PostsResponse> findAllPostsInMonthByUserId(int page, int itemsPerPage, String userId) {
+        Pageable pageable = PageRequest.of(page - 1, itemsPerPage);
+        UserProfileResponse user = userClientService.getUser(userId);
+        Date startDate = getStartOfDay(getNDaysAgo(30));
+        Date endDate = getEndOfDay(new Date());
+        // Sử dụng postRepository để tìm tất cả bài post của một userId cụ thể
+        Page<Post> userPostsPage = postRepository.findByUserIdAndPostTimeBetween(user.getUserId(), startDate, endDate,
+                pageable);
+
+        return userPostsPage.map(post -> {
+            UserProfileResponse userOfPostResponse = userClientService.getUser(userId);
+            GroupProfileResponse groupProfileResponse = null;
+            if (post.getGroupId() != null) {
+                groupProfileResponse = groupClientService.getGroup(post.getGroupId());
+            }
+            PostsResponse postsResponse = new PostsResponse(post, userOfPostResponse, groupProfileResponse);
+            return postsResponse;
+        });
+    }
+
 
 }

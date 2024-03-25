@@ -5,11 +5,11 @@
     <parent>
         <groupId>vn.iostar</groupId>
         <artifactId>system_utealo_microservice</artifactId>
-        <version>0.0.1-SNAPSHOT</version>
+        <version>1.0-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
-
     <artifactId>cloud-config</artifactId>
+    <version>0.0.1-SNAPSHOT</version>
     <name>cloud-config</name>
     <description>cloud-config</description>
     <properties>
@@ -22,6 +22,18 @@
             <artifactId>spring-cloud-config-server</artifactId>
         </dependency>
     </dependencies>
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>org.springframework.cloud</groupId>
+                <artifactId>spring-cloud-dependencies</artifactId>
+                <version>${spring-cloud.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
     <build>
         <plugins>
             <plugin>

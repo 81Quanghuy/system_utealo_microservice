@@ -39,7 +39,7 @@ public class CommentManagerController {
     }
 
     // Admin xóa comment trong hệ thống
-    @PutMapping("/delete/{commentId}")
+    @DeleteMapping("/delete/{commentId}")
     public ResponseEntity<GenericResponse> deleteCommentOfPost(
             @RequestHeader("Authorization") String authorizationHeader, @PathVariable("commentId") String commentId) {
         return commentService.deleteCommentByAdmin(commentId, authorizationHeader);

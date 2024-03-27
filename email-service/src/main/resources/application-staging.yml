@@ -2,6 +2,4 @@ spring:
   config:
     import: optional:configserver:http://localhost:8888/
     activate:
-      on-profile: local
-  main:
-    web-application-type: reactive
+      on-profile: staging

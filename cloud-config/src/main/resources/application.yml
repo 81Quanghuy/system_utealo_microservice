@@ -1,14 +1,16 @@
 server:
-  port: 8888
-
+    port: 8888
 spring:
-  profiles:
-    active: default
-  application:
-    name: cloud-config
-  cloud:
-    config:
-      server:
-        git:
-          uri: https://github.com/81Quanghuy/cloud-config-server.git
-          basedir: /tmp/cloud-config-repo
+    application:
+        name: config_server
+    cloud:
+        config:
+          server:
+            git:
+              uri: https://github.com/81Quanghuy/cloud-config-server.git
+              default-label: main
+              clone-on-start: true
+              skip-ssl-validation: false
+
+
+

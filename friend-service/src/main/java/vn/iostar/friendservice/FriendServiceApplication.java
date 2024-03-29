@@ -13,8 +13,6 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @OpenAPIDefinition(info =
 @Info(title = "Friend API", version = "1.0", description = "Documentation Friend API v1.0")
 )
-@EnableScheduling
-@EnableAsync
 public class FriendServiceApplication {
 
     public static void main(String[] args) {

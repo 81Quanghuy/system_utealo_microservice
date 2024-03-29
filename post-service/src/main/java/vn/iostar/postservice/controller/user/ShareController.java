@@ -96,5 +96,19 @@ public class ShareController {
         return shareService.deleteSharePost(shareId, token, userId);
     }
 
+    // Lấy những bài share của minh
+    @GetMapping("/post")
+    public ResponseEntity<GenericResponse> getMyShare(
+            @RequestHeader("Authorization") String authorizationHeader,
+            @RequestParam(defaultValue = "0") Integer page,
+            @RequestParam(defaultValue = "20") Integer size) {
+        String token = authorizationHeader.substring(7);
+        String currentUserId = jwtService.extractUserId(token);
+        Pageable pageable = PageRequest.of(page, size);
+        List<SharesResponse> sharePosts = shareService.findMySharePosts(currentUserId, pageable);
+
+        return ResponseEntity.ok(GenericResponse.builder().success(true).message("Retrieving share post successfully")
+                .result(sharePosts).statusCode(HttpStatus.OK.value()).build());
+    }
 
 }

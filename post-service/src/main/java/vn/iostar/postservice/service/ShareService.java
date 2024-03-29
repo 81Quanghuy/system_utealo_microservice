@@ -58,5 +58,9 @@ public interface ShareService {
     Page<SharesResponse> findAllSharesByUserId(int page, int itemsPerPage, String userId);
     // Lấy tất cả bài share của 1 user trong 1 tháng có phân trang
     Page<SharesResponse> findAllSharesInMonthByUserId(int page, int itemsPerPage, String userId);
+    // Xem chi tiết bài share
+    ResponseEntity<GenericResponse> getShare(String currentUserId, String shareId);
+    // Lấy tất cả bài share của 1 user
+    List<SharesResponse> findMySharePosts(String currentUserId, Pageable pageable);
 
 }

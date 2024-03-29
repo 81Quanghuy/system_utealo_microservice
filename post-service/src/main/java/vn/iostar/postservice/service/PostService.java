@@ -70,4 +70,5 @@ public interface PostService {
     // Lấy tất cả bài post của 1 user trong 1 tháng có phân trang
     Page<PostsResponse> findAllPostsInMonthByUserId(int page, int itemsPerPage, String userId);
 
+
 }

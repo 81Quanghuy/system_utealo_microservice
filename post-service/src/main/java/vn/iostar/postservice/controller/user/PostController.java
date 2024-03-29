@@ -16,6 +16,7 @@ import vn.iostar.postservice.dto.response.PostsResponse;
 import vn.iostar.postservice.entity.Post;
 import vn.iostar.postservice.jwt.service.JwtService;
 import vn.iostar.postservice.service.PostService;
+import vn.iostar.postservice.service.ShareService;
 
 import java.util.List;
 import java.util.Optional;
@@ -27,6 +28,7 @@ public class PostController {
 
     private final PostService postService;
     private final JwtService jwtService;
+    private final ShareService shareService;
 
     // Xem chi tiết bài viết
     @GetMapping("/{postId}")
@@ -110,6 +112,14 @@ public class PostController {
         return postService.findLatestPhotosByUserId(currentUserId, userId, pageable);
     }
 
+    // Xem chi tiết bài share
+    @GetMapping("/share/{shareId}")
+    public ResponseEntity<GenericResponse> getShare(@RequestHeader("Authorization") String authorizationHeader,
+                                                    @PathVariable("shareId") String shareId) {
+        String token = authorizationHeader.substring(7);
+        String currentUserId = jwtService.extractUserId(token);
+        return shareService.getShare(currentUserId, shareId);
+    }
 
 
 }

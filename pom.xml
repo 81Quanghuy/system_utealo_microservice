@@ -23,7 +23,6 @@
 		<module>group-service</module>
 		<module>discovery-server</module>
 		<module>api-gateway</module>
-		<module>cloud-config</module>
 		<module>conversation-service</module>
 		<module>post-service</module>
 		<module>report-service</module>

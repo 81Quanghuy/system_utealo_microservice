@@ -21,6 +21,7 @@
     </option>
     <option name="ignoredFiles">
       <set>
+        <option value="$PROJECT_DIR$/cloud-config/pom.xml" />
         <option value="$PROJECT_DIR$/user-serivce/pom.xml" />
       </set>
     </option>

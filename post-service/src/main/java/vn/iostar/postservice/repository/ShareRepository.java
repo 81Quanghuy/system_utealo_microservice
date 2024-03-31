@@ -30,5 +30,5 @@ public interface ShareRepository extends MongoRepository<Share, String> {
     // Đếm số lượng bài share của một người dùng cụ thể
     Long countSharesByUserId(String userId);
     // Tìm tất cả bài share của một người dùng cụ thể
-    List<Share> findByUserUserId(String userId, Pageable pageable);
+    List<Share> findByUserId(String userId, Pageable pageable);
 }

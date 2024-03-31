@@ -526,7 +526,7 @@ public class ShareServiceImpl implements ShareService {
 
     @Override
     public List<SharesResponse> findMySharePosts(String currentUserId, Pageable pageable) {
-        List<Share> userSharePosts = shareRepository.findByUserUserId(currentUserId, pageable);
+        List<Share> userSharePosts = shareRepository.findByUserId(currentUserId, pageable);
         List<SharesResponse> sharesResponses = new ArrayList<>();
         for (Share share : userSharePosts) {
             UserProfileResponse userProfileResponse = userClientService.getUser(share.getUserId());

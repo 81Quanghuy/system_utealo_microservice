@@ -1,5 +1,42 @@
+eureka:
+  instance:
+    hostname: localhost
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+
+server:
+  port: 8200
+
+
 spring:
+  config:
+    import: optional:configserver:http://localhost:8888/
+  kafka:
+    bootstrap-servers: localhost:9092
+    producer:
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      properties:
+        [enable.idempotence]: true # check trung lap event
+        [max.in.flight.requests.per.connection]: 5 # so luong request toi da tren 1 connection
+        [request.timeout.ms]: 10000
+      retries: 1
+      # 0 : no wait for kafka response
+      # 1: leader write success, no wait for follower
+      # -1: leader write success, wait for follower write success
+      acks: -1
+    consumer:
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      auto-offset-reset: earliest
   application:
     name: friend-service
-  profiles:
-    active: dev
+  data:
+    mongodb:
+      uri : mongodb+srv://huy:huyvff111@cluster0.wteenm1.mongodb.net/testmongo?retryWrites=true&w=majority
+      database : friend-service
+
+springdoc:
+  packages-to-scan:
+    vn.iostar.friendservice
+  api-docs:
+    path: /v3/api-docs/friend-service

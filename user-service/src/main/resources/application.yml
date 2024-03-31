@@ -1,5 +1,103 @@
+eureka:
+  instance:
+    hostname: localhost
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+
+server:
+  port: 8000
+
 spring:
+  kafka:
+    bootstrap-servers: localhost:9092
+    producer:
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      properties:
+        [enable.idempotence]: true #check trung lap event
+        [max.in.flight.requests.per.connection]: 5 # so luong request toi da tren 1 connection
+        [request.timeout.ms]: 60000
+      retries: 1
+      # 0 : no wait for kafka response
+      # 1: leader write success, no wait for follower
+      # -1: leader write success, wait for follower write success
+      acks: -1
+    consumer:
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      auto-offset-reset: earliest
+
   application:
     name: user-service
-  profiles:
-    active: dev
+  servlet:
+    multipart:
+      max-file-size: 20MB
+      max-request-size: 20MB
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: ngoquanghuy0510@gmail.com
+    password: iekijimtrmjenohk
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+  datasource:
+    driver-class-name: com.microsoft.sqlserver.jdbc.SQLServerDriver
+    url: jdbc:sqlserver://user-service.database.windows.net:1433;database=user-service;user=UteAdmin@user-service;;encrypt=false;trustServerCertificate=true;hostNameInCertificate=*.database.windows.net;loginTimeout=30;
+    username: UteAdmin
+    password: UteAlo@111
+  #    url: jdbc:sqlserver://localhost;database=UTEALO;encrypt=false;trustServerCertificate=true;sslProtocol=TLSv1.2;characterEncoding=UTF-8
+  #    username: sa
+  #    password: 123
+  jpa:
+    hibernate:
+      ddl-auto: update
+    database: sql_server
+    database-platform: org.hibernate.dialect.SQLServerDialect
+
+springdoc:
+  packages-to-scan:
+    vn.iotstart.userservice
+  api-docs:
+    path: /v3/api-docs/user-service
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      userService:
+        register-health-indicator: true
+        event-consumer-buffer-size: 10
+        automatic-transition-from-open-to-half-open-enabled: true
+        failure-rate-threshold: 50
+        minimum-number-of-calls: 5
+        permitted-number-of-calls-in-half-open-state: 3
+        sliding-window-size: 10
+        wait-duration-in-open-state: 5s
+        sliding-window-type: COUNT_BASED
+
+cloudinary:
+  cloud-name: ddccjvlbf
+  api-key: 135792485217745
+  api-secret: 6XXhPgTw6dZ3x7d43S_x5tIF7oU
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+  health:
+    circuitbreakers:
+      enabled: true
+  endpoint:
+    health:
+      show-details: always
+
+#management:
+#  tracing:
+#    sampling:
+#      probability: 1.0
+ribbon:
+  eureka:
+    enabled: true

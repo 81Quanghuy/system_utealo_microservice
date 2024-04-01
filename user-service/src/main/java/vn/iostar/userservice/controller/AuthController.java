@@ -16,12 +16,12 @@ import vn.iostar.userservice.dto.request.TokenRequest;
 import vn.iostar.userservice.dto.response.GenericResponse;
 import vn.iostar.userservice.entity.Account;
 import vn.iostar.userservice.entity.Token;
+import vn.iostar.userservice.exception.wrapper.BadRequestException;
 import vn.iostar.userservice.jwt.service.JwtService;
 import vn.iostar.userservice.repository.AccountRepository;
 import vn.iostar.userservice.repository.TokenRepository;
 import vn.iostar.userservice.service.AccountService;
 import vn.iostar.userservice.service.TokenService;
-
 
 import java.util.*;
 
@@ -39,65 +39,20 @@ public class AuthController {
 
     @PostMapping("/login")
     @Transactional
-    public ResponseEntity<?> login(@Valid @RequestBody LoginDTO loginDTO) {
-
-        if (accountService.findByEmail(loginDTO.getCredentialId()).isEmpty()
-                && accountService.findByPhone(loginDTO.getCredentialId()).isEmpty()) {
-            return ResponseEntity.ok().body(GenericResponse.builder().success(false).message("not found user")
-                    .result(null).statusCode(HttpStatus.NOT_FOUND.value()).build());
-        }
-
-        Optional<Account> optionalUser = accountService.findByEmail(loginDTO.getCredentialId());
-        if (optionalUser.isPresent() && !optionalUser.get().getIsVerified()) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(GenericResponse.builder().success(false).message("Your account is not verified!").result(null)
-                            .statusCode(HttpStatus.INTERNAL_SERVER_ERROR.value()).build());
-        }
-
-        String accessToken = jwtService.generateAccessToken(optionalUser.get());
-        String refreshToken = jwtService.generateRefreshToken(optionalUser.get());
-
-        Token token = Token.builder()
-                .token(refreshToken)
-                .isExpired(false)
-                .isRevoked(false)
-                .type(TokenType.REFRESH_ACCESS_TOKEN)
-                .expiredAt(new Date(System.currentTimeMillis() + 30L * 24 * 60 * 60 * 1000))
-                .user(optionalUser.get().getUser())
-                .build();
-
-
-        // Invalid all refreshToken before
-        tokenService.revokeRefreshToken(optionalUser.get().getUser().getUserId());
-        tokenService.save(token);
-
-        Map<String, String> tokenMap = new HashMap<>();
-        tokenMap.put("accessToken", accessToken);
-        tokenMap.put("refreshToken", refreshToken);
-        tokenMap.put("userId", optionalUser.get().getUser().getUserId());
-        tokenMap.put("roleName", optionalUser.get().getUser().getRole().getRoleName().name());
-
-        optionalUser.get().setLastLoginAt(new Date());
-        accountService.save(optionalUser.get());
-
-        return ResponseEntity.ok().body(GenericResponse.builder().success(true).message("Login successfully!")
-                .result(tokenMap).statusCode(HttpStatus.OK.value()).build());
-
+    public ResponseEntity<GenericResponse> login(@Valid @RequestBody LoginDTO loginDTO) {
+       return accountService.login(loginDTO);
     }
 
     @PostMapping("/register")
     public ResponseEntity<GenericResponse> registerProcess(@RequestBody @Valid RegisterRequest registerRequest,
                                                            BindingResult bindingResult) {
-
         if (bindingResult.hasErrors()) {
             String errorMessage = Objects.requireNonNull(bindingResult.getFieldError()).getDefaultMessage();
-
             return ResponseEntity.status(500)
                     .body(new GenericResponse(false, errorMessage, null, HttpStatus.INTERNAL_SERVER_ERROR.value()));
         } else {
             return accountService.userRegister(registerRequest);
         }
-
     }
 
     @PostMapping("/logout")

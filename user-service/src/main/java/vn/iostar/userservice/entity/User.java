@@ -56,7 +56,7 @@ public class User extends AbstractMappedEntity implements Serializable {
 
     @Column(name = "is_user_vertified")
     @Builder.Default
-    private boolean isVerified = false;
+    private Boolean isVerified = false;
 
     @ManyToOne
     @JoinColumn(name = "role_id")

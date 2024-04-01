@@ -12,6 +12,7 @@ import java.util.Date;
 @Getter
 @Setter
 @Entity
+@Table(name = "password_reset_otp")
 public class PasswordResetOtp implements Serializable {
 
 	@Serial

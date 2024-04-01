@@ -1,5 +1,6 @@
 package vn.iostar.friendservice.service;
 
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.ResponseEntity;
 import vn.iostar.friendservice.dto.FriendshipDto;
 import vn.iostar.friendservice.dto.response.FriendOfUserResponse;
@@ -31,4 +32,6 @@ public interface FriendService {
     List<FriendResponse> findFriendUserIdsByUserId(String userId);
 
     ResponseEntity<GenericResponse> findFriendSuggestions(String userIdToken);
+
+    List<FriendResponse> findFriendUserIdsByUserIdPageable(String userId, PageRequest of);
 }

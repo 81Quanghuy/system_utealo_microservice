@@ -17,26 +17,20 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Configuration
+@RequiredArgsConstructor
 public class RouteConfig {
-
-    @Autowired
-    private AuthFilter authFilter;
-    @Autowired
-    private AdminAuthFilter adminAuthFilter;
+    private final AuthFilter authFilter;
+    private final AdminAuthFilter adminAuthFilter;
     private final String API_V1 = "/api/v1/";
     private final Map<String, List<String>> services = Map.of(
             "conversation-service", pathConfig(List.of("chat-messages", "chat-users",
                     "chat-rooms", "notifications")),
-            "friend-service", pathConfig(List.of("friends", "friend-requests",
-                    "friendships")),
-            "group-service", pathConfig(List.of("groups", "group-members", "events",
-                    "group-member-requests", "group-member-invitations")),
+            "friend-service", pathConfig(List.of("friend", "friend-requests")),
+            "group-service", pathConfig(List.of("groupPost", "group-members", "events")),
             "media-service", pathConfig(List.of("files", "albums")),
             "post-service", pathConfig(List.of("posts", "comments", "reactions")),
-            "user-service", pathConfig(List.of("users", "credentials", "tokens", "auth", "relationships"
-                    , "addresses", "subjects")),
-            "exam-service", pathConfig(List.of("exams", "questions",
-                    "answers", "submissions", "submission-details")
+            "user-service", pathConfig(List.of("user", "auth", "accounts", "password_reset_otp"
+                    , "profiles", "roles")
             )
     );
 

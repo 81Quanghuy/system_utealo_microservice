@@ -18,11 +18,11 @@ public class KafkaConfig {
     }
     @Bean
     public NewTopic topic1() {
-        return new NewTopic(KafkaTopicName.USER_TOPIC, 2, (short) 1);
+        return new NewTopic(KafkaTopicName.EMAIL_REGISTER_TOPIC, 2, (short) 1);
     }
 
     @Bean
     public NewTopic getUserInf() {
-        return new NewTopic(KafkaTopicName.GET_USER_INF_FRIEND_TOPIC, 2, (short) 1);
+        return new NewTopic(KafkaTopicName.EMAIL_FORGOT_PASSWORD_TOPIC, 2, (short) 1);
     }
 }

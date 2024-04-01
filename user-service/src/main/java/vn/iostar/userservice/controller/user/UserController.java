@@ -53,25 +53,15 @@ public class UserController {
 
     private final UserService userService;
 
-    @Autowired
-    CloudinaryService cloudinaryService;
+    private final CloudinaryService cloudinaryService;
 
-    @Autowired
-    JavaMailSender javaMailSender;
+    private final JavaMailSender javaMailSender;
 
-    @Autowired
-    AccountService accountService;
+    private final AccountService accountService;
 
-    @Autowired
-    TemplateEngine templateEngine;
+    private final TemplateEngine templateEngine;
 
-    @Autowired
-    Environment env;
-
-    @GetMapping("/home")
-    public String homePage() {
-        return "Hello User";
-    }
+    private final Environment env;
 
     @GetMapping("/profile")
     public ResponseEntity<GenericResponse> getInformation(@RequestHeader("Authorization") String authorizationHeader) {
@@ -99,8 +89,6 @@ public class UserController {
             return ResponseEntity.ok(GenericResponse.builder().success(true).message("Successfully")
                     .result(profileResponse).statusCode(HttpStatus.OK.value()).build());
         }
-
-
     }
 
     @PutMapping("/update")
@@ -125,38 +113,18 @@ public class UserController {
         if (bindingResult.hasErrors()) {
             throw new RuntimeException(Objects.requireNonNull(bindingResult.getFieldError()).getDefaultMessage());
         }
-
         return userService.changePassword(userId, request);
     }
 
     @PostMapping("/forgot-password")
-    public GenericResponse resetPassword(@RequestParam final String email)
+    public ResponseEntity<GenericResponse> resetPassword(@RequestParam final String email)
             throws MessagingException, UnsupportedEncodingException {
         Optional<User> user = userService.findByAccountEmail(email);
         if (user.isEmpty()) {
-            return GenericResponse.builder().success(false).message("NOT FOUND").result("Not found Email")
-                    .statusCode(HttpStatus.NOT_FOUND.value()).build();
+            return ResponseEntity.ok(GenericResponse.builder().success(true).message("Không tìm thấy người dùng").result(null)
+                    .statusCode(404).build());
         }
-
-        String otp = UUID.randomUUID().toString();
-        userService.createPasswordResetOtpForUser(user.get(), otp);
-        String url = "http://localhost:8000/reset-password?token=" + otp;
-        String subject = "Thay đổi mật khẩu tài khoản UteAlo";
-        Context context = new Context();
-        context.setVariable("url", url);
-        String content = templateEngine.process("forgot-password", context);
-
-        MimeMessage message = javaMailSender.createMimeMessage();
-        MimeMessageHelper helper = new MimeMessageHelper(message, true);
-        helper.setSubject(subject);
-        helper.setText(content, true);
-        helper.setTo(user.get().getAccount().getEmail());
-        helper.setFrom(Objects.requireNonNull(env.getProperty("spring.mail.username")), "Admin UteAlo");
-
-        javaMailSender.send(message);
-
-        return GenericResponse.builder().success(true).message("Please check your email to reset your password!")
-                .result("Send Otp successfully!").statusCode(HttpStatus.OK.value()).build();
+        return userService.forgotPassword(user.get());
     }
 
     @PutMapping("/reset-password")

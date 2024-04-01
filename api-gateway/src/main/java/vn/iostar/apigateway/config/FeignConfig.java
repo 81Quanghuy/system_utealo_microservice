@@ -14,7 +14,6 @@ import org.springframework.http.converter.json.MappingJackson2HttpMessageConvert
 import org.springframework.web.client.RestTemplate;
 
 @Configuration
-@EnableFeignClients
 public class FeignConfig {
     @Bean
     public Decoder feignDecoder() {

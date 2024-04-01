@@ -25,7 +25,7 @@ public class RouteConfig {
     private final Map<String, List<String>> services = Map.of(
             "conversation-service", pathConfig(List.of("chat-messages", "chat-users",
                     "chat-rooms", "notifications")),
-            "friend-service", pathConfig(List.of("friend", "friend-requests")),
+            "friend-service", pathConfig(List.of("friend", "friend-request")),
             "group-service", pathConfig(List.of("groupPost", "group-members", "events")),
             "media-service", pathConfig(List.of("files", "albums")),
             "post-service", pathConfig(List.of("posts", "comments", "reactions")),

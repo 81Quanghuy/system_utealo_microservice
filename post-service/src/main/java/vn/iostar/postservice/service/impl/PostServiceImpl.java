@@ -18,16 +18,14 @@ import vn.iostar.postservice.dto.GenericResponseAdmin;
 import vn.iostar.postservice.dto.PaginationInfo;
 import vn.iostar.postservice.dto.request.CreatePostRequestDTO;
 import vn.iostar.postservice.dto.request.PostUpdateRequest;
-import vn.iostar.postservice.dto.response.GroupProfileResponse;
-import vn.iostar.postservice.dto.response.PhoToResponse;
-import vn.iostar.postservice.dto.response.PostsResponse;
-import vn.iostar.postservice.dto.response.UserProfileResponse;
-import vn.iostar.postservice.entity.Comment;
+import vn.iostar.postservice.dto.response.*;
 import vn.iostar.postservice.entity.Post;
+import vn.iostar.postservice.entity.Share;
 import vn.iostar.postservice.jwt.service.JwtService;
 import vn.iostar.postservice.repository.CommentRepository;
 import vn.iostar.postservice.repository.LikeRepository;
 import vn.iostar.postservice.repository.PostRepository;
+import vn.iostar.postservice.repository.ShareRepository;
 import vn.iostar.postservice.service.CloudinaryService;
 import vn.iostar.postservice.service.PostService;
 import vn.iostar.postservice.service.client.GroupClientService;
@@ -52,6 +50,7 @@ public class PostServiceImpl implements PostService {
     private final CloudinaryService cloudinaryService;
     private final CommentRepository commentRepository;
     private final LikeRepository likeRepository;
+    private final ShareRepository shareRepository;
 
     @Override
     public <S extends Post> S save(S entity) {
@@ -646,6 +645,9 @@ public class PostServiceImpl implements PostService {
             return postsResponse;
         });
     }
+
+
+
 
 
 }

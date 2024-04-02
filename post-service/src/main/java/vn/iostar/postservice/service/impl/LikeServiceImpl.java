@@ -1,14 +1,13 @@
 package vn.iostar.postservice.service.impl;
 
-import jakarta.ws.rs.NotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import vn.iostar.dto.LikePostResponse;
 import vn.iostar.postservice.dto.GenericResponse;
 import vn.iostar.postservice.dto.response.LikeCommentResponse;
+import vn.iostar.postservice.dto.response.LikeShareResponse;
 import vn.iostar.postservice.dto.response.ListUserLikePost;
 import vn.iostar.postservice.dto.response.UserProfileResponse;
 import vn.iostar.postservice.entity.Comment;

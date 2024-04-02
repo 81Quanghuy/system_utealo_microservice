@@ -4,20 +4,20 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import vn.iostar.groupservice.constant.GroupMemberRoleType;
+import vn.iostar.groupservice.constant.RoleName;
 import vn.iostar.groupservice.dto.FilesOfGroupDTO;
 import vn.iostar.groupservice.dto.PhotosOfGroupDTO;
 import vn.iostar.groupservice.dto.PostGroupDTO;
 import vn.iostar.groupservice.dto.SearchPostGroup;
 import vn.iostar.groupservice.dto.request.GroupCreateRequest;
-import vn.iostar.groupservice.dto.response.GenericResponse;
-import vn.iostar.groupservice.dto.response.GroupPostResponse;
-import vn.iostar.groupservice.dto.response.PostGroupResponse;
+import vn.iostar.groupservice.dto.response.*;
 import vn.iostar.groupservice.entity.Group;
 import vn.iostar.groupservice.entity.GroupMember;
 import vn.iostar.groupservice.entity.GroupRequest;
@@ -30,8 +30,13 @@ import vn.iostar.groupservice.repository.GroupRequestRepository;
 import vn.iostar.groupservice.service.GroupService;
 import vn.iostar.groupservice.service.MapperService;
 import vn.iostar.groupservice.service.client.FileClientService;
+import vn.iostar.groupservice.service.client.UserClientService;
 
 import java.io.IOException;
+import java.time.LocalDateTime;
+import java.time.Month;
+import java.time.ZoneId;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 
 @Service
@@ -45,6 +50,7 @@ public class GroupServiceImpl implements GroupService {
     private final GroupRequestRepository groupRequestRepository;
     private final JwtService jwtService;
     private final FileClientService fileClientService;
+    private final UserClientService userClientService;
 
     @Override
     public ResponseEntity<GenericResponse> getPostGroupByUserId(String authorizationHeader) {
@@ -296,4 +302,260 @@ public class GroupServiceImpl implements GroupService {
         }
         return ResponseEntity.ok(GenericResponse.builder().success(true).message("Lấy danh sách nhóm thành công!").result(groupPostResponses).statusCode(HttpStatus.OK.value()).build());
     }
+
+    @Override
+    public ResponseEntity<GenericResponseAdmin> getAllGroups(String authorizationHeader, int page, int itemsPerPage) {
+        String token = authorizationHeader.substring(7);
+        String currentUserId = jwtService.extractUserId(token);
+        UserProfileResponse user = userClientService.getUser(currentUserId);
+        RoleName roleName = user.getRoleName();
+        if (!roleName.name().equals("Admin")) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(GenericResponseAdmin.builder().success(false)
+                    .message("No access").statusCode(HttpStatus.FORBIDDEN.value()).build());
+        }
+
+        Page<SearchPostGroup> groups = findAllGroups(page, itemsPerPage);
+        long totalGroups = groupRepository.count();
+
+        PaginationInfo pagination = new PaginationInfo();
+        pagination.setPage(page);
+        pagination.setItemsPerPage(itemsPerPage);
+        pagination.setCount(totalGroups);
+        pagination.setPages((int) Math.ceil((double) totalGroups / itemsPerPage));
+
+        if (groups.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(GenericResponseAdmin.builder().success(true)
+                    .message("Empty").result(null).statusCode(HttpStatus.NOT_FOUND.value()).build());
+        } else {
+            return ResponseEntity.status(HttpStatus.OK)
+                    .body(GenericResponseAdmin.builder().success(true).message("Retrieved List of Groups Successfully")
+                            .result(groups).pagination(pagination).statusCode(HttpStatus.OK.value()).build());
+        }
+    }
+
+
+    @Override
+    public Page<SearchPostGroup> findAllGroups(int page, int itemsPerPage) {
+        Pageable pageable = PageRequest.of(page - 1, itemsPerPage);
+        Page<SearchPostGroup> postGroups = groupRepository.findAllPostGroups(pageable);
+
+        Page<SearchPostGroup> simplifiedGroupPosts = postGroups.map(group -> {
+            Optional<Group> postGroupOptional = findById(group.getId());
+            if (postGroupOptional.isPresent()) {
+                group.setCountMember(groupMemberRepository.countByGroupId(group.getId()));
+            }
+            return group;
+        });
+        return simplifiedGroupPosts;
+    }
+
+    @Override
+    public ResponseEntity<GenericResponse> deletePostGroupByAdmin(String postGroupId, String authorizationHeader) {
+        String token = authorizationHeader.substring(7);
+        String currentUserId = jwtService.extractUserId(token);
+        UserProfileResponse user = userClientService.getUser(currentUserId);
+        RoleName roleName = user.getRoleName();
+        if (!roleName.name().equals("Admin")) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(GenericResponse.builder().success(false)
+                    .message("No have access").statusCode(HttpStatus.NOT_FOUND.value()).build());
+        }
+        Optional<Group> posGroupOptional = findById(postGroupId);
+        Page<SearchPostGroup> groups = findAllGroups(1, 10);
+        if (posGroupOptional.isPresent()) {
+            //xóa member trong nhóm
+            List<GroupMember> groupMember = groupMemberRepository.findAllByGroupId(postGroupId);
+            groupMemberRepository.deleteAll(groupMember);
+            List<GroupRequest> groupRequest = groupRequestRepository.findAllByGroupId(postGroupId);
+            groupRequestRepository.deleteAll(groupRequest);
+            groupRepository.delete(posGroupOptional.get());
+            return ResponseEntity.ok()
+                    .body(new GenericResponse(true, "Delete Successful!", groups, HttpStatus.OK.value()));
+        } else {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(new GenericResponse(false, "Cannot found post group!", null, HttpStatus.NOT_FOUND.value()));
+        }
+
+    }
+
+    @Override
+    public Map<String, Long> countGroupsByMonthInYear() {
+        LocalDateTime now = LocalDateTime.now();
+        int currentYear = now.getYear();
+
+        // Tạo một danh sách các tháng
+        List<Month> months = Arrays.asList(Month.values());
+        Map<String, Long> groupCountsByMonth = new LinkedHashMap<>(); // Sử dụng LinkedHashMap để duy trì thứ tự
+
+        for (Month month : months) {
+            LocalDateTime startDate = LocalDateTime.of(currentYear, month, 1, 0, 0);
+            LocalDateTime endDate = startDate.plusMonths(1).minusSeconds(1);
+
+            Date startDateAsDate = Date.from(startDate.atZone(ZoneId.systemDefault()).toInstant());
+            Date endDateAsDate = Date.from(endDate.atZone(ZoneId.systemDefault()).toInstant());
+
+            long grpupCount = groupRepository.countByCreatedAtBetween(startDateAsDate, endDateAsDate);
+            groupCountsByMonth.put(month.toString(), grpupCount);
+        }
+
+        return groupCountsByMonth;
+    }
+
+    // Chuyển sang giờ bắt đầu của 1 ngày là 00:00:00
+    public Date getStartOfDay(Date date) {
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTime(date);
+        calendar.set(Calendar.HOUR_OF_DAY, 0);
+        calendar.set(Calendar.MINUTE, 0);
+        calendar.set(Calendar.SECOND, 0);
+        calendar.set(Calendar.MILLISECOND, 0);
+        return calendar.getTime();
+    }
+
+    // Chuyển sang giờ kết thức của 1 ngày là 23:59:59
+    public Date getEndOfDay(Date date) {
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTime(date);
+        calendar.set(Calendar.HOUR_OF_DAY, 23);
+        calendar.set(Calendar.MINUTE, 59);
+        calendar.set(Calendar.SECOND, 59);
+        calendar.set(Calendar.MILLISECOND, 999);
+        return calendar.getTime();
+    }
+
+    // Đếm số lượng user trong ngày hôm nay
+    @Override
+    public long countGroupsToday() {
+        Date startDate = getStartOfDay(new Date());
+        Date endDate = getEndOfDay(new Date());
+        return groupRepository.countByCreatedAtBetween(startDate, endDate);
+    }
+
+    // Đếm số lượng user trong 7 ngày
+    @Override
+    public long countGroupsInWeek() {
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime weekAgo = now.minus(1, ChronoUnit.WEEKS);
+        Date startDate = Date.from(weekAgo.atZone(ZoneId.systemDefault()).toInstant());
+        Date endDate = Date.from(now.atZone(ZoneId.systemDefault()).toInstant());
+        return groupRepository.countByCreatedAtBetween(startDate, endDate);
+    }
+
+    // Đếm số lượng user trong 1 tháng
+    @Override
+    public long countGroupsInMonthFromNow() {
+        // Lấy thời gian hiện tại
+        LocalDateTime now = LocalDateTime.now();
+
+        // Thời gian bắt đầu là thời điểm hiện tại trừ 1 tháng
+        LocalDateTime startDate = now.minusMonths(1);
+
+        // Thời gian kết thúc là thời điểm hiện tại
+        LocalDateTime endDate = now;
+
+        // Chuyển LocalDateTime sang Date (với ZoneId cụ thể, ở đây là
+        // ZoneId.systemDefault())
+        Date startDateAsDate = Date.from(startDate.atZone(ZoneId.systemDefault()).toInstant());
+        Date endDateAsDate = Date.from(endDate.atZone(ZoneId.systemDefault()).toInstant());
+
+        // Truy vấn số lượng user trong khoảng thời gian này
+        return groupRepository.countByCreatedAtBetween(startDateAsDate, endDateAsDate);
+    }
+
+    // Đếm số lượng user trong 3 tháng
+    @Override
+    public long countGroupsInThreeMonthsFromNow() {
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime startDate = now.minusMonths(3);
+        LocalDateTime endDate = now;
+        Date startDateAsDate = Date.from(startDate.atZone(ZoneId.systemDefault()).toInstant());
+        Date endDateAsDate = Date.from(endDate.atZone(ZoneId.systemDefault()).toInstant());
+        return groupRepository.countByCreatedAtBetween(startDateAsDate, endDateAsDate);
+    }
+
+    // Đếm số lượng user trong 6 tháng
+    @Override
+    public long countGroupsInSixMonthsFromNow() {
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime startDate = now.minusMonths(6);
+        LocalDateTime endDate = now;
+        Date startDateAsDate = Date.from(startDate.atZone(ZoneId.systemDefault()).toInstant());
+        Date endDateAsDate = Date.from(endDate.atZone(ZoneId.systemDefault()).toInstant());
+        return groupRepository.countByCreatedAtBetween(startDateAsDate, endDateAsDate);
+    }
+
+    // Đếm số lượng user trong 9 tháng
+    @Override
+    public long countGroupsInNineMonthsFromNow() {
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime startDate = now.minusMonths(9);
+        LocalDateTime endDate = now;
+        Date startDateAsDate = Date.from(startDate.atZone(ZoneId.systemDefault()).toInstant());
+        Date endDateAsDate = Date.from(endDate.atZone(ZoneId.systemDefault()).toInstant());
+        return groupRepository.countByCreatedAtBetween(startDateAsDate, endDateAsDate);
+    }
+
+    // Đếm số lượng user trong 1 năm
+    @Override
+    public long countGroupsInOneYearFromNow() {
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime startDate = now.minusYears(1);
+        LocalDateTime endDate = now;
+        Date startDateAsDate = Date.from(startDate.atZone(ZoneId.systemDefault()).toInstant());
+        Date endDateAsDate = Date.from(endDate.atZone(ZoneId.systemDefault()).toInstant());
+        return groupRepository.countByCreatedAtBetween(startDateAsDate, endDateAsDate);
+    }
+
+    @Override
+    public List<SearchPostGroup> getGroupsToday() {
+        Date startDate = getStartOfDay(new Date());
+        Date endDate = getEndOfDay(new Date());
+        List<SearchPostGroup> groups = groupRepository.findPostGroupByCreateDateBetween(startDate, endDate);
+        return groups;
+    }
+
+    @Override
+    public List<SearchPostGroup> getGroupsIn7Days() {
+        Date startDate = getStartOfDay(getNDaysAgo(6));
+        Date endDate = getEndOfDay(new Date());
+        List<SearchPostGroup> groups = groupRepository.findPostGroupByCreateDateBetween(startDate, endDate);
+        return groups;
+    }
+
+    @Override
+    public List<SearchPostGroup> getGroupsInMonth() {
+        Date startDate = getStartOfDay(getNDaysAgo(30));
+        Date endDate = getEndOfDay(new Date());
+        List<SearchPostGroup> groups = groupRepository.findPostGroupByCreateDateBetween(startDate, endDate);
+        return groups;
+    }
+
+    public Date getNDaysAgo(int days) {
+        Calendar calendar = Calendar.getInstance();
+        calendar.add(Calendar.DAY_OF_MONTH, -days);
+        return calendar.getTime();
+    }
+
+    @Override
+    public ResponseEntity<GenericResponseAdmin> getPostGroupJoinByUserId(String userId, int page, int itemsPerPage) {
+        Pageable pageable = PageRequest.of(page - 1, itemsPerPage); // Tính toán trang và số lượng phần tử trên trang
+
+        Page<GroupPostResponse> groupPostPage = groupRepository.findPostGroupByUserId(userId, pageable);
+
+        PaginationInfo pagination = new PaginationInfo();
+        pagination.setPage(page);
+        pagination.setItemsPerPage(itemsPerPage);
+        pagination.setCount(groupPostPage.getTotalElements());
+        pagination.setPages(groupPostPage.getTotalPages());
+
+        if (groupPostPage.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(GenericResponseAdmin.builder().success(false)
+                    .message("No Groups Found for User").statusCode(HttpStatus.NOT_FOUND.value()).build());
+        } else {
+            return ResponseEntity.ok(GenericResponseAdmin.builder().success(true)
+                    .message("Retrieved List of Joined Groups Successfully").result(groupPostPage.getContent())
+                    .pagination(pagination).statusCode(HttpStatus.OK.value()).build());
+        }
+    }
+
+
 }

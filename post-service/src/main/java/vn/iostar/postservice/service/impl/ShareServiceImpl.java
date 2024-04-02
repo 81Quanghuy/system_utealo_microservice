@@ -509,4 +509,34 @@ public class ShareServiceImpl implements ShareService {
             return sharesResponse;
         });
     }
+
+
+    public ResponseEntity<GenericResponse> getShare(String currentUserId, String shareId) {
+        Optional<Share> share = shareRepository.findById(shareId);
+        if (share.isEmpty())
+            return ResponseEntity.ok(GenericResponse.builder().success(null).message("not found share").result(null)
+                    .statusCode(HttpStatus.NOT_FOUND.value()).build());
+
+        SharesResponse sharePost = getSharePost(share.get(), currentUserId);
+
+        return ResponseEntity.ok(GenericResponse.builder().success(true).message("Retrieving user profile successfully")
+                .result(sharePost).statusCode(HttpStatus.OK.value()).build());
+
+    }
+
+    @Override
+    public List<SharesResponse> findMySharePosts(String currentUserId, Pageable pageable) {
+        List<Share> userSharePosts = shareRepository.findByUserId(currentUserId, pageable);
+        List<SharesResponse> sharesResponses = new ArrayList<>();
+        for (Share share : userSharePosts) {
+            UserProfileResponse userProfileResponse = userClientService.getUser(share.getUserId());
+            GroupProfileResponse groupProfileResponse = null;
+            if (share.getPostGroupId() != null) {
+                groupProfileResponse = groupClientService.getGroup(share.getPostGroupId());
+            }
+            SharesResponse sharesResponse = new SharesResponse(share, userProfileResponse, groupProfileResponse);
+            sharesResponses.add(sharesResponse);
+        }
+        return sharesResponses;
+    }
 }

@@ -8,7 +8,7 @@ import lombok.*;
 @NoArgsConstructor
 @Builder
 public class SearchPostGroup {
-    private String id;
+    private String postGroupId;
     private String postGroupName;
     private String avatarGroup;
     private String checkUserInGroup;
@@ -17,9 +17,9 @@ public class SearchPostGroup {
     private int countMember;
     private int countFriendJoinnedGroup;
 
-    public SearchPostGroup(String id, String postGroupName, String avatarGroup, String bio, Boolean isPublic) {
+    public SearchPostGroup(String postGroupId, String postGroupName, String avatarGroup, String bio, Boolean isPublic) {
         super();
-        this.id = id;
+        this.postGroupId = postGroupId;
         this.postGroupName = postGroupName;
         this.avatarGroup = avatarGroup;
         this.bio = bio;

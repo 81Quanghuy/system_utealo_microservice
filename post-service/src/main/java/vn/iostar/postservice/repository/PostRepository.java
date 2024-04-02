@@ -41,6 +41,12 @@ public interface PostRepository extends MongoRepository<Post, String> {
     List<Post> findByPostTimeBetween(Date startDate, Date endDate);
     // Đếm số lượng bài post trong khoảng thời gian
     long countByPostTimeBetween(Date startDate, Date endDate);
+
+    // Đếm số lượng bài post trong khoảng thời gian 1 tháng
+//    @Query("SELECT COUNT(p) FROM Post p WHERE p.postTime BETWEEN ?1 AND ?2")
+//    long countPostsBetweenDates(@Param("startDate") Date startDate, @Param("endDate") Date endDate);
+//    long countPostBetweenStartDateAndEndDate(Date startDate, Date endDate);
+
     // Đếm số lượng bài post của người dùng trong 1 tháng
     long countByUserIdAndPostTimeBetween(String userId, Date start, Date end);
     // Định nghĩa phương thức để tìm tất cả bài post của một userId và sắp xếp theo thời gian đăng bài giảm dần

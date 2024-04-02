@@ -10,7 +10,7 @@ import vn.iostar.groupservice.constant.GroupMemberRoleType;
 @AllArgsConstructor
 @Builder
 public class GroupPostResponse {
-    private String id;
+    private String postGroupId;
     private String postGroupName;
     private String avatarGroup;
     private String backgroundGroup;

@@ -10,12 +10,10 @@ import vn.iostar.groupservice.dto.request.GroupConfigRequest;
 import vn.iostar.groupservice.dto.request.GroupCreateRequest;
 import vn.iostar.groupservice.dto.request.UpdateDetailRequest;
 import vn.iostar.groupservice.dto.response.GenericResponse;
-import vn.iostar.groupservice.dto.response.GenericResponseAdmin;
 import vn.iostar.groupservice.entity.Group;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 
 public interface GroupService {
@@ -50,46 +48,4 @@ public interface GroupService {
     ResponseEntity<GenericResponse> getPostGroupOwnerByUserId(String currentUserId);
 
     ResponseEntity<GenericResponse> findByPostGroupNameContainingIgnoreCase(String search, String currentUserId);
-
-    Page<SearchPostGroup> findAllGroups(int page, int itemsPerPage);
-
-    ResponseEntity<GenericResponseAdmin> getAllGroups(String authorizationHeader, int page, int itemsPerPage);
-
-    ResponseEntity<GenericResponse> deletePostGroupByAdmin(String postGroupId, String authorizationHeader);
-
-    Map<String, Long> countGroupsByMonthInYear();
-
-    // Đếm số lượng user trong ngày hôm nay
-    long countGroupsToday();
-
-    // Đếm số lượng user trong 7 ngày
-    public long countGroupsInWeek();
-
-    // Đếm số lượng user trong 1 tháng
-    long countGroupsInMonthFromNow();
-
-    // Đếm số lượng user trong 1 năm
-    long countGroupsInOneYearFromNow();
-
-    // Đếm số lượng user trong 9 tháng
-    long countGroupsInNineMonthsFromNow();
-
-    // Đếm số lượng user trong 6 tháng
-    long countGroupsInSixMonthsFromNow();
-
-    // Đếm số lượng user trong 3 tháng
-    long countGroupsInThreeMonthsFromNow();
-
-    // Thống kê bài post trong ngày hôm nay
-    List<SearchPostGroup> getGroupsToday();
-
-    // Thống kê bài post trong 7 ngày
-    List<SearchPostGroup> getGroupsIn7Days();
-
-    // Thống kê bài post trong 1 tháng
-    List<SearchPostGroup> getGroupsInMonth();
-
-    ResponseEntity<GenericResponseAdmin> getPostGroupJoinByUserId(String userId, int page, int itemsPerPage);
-
-
 }

@@ -1,6 +1,7 @@
 package vn.iostar.friendservice.service;
 
 
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import vn.iostar.friendservice.dto.FriendRequestDto;
 import vn.iostar.friendservice.dto.request.CreateFriendRequest;
@@ -27,4 +28,5 @@ public interface FriendRequestService {
 
     ResponseEntity<GenericResponse> acceptRequest(String userIdToken, String userId);
 
+    ResponseEntity<GenericResponse> getInvitationSenderListPageable(String userId, Pageable pageable);
 }

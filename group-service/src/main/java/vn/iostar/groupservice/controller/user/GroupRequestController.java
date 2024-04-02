@@ -10,7 +10,7 @@ import vn.iostar.groupservice.jwt.service.JwtService;
 import vn.iostar.groupservice.service.GroupRequestService;
 
 @RestController
-@RequestMapping("/api/v1/groupPost/request")
+@RequestMapping("/api/v1/group-request")
 @Slf4j
 @RequiredArgsConstructor
 public class GroupRequestController {

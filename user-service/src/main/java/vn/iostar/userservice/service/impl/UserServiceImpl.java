@@ -13,18 +13,19 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 import vn.iostar.userservice.constant.Gender;
-import vn.iostar.userservice.constant.KafkaTopicName;
 import vn.iostar.userservice.constant.RoleName;
 import vn.iostar.userservice.constant.RoleUserGroup;
 import vn.iostar.userservice.dto.*;
-import vn.iostar.userservice.dto.request.*;
+import vn.iostar.userservice.dto.request.AccountManager;
+import vn.iostar.userservice.dto.request.ChangePasswordRequest;
+import vn.iostar.userservice.dto.request.UserManagerRequest;
+import vn.iostar.userservice.dto.request.UserUpdateRequest;
 import vn.iostar.userservice.dto.response.FriendResponse;
 import vn.iostar.userservice.dto.response.GenericResponse;
 import vn.iostar.userservice.dto.response.UserResponse;
@@ -67,8 +68,6 @@ public class UserServiceImpl implements UserService {
     private final JwtService jwtService;
 
     private final RoleService roleService;
-
-    private final KafkaTemplate<String, PasswordRequest> kafkaTemplate;
 
     final String indexCell = "Tại dòng ";
 
@@ -191,7 +190,7 @@ public class UserServiceImpl implements UserService {
             return "Token không hợp lệ, vui lòng kiểm tra token lần nữa!";
         }
         User user = verificationToken.getUser();
-        user.setIsVerified(true);
+        user.setVerified(true);
         userRepository.save(user);
         return "Xác minh tài khoản thành công, vui lòng đăng nhập!";
     }
@@ -206,7 +205,7 @@ public class UserServiceImpl implements UserService {
         if (!newPassword.equals(confirmPassword))
             throw new RuntimeException("Mật khẩu và mật khẩu xác nhận không khớp");
         user.setIsActive(true);
-        user.setIsVerified(true);
+        user.setVerified(true);
         user.getAccount().setIsVerified(true);
         user.getAccount().setPassword(passwordEncoder.encode(newPassword));
         save(user);
@@ -717,7 +716,7 @@ public class UserServiceImpl implements UserService {
                         user.setPhone(String.format("%011.0f", userDTO.getPhone()));
                     }
 
-                    user.setIsVerified(false);
+                    user.setVerified(false);
                     user.setUserName(userDTO.getUserName());
                     Optional<Role> role = roleService.findByRoleName(userDTO.getRoleGroup());
                     role.ifPresent(user::setRole);
@@ -1009,6 +1008,12 @@ public class UserServiceImpl implements UserService {
     // Lấy toàn bộ thông tin người dùng
     @Override
     public UserProfileResponse getFullProfile(User user) {
+        //		List<FriendResponse> fResponse = friendRepository.findFriendUserIdsByUserId(user.get().getUserId());
+//		profileResponse.setFriends(fResponse);
+//
+//		List<GroupPostResponse> groupPostResponses = postGroupRepository
+//				.findPostGroupInfoByUserId(user.get().getUserId(), pageable);
+//		profileResponse.setPostGroup(groupPostResponses);
         return new UserProfileResponse(user);
     }
     @Override
@@ -1028,16 +1033,5 @@ public class UserServiceImpl implements UserService {
             }
         }
         return listFriend;
-    }
-
-    @Override
-    public ResponseEntity<GenericResponse> forgotPassword(User user) {
-
-        String otp = UUID.randomUUID().toString();
-        createPasswordResetOtpForUser(user, otp);
-        PasswordRequest passwordRequest = new PasswordRequest(user.getAccount().getEmail(), otp);
-        kafkaTemplate.send(KafkaTopicName.EMAIL_FORGOT_PASSWORD_TOPIC, passwordRequest);
-        return ResponseEntity.ok().body(new GenericResponse(true, "Đã gửi email xác " +
-                "nhận đổi mật khẩu!", null, HttpStatus.OK.value()));
     }
 }

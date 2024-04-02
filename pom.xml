@@ -6,12 +6,12 @@
 	<parent>
 		<groupId>org.springframework.boot</groupId>
 		<artifactId>spring-boot-starter-parent</artifactId>
-		<version>3.2.4</version>
+		<version>3.2.2</version>
 		<relativePath/>
 	</parent>
 	<groupId>vn.iostar</groupId>
 	<artifactId>system_utealo_microservice</artifactId>
-	<version>1.0-SNAPSHOT</version>
+	<version>0.0.1-SNAPSHOT</version>
 
 	<name>system_utealo_microservice</name>
 	<description>STEM Microservice Backend App</description>
@@ -23,6 +23,7 @@
 		<module>group-service</module>
 		<module>discovery-server</module>
 		<module>api-gateway</module>
+		<module>cloud-config</module>
 		<module>conversation-service</module>
 		<module>post-service</module>
 		<module>report-service</module>

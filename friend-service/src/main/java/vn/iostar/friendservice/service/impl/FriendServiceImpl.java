@@ -4,7 +4,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -190,22 +189,6 @@ public class FriendServiceImpl implements FriendService {
     @Override
     public ResponseEntity<GenericResponse> findFriendSuggestions(String userIdToken) {
         return null;
-    }
-
-    @Override
-    public List<FriendResponse> findFriendUserIdsByUserIdPageable(String userId, PageRequest of) {
-        logger.info("FriendServiceImpl, findFriendUserIdsByUserIdPageable");
-        Optional<Friend> friendship = friendRepository.findByAuthorId(userId);
-        if (friendship.isEmpty()) {
-            return new ArrayList<>();
-        }
-        //Lay 5 ban be dau tien
-        UserIds userIds = UserIds.builder()
-                .userId(friendship.get().getFriendIds().size()> 5
-                        ? friendship.get().getFriendIds().subList(0, 5) :
-                        friendship.get().getFriendIds())
-                .build();
-        return userClientService.getFriendByListUserId(userIds);
     }
 
 }

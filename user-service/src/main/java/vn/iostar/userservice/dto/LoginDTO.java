@@ -13,7 +13,6 @@ public class LoginDTO {
 
     @NotBlank
     @NotEmpty
-
     private String credentialId;
 
     @NotBlank

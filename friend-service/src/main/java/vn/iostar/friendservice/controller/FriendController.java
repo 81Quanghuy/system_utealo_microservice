@@ -2,7 +2,6 @@ package vn.iostar.friendservice.controller;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -30,17 +29,6 @@ public class FriendController {
     @GetMapping("/list/{userId}")
     public ResponseEntity<GenericResponse> getListFriendByUserId(@PathVariable("userId") String userId) {
         List<FriendResponse> friend = friendService.findFriendUserIdsByUserId(userId);
-        return ResponseEntity.ok(GenericResponse.builder().success(true).message("Get List Friend Successfully")
-                .result(friend).statusCode(HttpStatus.OK.value()).build());
-    }
-
-    //Laays danh saach ban be theo userId co su dung phan trang
-    @GetMapping("/list/pageable/{userId}")
-    public ResponseEntity<GenericResponse> getListFriendByUserId(@PathVariable("userId") String userId,
-                                                                 //default page = 0, size = 10
-                                                                    @RequestParam(value = "page", defaultValue = "0") int page,
-                                                                 @RequestParam(value = "size" , defaultValue = "5") int size) {
-        List<FriendResponse> friend = friendService.findFriendUserIdsByUserIdPageable(userId, PageRequest.of(page, size));
         return ResponseEntity.ok(GenericResponse.builder().success(true).message("Get List Friend Successfully")
                 .result(friend).statusCode(HttpStatus.OK.value()).build());
     }

@@ -47,16 +47,13 @@ public class User extends AbstractMappedEntity implements Serializable {
     private Date dayOfBirth;
 
     @Column(name = "is_user_active")
-    @Builder.Default
     private Boolean isActive = true;
 
     @Column(name = "is_user_online")
-    @Builder.Default
     private Boolean isOnline = false;
 
     @Column(name = "is_user_vertified")
-    @Builder.Default
-    private Boolean isVerified = false;
+    private boolean isVerified = false;
 
     @ManyToOne
     @JoinColumn(name = "role_id")

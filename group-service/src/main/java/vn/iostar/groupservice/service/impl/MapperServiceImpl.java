@@ -86,7 +86,7 @@ public class MapperServiceImpl implements MapperService {
     @Override
     public GroupPostResponse mapToGroupPostResponse(GroupMember groupMember) {
         return GroupPostResponse.builder()
-                .postGroupId(groupMember.getGroup().getId())
+                .id(groupMember.getGroup().getId())
                 .postGroupName(groupMember.getGroup().getPostGroupName())
                 .avatarGroup(groupMember.getGroup().getAvatarGroup())
                 .backgroundGroup(groupMember.getGroup().getBackgroundGroup())
@@ -97,7 +97,7 @@ public class MapperServiceImpl implements MapperService {
     @Override
     public SearchPostGroup mapToSearchPostGroup(Group group) {
         return SearchPostGroup.builder()
-                .postGroupId(group.getId())
+                .id(group.getId())
                 .postGroupName(group.getPostGroupName())
                 .avatarGroup(group.getAvatarGroup())
                 .bio(group.getBio())

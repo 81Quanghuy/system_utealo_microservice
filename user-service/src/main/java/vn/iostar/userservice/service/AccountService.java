@@ -2,7 +2,6 @@ package vn.iostar.userservice.service;
 
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
-import vn.iostar.userservice.dto.LoginDTO;
 import vn.iostar.userservice.dto.request.RegisterRequest;
 import vn.iostar.userservice.dto.response.GenericResponse;
 import vn.iostar.userservice.entity.Account;
@@ -34,6 +33,4 @@ public interface AccountService {
 
     // Lưu tất cả tài khoản
     <S extends Account> List<S> saveAll(Iterable<S> entities);
-
-    ResponseEntity<GenericResponse> login(LoginDTO loginDTO);
 }

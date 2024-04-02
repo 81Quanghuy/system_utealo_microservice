@@ -48,9 +48,9 @@ spring:
     url: jdbc:sqlserver://user-service.database.windows.net:1433;database=user-service;user=UteAdmin@user-service;;encrypt=false;trustServerCertificate=true;hostNameInCertificate=*.database.windows.net;loginTimeout=30;
     username: UteAdmin
     password: UteAlo@111
-  #    url: jdbc:sqlserver://localhost;database=UTEALO;encrypt=false;trustServerCertificate=true;sslProtocol=TLSv1.2;characterEncoding=UTF-8
-  #    username: sa
-  #    password: 123
+#    url: jdbc:sqlserver://localhost;database=UTEALO;encrypt=false;trustServerCertificate=true;sslProtocol=TLSv1.2;characterEncoding=UTF-8
+#    username: sa
+#    password: 123
   jpa:
     hibernate:
       ddl-auto: update

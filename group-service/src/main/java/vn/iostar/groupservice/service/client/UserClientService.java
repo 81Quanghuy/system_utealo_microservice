@@ -17,4 +17,6 @@ public interface UserClientService {
     UserProfileResponse getProfileByUserId(@PathVariable String userId);
     @PostMapping("/getProfileByListUserId")
     List<FriendResponse> getFriendByListUserId(@RequestBody UserIds list_userId) ;
+    @GetMapping("/getUser/{userId}")
+    UserProfileResponse getUser(@PathVariable String userId);
 }

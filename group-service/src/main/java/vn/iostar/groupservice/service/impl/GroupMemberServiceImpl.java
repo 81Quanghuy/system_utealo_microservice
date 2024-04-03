@@ -212,12 +212,12 @@ public class GroupMemberServiceImpl implements GroupMemberService {
         Optional<Group> optionalGroup = groupRepository.findById(postGroup.getPostGroupId());
         if (optionalGroup.isPresent()) {
             Group group = optionalGroup.get();
-            GroupMember groupMember = groupMemberRepository.findByUserIdAndGroupId(currentUserId, group.getId())
+            GroupMember groupMember = groupMemberRepository.findByUserIdAndGroupId(currentUserId, postGroup.getPostGroupId())
                     .orElseThrow(() -> new BadRequestException("Bạn không phải là thành viên của nhóm!"));
             List<GroupMember> optionalGroupMember = groupMemberRepository.findAllByGroupIdAndRoleIn(group.getId(), List.of(GroupMemberRoleType.Admin, GroupMemberRoleType.Deputy));
             if (optionalGroupMember.contains(groupMember)) {
                 Optional<GroupMember> optionalGroupMemberDelete = groupMemberRepository.findByUserIdAndGroupId(postGroup.getUserId(), group.getId());
-                if (optionalGroupMemberDelete.isPresent() && !optionalGroupMember.contains(optionalGroupMemberDelete.get())) {
+                if (optionalGroupMemberDelete.isPresent() && !optionalGroupMemberDelete.get().getRole().equals(GroupMemberRoleType.Admin)) {
                     groupMemberRepository.delete(optionalGroupMemberDelete.get());
                     return ResponseEntity.ok(GenericResponse.builder()
                             .success(true)

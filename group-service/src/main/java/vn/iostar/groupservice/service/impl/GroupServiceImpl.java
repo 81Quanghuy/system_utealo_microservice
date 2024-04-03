@@ -68,7 +68,15 @@ public class GroupServiceImpl implements GroupService {
         if (groupExist.isPresent()) {
             throw new ForbiddenException("Tên nhóm đã tồn tại!");
         }
-        Group group = Group.builder().id(UUID.randomUUID().toString()).postGroupName(postGroup.getPostGroupName()).bio(postGroup.getBio() == null ? "" : postGroup.getBio()).authorId(userId).isSystem(postGroup.getIsSystem()).isPublic(postGroup.getIsPublic()).isApprovalRequired(postGroup.getIsApprovalRequired()).isActive(postGroup.getIsActive()).createdAt(new Date()).build();
+        Group group = Group.builder()
+                .id(UUID.randomUUID().toString())
+                .postGroupName(postGroup.getPostGroupName())
+                .bio(postGroup.getBio() == null ? "" : postGroup.getBio()).authorId(userId)
+                .isSystem(postGroup.getIsSystem() != null && postGroup.getIsSystem())
+                .isPublic(postGroup.getIsPublic())
+                .isApprovalRequired(postGroup.getIsApprovalRequired())
+                .isActive(true)
+                .createdAt(new Date()).build();
         groupRepository.save(group);
 
         // Add author to group
@@ -76,9 +84,17 @@ public class GroupServiceImpl implements GroupService {
         groupMemberRepository.save(groupMember);
 
         //add group request to user
-        if (!postGroup.getUserRequestId().isEmpty()) {
-            for (String userRequest : postGroup.getUserRequestId()) {
-                GroupRequest groupRequest = GroupRequest.builder().id(UUID.randomUUID().toString()).group(group).invitedUser(userRequest).invitingUser(userId).isAccept(false).group(group).createdAt(new Date()).build();
+        if (!postGroup.getUserId().isEmpty()) {
+            for (String userRequest : postGroup.getUserId()) {
+                GroupRequest groupRequest = GroupRequest.builder()
+                        .id(UUID.randomUUID().toString())
+                        .group(group)
+                        .invitedUser(userRequest)
+                        .invitingUser(userId)
+                        .isAccept(false)
+                        .group(group)
+                        .createdAt(new Date())
+                        .build();
                 groupRequestRepository.save(groupRequest);
             }
         }
@@ -168,9 +184,28 @@ public class GroupServiceImpl implements GroupService {
             listAdminAndDeputyId.add(groupMember.getUserId());
         }
         PostGroupResponse postGroupResponse = mapperService.mapToPostGroupResponse(group, countMember, listAdminAndDeputyId);
+        postGroupResponse.setRoleGroup(checkUserInGroup(currentUserId, postGroupId));
         return ResponseEntity.ok(GenericResponse.builder().success(true).message("Lấy thông tin nhóm thành công!").result(postGroupResponse).statusCode(HttpStatus.OK.value()).build());
     }
-
+    public String checkUserInGroup(String userId,String postGroupId) {
+        GroupMember groupMember = groupMemberRepository.findByUserIdAndGroupId(userId, postGroupId).orElse(null);
+        if (groupMember != null) {
+            if (groupMember.getRole().equals(GroupMemberRoleType.Admin)) {
+                return "Admin";
+            } else if (groupMember.getRole().equals(GroupMemberRoleType.Deputy)) {
+                return "Deputy";
+            }
+            return "Member";
+        }
+        Optional<GroupRequest> groupRequest = groupRequestRepository.findByGroupIdAndInvitedUserAndIsAccept(postGroupId,userId,true);
+        if (groupRequest.isPresent()) {
+            if (Boolean.TRUE.equals(groupRequest.get().getIsAccept())) {
+                return "Waiting Accept";
+            }
+            return "Accept Invited";
+        }
+        return "None";
+    }
     @Override
     public ResponseEntity<GenericResponse> getGroupSharePosts(String currentUserId, String postGroupId, Pageable pageable) {
         log.info("GroupServiceImpl, getGroupSharePosts");
@@ -204,7 +239,7 @@ public class GroupServiceImpl implements GroupService {
     }
 
     @Override
-    public Page<PhotosOfGroupDTO> findLatestPhotosByGroupId(Integer groupId, Pageable pageable) {
+    public Page<PhotosOfGroupDTO> findLatestPhotosByGroupId(String groupId, Pageable pageable) {
         log.info("GroupServiceImpl, findLatestPhotosByGroupId");
         return null; // FileService chưa làm
     }
@@ -218,7 +253,7 @@ public class GroupServiceImpl implements GroupService {
         group.setPostGroupName(postGroup.getPostGroupName());
         group.setIsPublic(postGroup.getIsPublic());
         group.setIsApprovalRequired(postGroup.getIsApprovalRequired());
-        group.setIsActive(postGroup.getIsActive());
+        group.setIsActive(postGroup.getIsActive() != null ? postGroup.getIsActive() : group.getIsActive());
         group.setBio(postGroup.getBio());
         group.setUpdatedAt(new Date());
         return group;

@@ -1,7 +1,6 @@
 package vn.iostar.emailservice.service;
 
 import jakarta.mail.MessagingException;
-import org.springframework.stereotype.Service;
 import vn.iostar.emailservice.dto.request.PasswordRequest;
 
 import java.io.UnsupportedEncodingException;

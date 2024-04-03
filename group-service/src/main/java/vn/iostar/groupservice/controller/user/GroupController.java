@@ -258,7 +258,7 @@ public class GroupController {
      */
     @GetMapping("/photos/{groupId}")
     public Page<PhotosOfGroupDTO> getLatestPhotoOfGroup(@RequestParam(defaultValue = "0") int page,
-                                                        @RequestParam(defaultValue = "5") int size, @PathVariable("groupId") Integer groupId) {
+                                                        @RequestParam(defaultValue = "5") int size, @PathVariable("groupId") String groupId) {
         Pageable pageable = PageRequest.of(page, size);
         return groupService.findLatestPhotosByGroupId(groupId, pageable);
     }

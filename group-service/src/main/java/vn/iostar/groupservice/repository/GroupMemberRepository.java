@@ -21,4 +21,5 @@ public interface GroupMemberRepository extends MongoRepository<GroupMember, Stri
     Optional<GroupMember> findByUserIdAndRoleAndGroupId(String userId, GroupMemberRoleType role,String groupId);
     Integer countByGroupId(String groupId);
     List<GroupMember> findAllByGroupIdAndRoleIn(String groupId, List<GroupMemberRoleType> roles);
+    Boolean existsByUserIdAndGroupId(String userId, String groupId);
 }

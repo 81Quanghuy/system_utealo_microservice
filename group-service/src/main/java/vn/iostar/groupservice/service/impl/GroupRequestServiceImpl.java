@@ -7,9 +7,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import vn.iostar.groupservice.constant.GroupMemberRoleType;
 import vn.iostar.groupservice.dto.PostGroupDTO;
+import vn.iostar.groupservice.dto.UserInviteGroup;
 import vn.iostar.groupservice.dto.response.GenericResponse;
 import vn.iostar.groupservice.dto.response.InvitedPostGroupResponse;
 import vn.iostar.groupservice.dto.response.UserProfileResponse;
+import vn.iostar.groupservice.dto.response.invitePostGroupResponse;
 import vn.iostar.groupservice.entity.Group;
 import vn.iostar.groupservice.entity.GroupMember;
 import vn.iostar.groupservice.entity.GroupRequest;
@@ -20,10 +22,7 @@ import vn.iostar.groupservice.repository.GroupRequestRepository;
 import vn.iostar.groupservice.service.GroupRequestService;
 import vn.iostar.groupservice.service.client.UserClientService;
 
-import java.util.Date;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 
 @Service
 @Slf4j
@@ -67,12 +66,12 @@ public class GroupRequestServiceImpl implements GroupRequestService {
         List<GroupRequest> list = groupRequestRepository.findAllByInvitedUser(currentUserId);
         // chuyển đổi từ entity sang dto
         List<InvitedPostGroupResponse> invitedPostGroupResponses = list.stream().map(groupRequest -> {
-            if(groupRequest.getInvitedUser().equals(groupRequest.getInvitingUser())){
-                throw new NotFoundException("Group request not found");
+            if(groupRequest.getInvitedUser().equals(groupRequest.getInvitingUser())) {
+                return new InvitedPostGroupResponse();
             }
             Optional<Group> group = groupRepository.findById(groupRequest.getGroup().getId());
             if (group.isEmpty()) {
-                throw new NotFoundException("Group not found");
+                return new InvitedPostGroupResponse();
             }
             UserProfileResponse userProfileResponse = userClientService.getProfileByUserId(groupRequest.getInvitingUser());
             return InvitedPostGroupResponse.builder()
@@ -87,7 +86,10 @@ public class GroupRequestServiceImpl implements GroupRequestService {
                     .userId(groupRequest.getInvitingUser())
                     .build();
         }).toList();
-        return ResponseEntity.ok(GenericResponse.builder().success(true).message("Get successfully").result(invitedPostGroupResponses)
+        return ResponseEntity.ok(GenericResponse.builder()
+                .success(true)
+                .message("Get successfully")
+                .result(invitedPostGroupResponses)
                 .statusCode(HttpStatus.OK.value()).build());
     }
 
@@ -95,13 +97,13 @@ public class GroupRequestServiceImpl implements GroupRequestService {
     public ResponseEntity<GenericResponse> getPostGroupRequestsSentByUserId(String currentUserId) {
         log.info("GroupMemberRequestServiceImpl, getPostGroupRequestsSentByUserId");
 
-        List<GroupRequest> list = groupRequestRepository.findAllByInvitingUser(currentUserId);
+        List<GroupRequest> list = groupRequestRepository.findByInvitedUserNotAndInvitingUser(currentUserId,currentUserId);
         // chuyển đổi từ entity sang dto
         List<InvitedPostGroupResponse> invitedPostGroupResponses = list.stream().map(groupRequest -> {
             Optional<Group> group = groupRepository.findById(groupRequest.getGroup().getId());
             if (group.isEmpty()) {
-                throw new NotFoundException("Group not found");
-            }
+                return new InvitedPostGroupResponse();
+            };
             UserProfileResponse userProfileResponse = userClientService.getProfileByUserId(groupRequest.getInvitedUser());
             return InvitedPostGroupResponse.builder()
                     .postGroupRequestId(groupRequest.getId())
@@ -116,7 +118,10 @@ public class GroupRequestServiceImpl implements GroupRequestService {
                     .build();
         }).toList();
 
-        return ResponseEntity.ok(GenericResponse.builder().success(true).message("Get successfully").result(invitedPostGroupResponses)
+        return ResponseEntity.ok(GenericResponse.builder()
+                .success(true)
+                .message("Get successfully")
+                .result(invitedPostGroupResponses)
                 .statusCode(HttpStatus.OK.value()).build());
     }
 
@@ -147,15 +152,29 @@ public class GroupRequestServiceImpl implements GroupRequestService {
     @Override
     public ResponseEntity<GenericResponse> invitePostGroup(PostGroupDTO postGroup, String currentUserId) {
         log.info("GroupMemberRequestServiceImpl, invitePostGroup");
+        List<UserInviteGroup> nameUserInGroup = new ArrayList<>();
+        List<UserInviteGroup> nameUserInvited = new ArrayList<>();
         Optional<Group> group = groupRepository.findById(postGroup.getPostGroupId());
         if (group.isEmpty()) {
             throw new NotFoundException("Group not found");
         }
         for (String userId : postGroup.getUserId()) {
-            Optional<GroupRequest> optionalGroupRequest = groupRequestRepository.findByGroupIdAndInvitedUserAndInvitingUser(postGroup.getPostGroupId(), userId, currentUserId);
-            if (optionalGroupRequest.isPresent()) {
-                throw new NotFoundException("Đã gửi lời mời vào nhóm trước đó!");
-            }
+
+            Optional<GroupRequest> optionalGroupRequest = groupRequestRepository.findByGroupIdAndInvitedUser(postGroup.getPostGroupId(),userId);
+            // Kiểm tra người được mời có nằm trong nhóm đó hay chưa
+            boolean checkInGroup = groupMemberRepository.existsByUserIdAndGroupId(userId, postGroup.getPostGroupId());
+            // Kiểm tra chưa mời, không mời chính mình và chưa có trong nhóm đó
+            if (userId.equals(currentUserId) ) {
+                throw new NotFoundException("Không được mời chính mình!");
+            } else if(checkInGroup){
+                UserProfileResponse userProfileResponse = userClientService.getProfileByUserId(userId);
+                nameUserInGroup.add(UserInviteGroup.builder().userId(userId)
+                        .userName(userProfileResponse.getUserName()).build());
+            }else if(optionalGroupRequest.isPresent()){
+                UserProfileResponse userProfileResponse = userClientService.getProfileByUserId(userId);
+                nameUserInvited.add(UserInviteGroup.builder().userId(userId)
+                        .userName(userProfileResponse.getUserName()).build());
+            }else{
             GroupRequest groupRequest = GroupRequest.builder()
                     .id(UUID.randomUUID().toString())
                     .group(group.get())
@@ -165,9 +184,19 @@ public class GroupRequestServiceImpl implements GroupRequestService {
                     .isAccept(false)
                     .build();
             groupRequestRepository.save(groupRequest);
+            }
+        }
+        List<invitePostGroupResponse> invitePostGroupResponses = new ArrayList<>();
+        if(!nameUserInGroup.isEmpty()){
+            invitePostGroupResponses.add(invitePostGroupResponse.builder().message("Người dùng đã nằm trong nhóm")
+                    .userInviteGroups(nameUserInGroup).build());
+        }
+        if(!nameUserInvited.isEmpty()){
+            invitePostGroupResponses.add(invitePostGroupResponse.builder().message("Người dùng đã được mời")
+                    .userInviteGroups(nameUserInvited).build());
         }
         return ResponseEntity.ok(GenericResponse.builder().success(true).message("Invite successfully")
-                .statusCode(HttpStatus.OK.value()).build());
+                .result(invitePostGroupResponses).statusCode(HttpStatus.OK.value()).build());
     }
 
     @Override

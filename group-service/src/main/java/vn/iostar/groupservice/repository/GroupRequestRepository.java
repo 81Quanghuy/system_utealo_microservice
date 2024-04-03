@@ -21,6 +21,7 @@ public interface GroupRequestRepository extends MongoRepository<GroupRequest, St
 
     // Lấy request theo group id và invited user
     Optional<GroupRequest> findByGroupIdAndInvitedUserAndIsAccept(String groupId, String invitedUser, Boolean isAccept);
+    Optional<GroupRequest> findByGroupIdAndInvitedUser(String groupId, String invitedUser);
 
     // Lay tat ca yeu cau tham gia nhom theo groupid va IsAccept
     List<GroupRequest> findAllByGroupIdAndIsAccept(String groupId, Boolean isAccept);
@@ -28,4 +29,6 @@ public interface GroupRequestRepository extends MongoRepository<GroupRequest, St
     //Lấy yêu cầu tham gia nhóm của chính mình
     Optional<GroupRequest> findByGroupIdAndInvitedUserAndInvitingUser(String groupId, String invitedUser, String invitingUser);
 
+    // Lay yeu cau tham gia nhom co user duoc moi va khong co user moi
+    List<GroupRequest> findByInvitedUserNotAndInvitingUser(String invitedUser, String invitingUser);
 }

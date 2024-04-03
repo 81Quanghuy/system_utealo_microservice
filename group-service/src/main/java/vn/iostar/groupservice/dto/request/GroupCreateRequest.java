@@ -17,7 +17,7 @@ public class GroupCreateRequest {
     private String bio;
     @NotNull(message = "isClass is required")
     private Boolean isSystem ;
-    private Set<String> userRequestId;
+    private Set<String> userId;
     @NotNull(message = "isPublic is required")
     private Boolean isPublic;
     @NotNull(message = "isAcceptAllRequest is required")

@@ -4,9 +4,11 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import vn.iostar.friendservice.dto.FriendRequestDto;
 import vn.iostar.friendservice.dto.UserIds;
 import vn.iostar.friendservice.dto.response.FriendResponse;
 import vn.iostar.friendservice.dto.response.GenericResponse;
@@ -120,16 +122,24 @@ public class FriendRequestServiceImpl implements FriendRequestService {
         if (friendRequest.isPresent()) {
             throw new BadRequestException("Đã gửi lời mời kết bạn!");
         }
-        friendRequestRepository.save(FriendRequest.builder()
+        FriendRequest entity = friendRequestRepository.save(FriendRequest.builder()
                 .id(UUID.randomUUID().toString())
                 .senderId(userIdToken)
                 .recipientId(userId)
                 .isActive(true)
                 .createdAt(new Date())
                 .build());
+        FriendRequestDto friendRequestDto = FriendRequestDto.builder()
+                .friendRequestId(entity.getId())
+                .userFromId(entity.getSenderId())
+                .userToId(entity.getRecipientId())
+                .isActive(entity.getIsActive())
+                .createdAt(entity.getCreatedAt())
+                .build();
         return ResponseEntity.ok(GenericResponse.builder()
                 .success(true)
                 .statusCode(200)
+                .result(friendRequestDto)
                 .message("Gửi lời mời kết bạn thành công!")
                 .build());
     }
@@ -140,7 +150,7 @@ public class FriendRequestServiceImpl implements FriendRequestService {
         List<FriendRequest> friendRequests = friendRequestRepository.findAllByRecipientId(userId);
         UserIds userIds = UserIds.builder()
                 .userId(friendRequests.stream()
-                        .map(FriendRequest::getRecipientId)
+                        .map(FriendRequest::getSenderId)
                         .toList())
                 .build();
         List<FriendResponse> friendResponses = userClientService.getFriendByListUserId(userIds);
@@ -209,6 +219,24 @@ public class FriendRequestServiceImpl implements FriendRequestService {
                 .success(true)
                 .statusCode(200)
                 .message("Chấp nhận lời mời kết bạn thành công!")
+                .build());
+    }
+
+    @Override
+    public ResponseEntity<GenericResponse> getInvitationSenderListPageable(String userId, Pageable pageable) {
+        log.info("FriendRequestServiceImpl, getInvitationSenderListPageable");
+        Page<FriendRequest> friendRequests = friendRequestRepository.findAllByRecipientId(userId,pageable);
+        UserIds userIds = UserIds.builder()
+                .userId(friendRequests.stream()
+                        .map(FriendRequest::getSenderId)
+                        .toList())
+                .build();
+        List<FriendResponse> friendResponses = userClientService.getFriendByListUserId(userIds);
+        return ResponseEntity.ok(GenericResponse.builder()
+                .success(true)
+                .statusCode(200)
+                .message("Lấy danh sách lời mời kết bạn thành công!")
+                .result(friendResponses)
                 .build());
     }
 

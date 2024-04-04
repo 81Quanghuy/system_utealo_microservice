@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import vn.iostar.groupservice.constant.AppConstant;
+import vn.iostar.groupservice.constant.GroupMemberRoleType;
 import vn.iostar.groupservice.dto.GroupDto;
 import vn.iostar.groupservice.dto.SearchPostGroup;
 import vn.iostar.groupservice.dto.response.GroupPostResponse;

@@ -4,21 +4,16 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import vn.iostar.friendservice.dto.FriendRequestDto;
-import vn.iostar.friendservice.dto.request.CreateFriendRequest;
-import vn.iostar.friendservice.dto.response.FriendResponse;
 import vn.iostar.friendservice.dto.response.GenericResponse;
 import vn.iostar.friendservice.jwt.service.JwtService;
 import vn.iostar.friendservice.service.FriendRequestService;
 
-import java.util.List;
-
 @RestController
-@RequestMapping("/api/v1/friend/request")
+@RequestMapping("/api/v1/friend-request")
 @RequiredArgsConstructor
 @Slf4j
 public class FriendRequestController {
@@ -29,8 +24,8 @@ public class FriendRequestController {
 
     /**
      * Lay trang thai nguoi dung dua theo userId va userToken: Ban be, dang cho ket ban,chap nhan loi moi ket ban
-     * @param authorizationHeader
-     * @param userId
+     * @param authorizationHeader authorizationHeader
+     * @param userId userId
      * @return ResponseEntity<GenericResponse>
      */
     @GetMapping("/status/{userId}")
@@ -99,11 +94,27 @@ public class FriendRequestController {
         String userId = jwtService.extractUserId(token);
         return friendRequestService.getInvitationSenderList(userId);
     }
-
+    /**
+     * Lấy danh sách người dùng đã gửi lời mời kết bạn có sử dụng phân trang
+     *
+     * @param authorizationHeader The JWT (JSON Web Token) provided in the "Authorization"
+     *                      header for authentication.
+     * @return The resource if found, or a 404 Not Found response.
+     */
+    @GetMapping("/requestFrom/list/pageable")
+    public ResponseEntity<GenericResponse> getInvitationSenderList(
+            @RequestHeader("Authorization") String authorizationHeader,
+            @RequestParam(value = "page", defaultValue = "0") int page,
+            @RequestParam(value = "size", defaultValue = "5") int size){
+        String token = authorizationHeader.substring(7);
+        String userId = jwtService.extractUserId(token);
+        Pageable pageable = PageRequest.of(page, size);
+        return friendRequestService.getInvitationSenderListPageable(userId,pageable);
+    }
     /**
      * DELETE  Từ chối lời mời kết bạn by Authorization and userId
      *
-     * @param userId
+     * @param userId userId
      * @param authorizationHeader The JWT (JSON Web Token) provided in the "Authorization"
      *                      header for authentication.
      * @return The resource if found, or a 404 Not Found response.
@@ -119,7 +130,7 @@ public class FriendRequestController {
     /**
      * DELETE hủy lời mời kết bạn by Authorization and userId
      *
-     * @param userId
+     * @param userId userId
      * @param authorizationHeader The JWT (JSON Web Token) provided in the "Authorization"
      *                      header for authentication.
      * @return The resource if found, or a 404 Not Found response.
@@ -135,7 +146,7 @@ public class FriendRequestController {
     /**
      * PUT accept FriendRequest by Authorization and userId
      *
-     * @param userId
+     * @param userId userId
      * @param authorizationHeader The JWT (JSON Web Token) provided in the "Authorization"
      *                      header for authentication.
      * @return The resource if found, or a 404 Not Found response.

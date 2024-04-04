@@ -42,7 +42,7 @@ public interface GroupService {
 
     List<FilesOfGroupDTO> findLatestFilesByGroupId(Integer groupId);
 
-    Page<PhotosOfGroupDTO> findLatestPhotosByGroupId(Integer groupId, Pageable pageable);
+    Page<PhotosOfGroupDTO> findLatestPhotosByGroupId(String groupId, Pageable pageable);
     Optional<Group> findById(String id);
 
     ResponseEntity<GenericResponse> getPostGroupJoinByUserId(String currentUserId);

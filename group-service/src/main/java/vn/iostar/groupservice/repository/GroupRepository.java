@@ -39,7 +39,7 @@ public interface GroupRepository extends MongoRepository<Group, String> {
     List<SearchPostGroup> findPostGroupByCreateDateBetween(@Param("startDate") Date startDate, @Param("endDate") Date endDate);
 
 
-
-
-
+    // find group by user id
+    @Query("SELECT NEW vn.iostar.dto.response.GroupPostResponse(pg.id, pg.postGroupName, pg.avatarGroup, pg.bio, pg.isPublic, pg.countMember, pg.countFriendJoinnedGroup) FROM PostGroup pg WHERE pg.authorId = ?1")
+    Page<GroupPostResponse> findPostGroupByUserId(String userId, Pageable pageable);
 }

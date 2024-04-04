@@ -117,7 +117,7 @@ public class GroupMemberController {
      * @param authorizationHeader authorizationHeader
      * @return GenericResponse
      */
-    @DeleteMapping("/delete/member")
+    @PutMapping("/delete/member")
     public ResponseEntity<GenericResponse> deleteMemberByPostId(@RequestBody PostGroupRequest postGroup,
                                                                 @RequestHeader("Authorization") String authorizationHeader) {
         String token = authorizationHeader.substring(7);

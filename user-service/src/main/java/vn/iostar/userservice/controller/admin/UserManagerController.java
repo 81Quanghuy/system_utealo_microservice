@@ -32,7 +32,7 @@ import vn.iostar.userservice.repository.UserRepository;
 import vn.iostar.userservice.service.UserService;
 
 @RestController
-@RequestMapping("/api/v1/admin/userManager")
+@RequestMapping("/api/v1/user/admin")
 public class UserManagerController {
 
 	@Autowired

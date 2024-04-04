@@ -6,7 +6,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import vn.iostar.groupservice.dto.CountDTO;
-import vn.iostar.groupservice.dto.PostGroupDTO;
 import vn.iostar.groupservice.dto.SearchPostGroup;
 import vn.iostar.groupservice.dto.response.GenericResponse;
 import vn.iostar.groupservice.dto.response.GenericResponseAdmin;

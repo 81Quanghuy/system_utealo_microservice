@@ -68,10 +68,6 @@ public class JwtUtilImpl implements JwtUtil {
 		return false;
 	}
 
-
-
-
-
 	private String createAccessToken(final Map<String, Object> claims, final String subject) {
 		return Jwts.builder()
 				.setClaims(claims)
@@ -91,5 +87,4 @@ public class JwtUtilImpl implements JwtUtil {
 				.signWith(this.getSigningKey(), SignatureAlgorithm.HS512)
 				.compact();
 	}
-
 }

@@ -28,7 +28,7 @@ public class RouteConfig {
             "friend-service", pathConfig(List.of("friend", "friend-request")),
             "group-service", pathConfig(List.of("groupPost", "group-members", "events","group-request")),
             "media-service", pathConfig(List.of("files", "albums")),
-            "post-service", pathConfig(List.of("posts", "comments", "reactions")),
+            "post-service", pathConfig(List.of("post", "comment", "reactions","share")),
             "user-service", pathConfig(List.of("user", "auth", "accounts", "password_reset_otp"
                     , "profiles", "roles")
             )

@@ -240,7 +240,15 @@ public class CommentServiceImpl implements CommentService {
 
             // Xóa các comments có commentReply là id của comment vừa xóa
             List<Comment> commentsWithReply = commentRepository.findByCommentReplyIdOrderByCreateTimeDesc(commentId);
-            commentRepository.deleteAll(commentsWithReply);
+            //commentRepository.deleteAll(commentsWithReply);
+
+            List<CommentPostResponse> comments = getCommentsOfComment(commentId);
+            for (CommentPostResponse c : comments) {
+                Optional<Comment> cmt = commentRepository.findById(c.getCommentId());
+                if (cmt.isPresent()) {
+                    commentRepository.delete(cmt.get());
+                }
+            }
 
             // Xóa comment
             commentRepository.delete(comment);
@@ -267,6 +275,14 @@ public class CommentServiceImpl implements CommentService {
 
                     for (Comment c : commentsWithReply) {
                         postComments.remove(c.getId());
+
+                        for (Comment directReply : commentsWithReply) {
+                            postComments.remove(directReply.getId());
+                        }
+                    }
+
+                    for (CommentPostResponse c : comments) {
+                        postComments.remove(c.getCommentId());
                     }
 
                     // Cập nhật lại post vào MongoDB
@@ -294,6 +310,13 @@ public class CommentServiceImpl implements CommentService {
 
                     for (Comment c : commentsWithReply) {
                         shareComments.remove(c.getId());
+                        for (Comment directReply : commentsWithReply) {
+                            shareComments.remove(directReply.getId());
+                        }
+                    }
+
+                    for (CommentPostResponse c : comments) {
+                        shareComments.remove(c.getCommentId());
                     }
 
                     // Cập nhật lại share vào MongoDB
@@ -339,6 +362,11 @@ public class CommentServiceImpl implements CommentService {
             directReplyResponse.setUserOwner(userProfileResponse.getUserName());
             commentPostResponses.add(directReplyResponse);
 
+            // Tìm các comment reply cho directReply
+            List<CommentPostResponse> subReplies = getCommentsOfComment(directReply.getId());
+
+            // Thêm tất cả các comment reply của directReply
+            commentPostResponses.addAll(subReplies);
         }
 
         return commentPostResponses;
@@ -349,17 +377,20 @@ public class CommentServiceImpl implements CommentService {
         Optional<Post> post = postService.findById(postId);
         if (post.isEmpty())
             throw new RuntimeException("Post not found");
-        List<Comment> comments = commentRepository.findByPostIdAndCommentReplyIsNullOrderByCreateTimeDesc(postId);
-        if (comments.isEmpty())
-            throw new RuntimeException("This post has no comment");
-        List<CommentPostResponse> commentPostResponses = new ArrayList<>();
-        for (Comment comment : comments) {
-            UserProfileResponse userProfileResponse = userClientService.getUser(comment.getUserId());
-            commentPostResponses.add(new CommentPostResponse(comment,userProfileResponse));
+        List<Comment> comments = commentRepository.findByPostIdOrderByCreateTimeDesc(postId);
+        if (!comments.isEmpty()) {
+            List<CommentPostResponse> commentPostResponses = new ArrayList<>();
+            for (Comment comment : comments) {
+                UserProfileResponse userProfileResponse = userClientService.getUser(comment.getUserId());
+                commentPostResponses.add(new CommentPostResponse(comment, userProfileResponse));
+            }
+            return ResponseEntity.ok(
+                    GenericResponse.builder().success(true).message("Retrieving number of comments of Post successfully")
+                            .result(commentPostResponses.size()).statusCode(HttpStatus.OK.value()).build());
+        } else {
+            return ResponseEntity.ok(GenericResponse.builder().success(false).message("This post has no comment")
+                    .result(0).statusCode(HttpStatus.OK.value()).build());
         }
-        return ResponseEntity.ok(
-                GenericResponse.builder().success(true).message("Retrieving number of comments of Post successfully")
-                        .result(commentPostResponses.size()).statusCode(HttpStatus.OK.value()).build());
     }
 
     @Override

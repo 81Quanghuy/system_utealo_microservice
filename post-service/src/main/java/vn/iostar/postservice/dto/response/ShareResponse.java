@@ -24,8 +24,16 @@ public class ShareResponse {
 		this.updateAt = share.getUpdateAt();
 		this.postId = share.getPost().getId();
 		this.userId = user.getUserId();
-		this.comments = share.getComments();
-		this.likes = share.getLikes();
+		if (share.getComments() != null) {
+			this.comments = share.getComments();
+		} else {
+			this.comments = null;
+		}
+		if (share.getLikes() != null) {
+			this.likes = share.getLikes();
+		} else {
+			this.likes = null;
+		}
 	}
 
 }

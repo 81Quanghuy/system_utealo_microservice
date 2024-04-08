@@ -1,5 +1,6 @@
 package vn.iostar.postservice.dto.response;
 
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
@@ -51,7 +52,15 @@ public class PostsResponse {
 			this.groupType = group.getGroupType();
 		}
 		this.privacyLevel = post.getPrivacyLevel();
-		this.comments = post.getComments();
-		this.likes = post.getLikes();
+		if(post.getComments() != null) {
+			this.comments = post.getComments();
+		} else {
+			this.comments = new ArrayList<>();
+		}
+		if(post.getLikes() != null) {
+			this.likes = post.getLikes();
+		} else {
+			this.likes = new ArrayList<>();
+		}
 	}
 }

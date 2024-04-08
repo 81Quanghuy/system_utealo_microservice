@@ -55,6 +55,7 @@ public interface PostRepository extends MongoRepository<Post, String> {
     Long countPostsByUserId(String userId);
     // Định nghĩa hàm lấy những bài post của 1 user trong 1 tháng
     Page<Post> findByUserIdAndPostTimeBetween(String userId, Date start, Date end, Pageable pageable);
+    
 
 
 }

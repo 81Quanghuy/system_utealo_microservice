@@ -110,7 +110,7 @@ public class PostServiceImpl implements PostService {
         }
 
         GroupProfileResponse groupProfileResponse = null;
-        if (requestDTO.getPostGroupId() == null) {
+        if (requestDTO.getPostGroupId() == null || Integer.valueOf(requestDTO.getPostGroupId()) == 0) {
             post.setGroupId(null);
         } else {
             // Kiểm tra xem người dùng có quyền đăng bài trong nhóm không

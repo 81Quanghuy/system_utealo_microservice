@@ -23,8 +23,8 @@ public class SharesResponse {
     private PostsResponse postsResponse;
     private String postGroupId;
     private String postGroupName;
-    private List<Integer> comments;
-    private List<Integer> likes;
+    private List<String> comments;
+    private List<String> likes;
 
     public SharesResponse(Share share, UserProfileResponse user, GroupProfileResponse group) {
         this.shareId = share.getId();
@@ -41,7 +41,16 @@ public class SharesResponse {
             this.postGroupId = group.getId();
             this.postGroupName = group.getGroupName();
         }
-
+        if (share.getComments() != null) {
+            this.comments = share.getComments();
+        } else {
+            this.comments = null;
+        }
+        if (share.getLikes() != null) {
+            this.likes = share.getLikes();
+        } else {
+            this.likes = null;
+        }
     }
 
 //    public SharesResponse(Share share) {

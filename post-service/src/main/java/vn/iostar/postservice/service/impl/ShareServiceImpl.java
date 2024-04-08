@@ -92,9 +92,6 @@ public class ShareServiceImpl implements ShareService {
         }
         save(share);
         SharesResponse sharesResponse = new SharesResponse(share, userProfileResponse, postGroup);
-        List<Integer> count = new ArrayList<>();
-        sharesResponse.setComments(count);
-        sharesResponse.setLikes(count);
 
         GenericResponse response = GenericResponse.builder().success(true).message("Share Post Successfully")
                 .result(sharesResponse).statusCode(200).build();

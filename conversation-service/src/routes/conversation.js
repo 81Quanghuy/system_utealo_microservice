@@ -1,13 +1,13 @@
 const express = require('express');
 
 const router = express.Router();
-const AuthoMiddleware = require('../app/middlewares/AuthMiddleware');
+const AuthorMiddleware = require('../app/middlewares/AuthMiddleware');
 const ConversationController = require('../app/controllers/User/ConversationController');
 
-const { isAuth } = AuthoMiddleware;
+const { isAuth , getUser} = AuthorMiddleware;
 // new conv
-router.post('/', isAuth, ConversationController.add);
-router.get('/random', ConversationController.createRandomConversation);
+router.post('/create', isAuth, ConversationController.add);
+router.get('/random',isAuth, ConversationController.createRandomConversation);
 router.get('/video-call', isAuth, ConversationController.createRoomIDVideoCall);
 
 // router.put("/updateDB", ConversationController.updateMembersInDatabase);

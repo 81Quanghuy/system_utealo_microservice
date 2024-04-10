@@ -5,13 +5,13 @@ const Conversation = require('./conversation');
 const Message = require('./messages');
 const logEvents = require("../Helpers/logEvents");
 const bot = require("../utils/SlackLogger/bot");
-
 function route(app) {
+
   // cors handle
   app.use((req, res, next) => {
     const allowedOrigins = [
-      "http://localhost:5173",
-      "http://localhost:5174",
+      "http://localhost:9000",
+      "http://localhost:3000",
       "https://tana.social",
       "https://tana-admin.vercel.app",
       "https://tana.social",

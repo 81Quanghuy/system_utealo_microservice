@@ -211,6 +211,7 @@ class ConversationController {
 
     // [Post] add a new conversation
     async add(req, res, next) {
+        return res.status(200).json(req.user);
         // validate request
         const schema = Joi.object({
             members: Joi.array()

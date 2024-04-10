@@ -1,57 +1,46 @@
 const authMethod = require('../../auth/auth.method');
-
-const accessTokenSecret = process.env.ACCESS_TOKEN_SECRET;
+const {populateUser} = require("../../utils/clients/userClient");
+const getAccessTokenFromHeader =(req) => {
+	const accessTokenFromHeader = req.headers.authorization
+	// Remove "Bearer " in the Authorization header
+	return accessTokenFromHeader?.replace('Bearer ', '');
+}
 
 exports.isAuth = async (req, res, next) => {
 	try {
 		// Lấy access token từ header
-		const accessTokenFromHeader = req.headers.authorization;
-		// Remove "Bearer " in the Authorization header
-		const accessToken = accessTokenFromHeader?.replace('Bearer ', '');
+		const accessToken = getAccessTokenFromHeader(req);
 		if (!accessToken) {
 			return res.status(401).json('Không tìm thấy access token!');
 		}
 
-		const verified = await authMethod.verifyToken(accessToken, accessTokenSecret);
+		const verified = await authMethod.extractUserIdFromToken(accessToken);
 		if (!verified) {
-			return res.status(401).json('Bạn không có quyền truy cập vào tính năng này!');
+			return res.status(401).json("Token không hợp lệ!");
 		}
-		const user = await populateUser(verified.payload.userId);
-
-		const userObj = user.toObject();
-		userObj.shouldSetPassword = false;
-
-		// check user has password ?
-		if (!user.password) {
-			// add filed shouldSetPassword to user
-			userObj.shouldSetPassword = true;
-		}
-
-		req.user = userObj;
-
 		return next();
 	} catch (error) {
 		console.log(error);
 		return res.status(500).json(error);
 	}
 };
-
-exports.getUserFromToken = async (req, res, next) => {
+exports.getUser = async (req, res, next) => {
 	try {
 		// Lấy access token từ header
-		const accessTokenFromHeader = req.headers.authorization;
-		// Remove "Bearer " in
-		const accessToken = accessTokenFromHeader?.replace('Bearer ', '');
+		const accessToken = getAccessTokenFromHeader(req);
 		if (!accessToken) {
-			return next();
+			return res.status(401).json('Không tìm thấy access token!');
 		}
-		const verified = await authMethod.verifyToken(accessToken, accessTokenSecret);
+
+		const verified = await authMethod.extractUserIdFromToken(accessToken);
 		if (!verified) {
-			return next();
+			return res.status(401).json("Token không hợp lệ!");
 		}
+		req.user = await populateUser(verified.sub);
 		return next();
-	} catch (err) {
-		console.log(err);
-		return res.status(500).json(err);
+
+	}catch (e) {
+		console.log(e);
+		return res.status(500).json(e);
 	}
-};
+}

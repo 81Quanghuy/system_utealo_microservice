@@ -59,9 +59,9 @@ spring:
 
 springdoc:
   packages-to-scan:
-    vn.iotstart.userservice
+    vn.iostar.userservice
   api-docs:
-    path: /v3/api-docs/user-service
+    path: /v1/api-docs/user-service
 
 resilience4j:
   circuitbreaker:

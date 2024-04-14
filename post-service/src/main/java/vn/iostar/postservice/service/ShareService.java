@@ -62,5 +62,12 @@ public interface ShareService {
     ResponseEntity<GenericResponse> getShare(String currentUserId, String shareId);
     // Lấy tất cả bài share của 1 user
     List<SharesResponse> findMySharePosts(String currentUserId, Pageable pageable);
+    // Lấy những bài share liên quan đến mình như: nhóm, bạn bè, cá nhân
+    ResponseEntity<GenericResponse> getTimeLineSharePosts(String currentUserId, Integer page, Integer size);
+    // Lấy tất cả các bài share của những nhóm mình tham gia
+    ResponseEntity<GenericResponse> getShareOfPostGroup(String currentUserId, Pageable pageable);
+    // Lấy những bài share của group theo id
+    ResponseEntity<GenericResponse> getGroupSharePosts(String currentUserId, String postGroupId, Integer page,
+                                                       Integer size);
 
 }

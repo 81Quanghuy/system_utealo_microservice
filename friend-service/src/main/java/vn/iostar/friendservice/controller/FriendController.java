@@ -2,6 +2,8 @@ package vn.iostar.friendservice.controller;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.json.JsonParser;
+import org.springframework.boot.json.JsonParserFactory;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -10,8 +12,10 @@ import org.springframework.web.bind.annotation.*;
 import vn.iostar.friendservice.dto.response.FriendResponse;
 import vn.iostar.friendservice.dto.response.GenericResponse;
 import vn.iostar.friendservice.jwt.service.JwtService;
+import vn.iostar.friendservice.repository.FriendRepository;
 import vn.iostar.friendservice.service.FriendService;
 
+import java.util.Map;
 import java.util.List;
 
 @RestController
@@ -19,8 +23,10 @@ import java.util.List;
 @RequestMapping("/api/v1/friend")
 @RequiredArgsConstructor
 public class FriendController {
+
     private final FriendService friendService;
     private final JwtService jwtService;
+    private final FriendRepository friendRepository;
 
     /**
      * Lay danh sach ban be theo userId
@@ -69,6 +75,20 @@ public class FriendController {
         String token = authorizationHeader.substring(7);
         String userIdToken = jwtService.extractUserId(token);
         return friendService.getFriendSuggestions(userIdToken);
+    }
+
+    // Lấy danh sách id của bạn bè theo userId
+    @GetMapping("/list/friend-ids/{userId}")
+    public List<String> getFriendIdsByUserId(@PathVariable String userId) {
+        List<String> friendIds = friendRepository.findFriendIdsByAuthorId(userId);
+        if (!friendIds.isEmpty()) {
+            String jsonString = friendIds.get(0);
+            JsonParser jsonParser = JsonParserFactory.getJsonParser();
+            Map<String, Object> jsonMap = jsonParser.parseMap(jsonString);
+            List<String> extractedFriendIds = (List<String>) jsonMap.get("fiend_ids");
+            return extractedFriendIds;
+        }
+        return null;
     }
 
 }

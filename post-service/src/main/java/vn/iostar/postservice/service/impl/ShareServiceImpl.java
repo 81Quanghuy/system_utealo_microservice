@@ -15,6 +15,7 @@ import vn.iostar.postservice.dto.GenericResponseAdmin;
 import vn.iostar.postservice.dto.PaginationInfo;
 import vn.iostar.postservice.dto.SharePostRequestDTO;
 import vn.iostar.postservice.dto.response.GroupProfileResponse;
+import vn.iostar.postservice.dto.response.PostsResponse;
 import vn.iostar.postservice.dto.response.SharesResponse;
 import vn.iostar.postservice.dto.response.UserProfileResponse;
 import vn.iostar.postservice.entity.Comment;
@@ -28,6 +29,7 @@ import vn.iostar.postservice.repository.PostRepository;
 import vn.iostar.postservice.repository.ShareRepository;
 import vn.iostar.postservice.service.PostService;
 import vn.iostar.postservice.service.ShareService;
+import vn.iostar.postservice.service.client.FriendClientService;
 import vn.iostar.postservice.service.client.GroupClientService;
 import vn.iostar.postservice.service.client.UserClientService;
 
@@ -48,6 +50,7 @@ public class ShareServiceImpl implements ShareService {
     private final GroupClientService groupClientService;
     private final CommentRepository commentRepository;
     private final LikeRepository likeRepository;
+    private final FriendClientService friendClientService;
 
     @Override
     public <S extends Share> S save(S entity) {
@@ -171,7 +174,7 @@ public class ShareServiceImpl implements ShareService {
         UserProfileResponse userProfileResponse = userClientService.getUser(userId);
         GroupProfileResponse groupProfileResponse = null;
         for (Share share : userSharePosts) {
-            if (share.getPostGroupId() != null) {
+            if (share.getPostGroupId() != null && !share.getPostGroupId().isEmpty()) {
                 groupProfileResponse = groupClientService.getGroup(share.getPostGroupId());
             }
             SharesResponse sharesResponse = new SharesResponse(share, userProfileResponse, groupProfileResponse);
@@ -184,7 +187,7 @@ public class ShareServiceImpl implements ShareService {
     public SharesResponse getSharePost(Share share, String currentUserId) {
         UserProfileResponse userProfileResponse = userClientService.getUser(share.getUserId());
         GroupProfileResponse groupProfileResponse = null;
-        if (share.getPostGroupId() != null) {
+        if (share.getPostGroupId() != null && !share.getPostGroupId().isEmpty()) {
             groupProfileResponse = groupClientService.getGroup(share.getPostGroupId());
         }
         SharesResponse sharesResponse = new SharesResponse(share, userProfileResponse, groupProfileResponse);
@@ -199,7 +202,7 @@ public class ShareServiceImpl implements ShareService {
         return userSharesPage.map(share -> {
             UserProfileResponse userProfileResponse = userClientService.getUser(share.getUserId());
             GroupProfileResponse groupProfileResponse = null;
-            if (share.getPostGroupId() != null) {
+            if (share.getPostGroupId() != null && !share.getPostGroupId().isEmpty()) {
                 groupProfileResponse = groupClientService.getGroup(share.getPostGroupId());
             }
             SharesResponse sharesResponse = new SharesResponse(share, userProfileResponse, groupProfileResponse);
@@ -304,7 +307,7 @@ public class ShareServiceImpl implements ShareService {
         for (Share share : shares) {
             UserProfileResponse userProfileResponse = userClientService.getUser(share.getUserId());
             GroupProfileResponse groupProfileResponse = null;
-            if (share.getPostGroupId() != null) {
+            if (share.getPostGroupId() != null && !share.getPostGroupId().isEmpty()) {
                 groupProfileResponse = groupClientService.getGroup(share.getPostGroupId());
             }
             SharesResponse sharesResponse = new SharesResponse(share, userProfileResponse, groupProfileResponse);
@@ -480,7 +483,7 @@ public class ShareServiceImpl implements ShareService {
         return userSharesPage.map(share -> {
             UserProfileResponse userProfileResponse = userClientService.getUser(share.getUserId());
             GroupProfileResponse groupProfileResponse = null;
-            if (share.getPostGroupId() != null) {
+            if (share.getPostGroupId() != null && !share.getPostGroupId().isEmpty()) {
                 groupProfileResponse = groupClientService.getGroup(share.getPostGroupId());
             }
             SharesResponse sharesResponse = new SharesResponse(share, userProfileResponse, groupProfileResponse);
@@ -499,7 +502,7 @@ public class ShareServiceImpl implements ShareService {
         return userSharesPage.map(share -> {
             UserProfileResponse userProfileResponse = userClientService.getUser(share.getUserId());
             GroupProfileResponse groupProfileResponse = null;
-            if (share.getPostGroupId() != null) {
+            if (share.getPostGroupId() != null && !share.getPostGroupId().isEmpty()) {
                 groupProfileResponse = groupClientService.getGroup(share.getPostGroupId());
             }
             SharesResponse sharesResponse = new SharesResponse(share, userProfileResponse, groupProfileResponse);
@@ -528,12 +531,82 @@ public class ShareServiceImpl implements ShareService {
         for (Share share : userSharePosts) {
             UserProfileResponse userProfileResponse = userClientService.getUser(share.getUserId());
             GroupProfileResponse groupProfileResponse = null;
-            if (share.getPostGroupId() != null) {
+            if (share.getPostGroupId() != null && !share.getPostGroupId().isEmpty()) {
                 groupProfileResponse = groupClientService.getGroup(share.getPostGroupId());
             }
             SharesResponse sharesResponse = new SharesResponse(share, userProfileResponse, groupProfileResponse);
             sharesResponses.add(sharesResponse);
         }
         return sharesResponses;
+    }
+
+    @Override
+    public ResponseEntity<GenericResponse> getTimeLineSharePosts(String userId, Integer page, Integer size) {
+
+        UserProfileResponse user = userClientService.getUser(userId);
+        if (user == null) {
+            return ResponseEntity.ofNullable(GenericResponse.builder().success(false).message("User not found")
+                    .result(null).statusCode(HttpStatus.NOT_FOUND.value()).build());
+        }
+        PageRequest pageable = PageRequest.of(page, size);
+        List<String> userIds = friendClientService.getFriendIdsByUserId(userId);
+        userIds.add(userId);
+        List<String> groupIds = groupClientService.getGroupIdsByUserId(userId);
+        List<Share> userSharePosts = shareRepository.findSharePostsInTimeLine(userIds, groupIds, pageable);
+        GroupProfileResponse groupProfileResponse = null;
+
+        List<SharesResponse> simplifiedUserPosts = new ArrayList<>();
+        for (Share share : userSharePosts) {
+            if (share.getPostGroupId() != null && !share.getPostGroupId().isEmpty()) {
+                groupProfileResponse = groupClientService.getGroup(share.getPostGroupId());
+            }
+            SharesResponse sharePostsResponse = new SharesResponse(share, user, groupProfileResponse);
+            simplifiedUserPosts.add(sharePostsResponse);
+        }
+
+        return ResponseEntity.ok(GenericResponse.builder().success(true).message("Retrieved user posts successfully and access update")
+                .result(simplifiedUserPosts).statusCode(HttpStatus.OK.value()).build());
+    }
+
+    @Override
+    public ResponseEntity<GenericResponse> getShareOfPostGroup(String userId, Pageable pageable) {
+        if (userId == null)
+            return ResponseEntity.badRequest().body(new GenericResponse(false, "User not found", null, 400));
+        List<String> groupIds = groupClientService.getGroupIdsByUserId(userId);
+        List<Share> shares = shareRepository.findAllSharesInUserGroups(groupIds, pageable);
+        List<SharesResponse> sharesResponses = new ArrayList<>();
+        for (Share share : shares) {
+            UserProfileResponse userProfileResponse = userClientService.getUser(share.getUserId());
+            GroupProfileResponse groupProfileResponse = null;
+            if (share.getPostGroupId() != null && !share.getPostGroupId().isEmpty()) {
+                groupProfileResponse = groupClientService.getGroup(share.getPostGroupId());
+            }
+            SharesResponse sharesResponse = new SharesResponse(share, userProfileResponse, groupProfileResponse);
+            sharesResponses.add(sharesResponse);
+        }
+        return ResponseEntity.ok(GenericResponse.builder().success(true).message("Retrieved share post successfully")
+                .result(sharesResponses).statusCode(HttpStatus.OK.value()).build());
+
+    }
+
+    @Override
+    public ResponseEntity<GenericResponse> getGroupSharePosts(String userId, String postGroupId, Integer page,
+                                                              Integer size) {
+        if (userId == null)
+            return ResponseEntity.badRequest().body(new GenericResponse(false, "User not found", null, 400));
+        PageRequest pageable = PageRequest.of(page, size);
+        List<Share> shares = shareRepository.findByPostGroupIdOrderByCreateAtDesc(postGroupId, pageable);
+        List<SharesResponse> sharesResponses = new ArrayList<>();
+        for (Share share : shares) {
+            UserProfileResponse userProfileResponse = userClientService.getUser(share.getUserId());
+            GroupProfileResponse groupProfileResponse = null;
+            if (share.getPostGroupId() != null && !share.getPostGroupId().isEmpty()) {
+                groupProfileResponse = groupClientService.getGroup(share.getPostGroupId());
+            }
+            SharesResponse shareResponse = new SharesResponse(share, userProfileResponse, groupProfileResponse);
+            sharesResponses.add(shareResponse);
+        }
+        return ResponseEntity.ok(GenericResponse.builder().success(true).message("Retrieved group posts successfully")
+                .result(sharesResponses).statusCode(HttpStatus.OK.value()).build());
     }
 }

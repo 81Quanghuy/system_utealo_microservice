@@ -11,7 +11,7 @@ import org.springframework.util.backoff.FixedBackOff;
 import vn.iostar.postservice.constant.KafkaTopicName;
 
 @Configuration
-public class KafkaConfig {
+public class PostKafkaConfig {
     @Bean
     public CommonErrorHandler errorHandler(KafkaOperations<Object, Object> template) {
         return new DefaultErrorHandler(

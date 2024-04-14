@@ -6,11 +6,11 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.web.client.RestTemplate;
 
 @Configuration
-public class ClientConfig {
+public class PostClientConfig {
 
     @LoadBalanced
     @Bean
-    public RestTemplate restTemplate() {
+    public RestTemplate postRestTemplate() {
         return new RestTemplate();
     }
 

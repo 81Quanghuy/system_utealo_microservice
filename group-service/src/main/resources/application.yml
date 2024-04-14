@@ -21,4 +21,4 @@ springdoc:
   packages-to-scan:
     vn.iostar.groupservice
   api-docs:
-    path: /v3/api-docs/group-service
+    path: /v1/api-docs/group-service

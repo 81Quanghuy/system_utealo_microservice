@@ -3,6 +3,8 @@ package vn.iostar.groupservice.controller.user;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.json.JsonParser;
+import org.springframework.boot.json.JsonParserFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -15,13 +17,17 @@ import vn.iostar.groupservice.dto.request.GroupCreateRequest;
 import vn.iostar.groupservice.dto.response.GenericResponse;
 import vn.iostar.groupservice.dto.response.GroupProfileResponse;
 import vn.iostar.groupservice.entity.Group;
+import vn.iostar.groupservice.entity.GroupMember;
 import vn.iostar.groupservice.jwt.service.JwtService;
+import vn.iostar.groupservice.repository.GroupMemberRepository;
 import vn.iostar.groupservice.service.GroupRequestService;
 import vn.iostar.groupservice.service.GroupService;
 import vn.iostar.groupservice.service.MapperService;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/v1/groupPost")
@@ -33,6 +39,7 @@ public class GroupController {
     private final MapperService mapperService;
     private final JwtService jwtService;
     private final GroupRequestService groupRequestService;
+    private final GroupMemberRepository groupMemberRepository;
 
     /**
      *  Create group by authorized user and GroupCreateRequest
@@ -289,4 +296,14 @@ public class GroupController {
         String currentUserId = jwtService.extractUserId(token);
         return groupService.findByPostGroupNameContainingIgnoreCase(search, currentUserId);
     }
+
+    // Lấy danh sách id của nhóm theo userId
+    @GetMapping("/list/group-ids/{userId}")
+    public List<String> getGroupIdsByUserId(@PathVariable String userId) {
+        List<GroupMember> groupMembers = groupMemberRepository.findByUserId(userId);
+        return groupMembers.stream()
+                .map(groupMember -> groupMember.getGroup().getId())
+                .collect(Collectors.toList());
+    }
+
 }

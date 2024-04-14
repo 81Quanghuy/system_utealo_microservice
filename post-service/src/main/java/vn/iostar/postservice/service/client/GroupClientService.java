@@ -6,10 +6,15 @@ import org.springframework.web.bind.annotation.PathVariable;
 import vn.iostar.postservice.dto.response.GroupProfileResponse;
 import vn.iostar.postservice.dto.response.UserProfileResponse;
 
-@FeignClient(name = "group-service", contextId = "groupClientService", path = "/api/v1/groups")
+import java.util.List;
+
+@FeignClient(name = "group-service", contextId = "groupClientService", path = "/api/v1/groupPost")
 public interface GroupClientService {
 
     @GetMapping("/getGroup/{groupId}")
     GroupProfileResponse getGroup(@PathVariable String groupId);
+
+    @GetMapping("/list/group-ids/{userId}")
+    List<String> getGroupIdsByUserId(@PathVariable String userId);
 
 }

@@ -3,6 +3,7 @@ package vn.iostar.postservice.service;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
+import vn.iostar.groupservice.dto.FilesOfGroupDTO;
 import vn.iostar.postservice.dto.GenericResponse;
 import vn.iostar.postservice.dto.GenericResponseAdmin;
 import vn.iostar.postservice.dto.request.CreatePostRequestDTO;
@@ -69,6 +70,14 @@ public interface PostService {
     Page<PostsResponse> findAllPostsByUserId(int page, int itemsPerPage, String userId);
     // Lấy tất cả bài post của 1 user trong 1 tháng có phân trang
     Page<PostsResponse> findAllPostsInMonthByUserId(int page, int itemsPerPage, String userId);
+    // Lấy những bài post trên bảng tin của người dùng
+    ResponseEntity<GenericResponse> getPostTimelineByUserId(String userId, int page, int size) throws RuntimeException;
+    // Lấy tất cả bài post của 1 nhóm
+    ResponseEntity<GenericResponse> getGroupPosts(String userIdToken, String postGroupId, Integer page, Integer size);
+    // Lấy tất cả các bài post của những nhóm mình tham gia
+    ResponseEntity<GenericResponse> getPostOfPostGroup(String currentUserId, Pageable pageable);
+    // Lấy danh sách file của 1 nhóm
+    List<FilesOfGroupDTO> findLatestFilesByGroupId(String groupId);
 
 
 }

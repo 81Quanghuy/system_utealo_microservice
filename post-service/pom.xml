@@ -83,6 +83,16 @@
             <artifactId>cloudinary-http44</artifactId>
             <version>1.33.0</version>
         </dependency>
+        <dependency>
+            <groupId>vn.iostar</groupId>
+            <artifactId>friend-service</artifactId>
+            <version>1.0-SNAPSHOT</version> <!-- Phiên bản của friend-service -->
+        </dependency>
+        <dependency>
+            <groupId>vn.iostar</groupId>
+            <artifactId>group-service</artifactId>
+            <version>1.0-SNAPSHOT</version> <!-- Phiên bản của group-service -->
+        </dependency>
     </dependencies>
     <build>
         <plugins>

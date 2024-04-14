@@ -111,4 +111,41 @@ public class ShareController {
                 .result(sharePosts).statusCode(HttpStatus.OK.value()).build());
     }
 
+    // Lấy những bài share liên quan đến mình như: nhóm, bạn bè, cá nhân
+    @GetMapping("/get/timeLine")
+    public ResponseEntity<GenericResponse> getShareTimeLine(
+            @RequestHeader("Authorization") String authorizationHeader,
+            @RequestParam(defaultValue = "0") Integer page,
+            @RequestParam(defaultValue = "20") Integer size) {
+
+        String token = authorizationHeader.substring(7);
+        String currentUserId = jwtService.extractUserId(token);
+        return shareService.getTimeLineSharePosts(currentUserId, page, size);
+    }
+
+    // Lấy tất cả các bài share của những nhóm mình tham gia
+    @GetMapping("/inGroup")
+    public ResponseEntity<GenericResponse> getShareOfUserPostGroup(
+            @RequestHeader("Authorization") String authorizationHeader,
+            @RequestParam(defaultValue = "0") Integer page,
+            @RequestParam(defaultValue = "20") Integer size) {
+        String token = authorizationHeader.substring(7);
+        String currentUserId = jwtService.extractUserId(token);
+        Pageable pageable = PageRequest.of(page, size);
+        return shareService.getShareOfPostGroup(currentUserId, pageable);
+    }
+
+
+    // Lấy những bài share post của nhóm
+    @GetMapping("/{postGroupId}/shares")
+    public ResponseEntity<GenericResponse> getGroupSharePosts(
+            @RequestHeader("Authorization") String authorizationHeader,
+            @PathVariable("postGroupId") String postGroupId, @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        String token = authorizationHeader.substring(7);
+        String currentUserId = jwtService.extractUserId(token);
+        return shareService.getGroupSharePosts(currentUserId, postGroupId, page, size);
+    }
+
+
 }

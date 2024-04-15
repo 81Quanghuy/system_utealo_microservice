@@ -17,13 +17,4 @@ public class FilesOfGroupDTO  {
     private String type;
     private Date createAt;
     private Date updateAt;
-
-    public FilesOfGroupDTO(String userId, String userName, String files, String postId, Date createAt, Date updateAt) {
-        this.userId = userId;
-        this.userName = userName;
-        this.files = files;
-        this.postId = postId;
-        this.setCreateAt(createAt);
-        this.setUpdateAt(updateAt);
-    }
 }

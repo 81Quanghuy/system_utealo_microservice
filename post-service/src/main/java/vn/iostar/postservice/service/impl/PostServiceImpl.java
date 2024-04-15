@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import vn.iostar.groupservice.dto.FilesOfGroupDTO;
+import vn.iostar.groupservice.dto.PhotosOfGroupDTO;
 import vn.iostar.postservice.constant.PrivacyLevel;
 import vn.iostar.postservice.constant.RoleName;
 import vn.iostar.postservice.dto.GenericResponse;
@@ -35,11 +36,14 @@ import vn.iostar.postservice.service.client.UserClientService;
 
 
 import java.io.IOException;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
 import java.time.Month;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -745,7 +749,121 @@ public class PostServiceImpl implements PostService {
 
     @Override
     public List<FilesOfGroupDTO> findLatestFilesByGroupId(String groupId) {
-        return postRepository.findFilesOfPostByGroupId(groupId);
+
+        List<String> files= postRepository.findFilesOfPostByGroupId(groupId);
+
+        List<FilesOfGroupDTO> filesDTO = new ArrayList<>();
+
+        for (String file : files) {
+            try {
+                JSONObject jsonObject = new JSONObject(file);
+                if (jsonObject.has("files")) {
+                    // Tạo một đối tượng FilesOfGroupDTO từ JSON
+                    FilesOfGroupDTO filesOfGroupDTO = new FilesOfGroupDTO();
+                    filesOfGroupDTO.setFiles(jsonObject.getString("files"));
+
+                    if (jsonObject.has("_id")) {
+                        filesOfGroupDTO.setPostId(jsonObject.getString("_id"));
+                    }
+
+                    if (jsonObject.has("user_id")) {
+                        UserProfileResponse userProfileResponse = userClientService.getUser(jsonObject.getString("user_id"));
+                        filesOfGroupDTO.setUserName(userProfileResponse.getUserName());
+                        filesOfGroupDTO.setUserId(jsonObject.getString("user_id"));
+                    }
+
+                    if (jsonObject.has("type")) {
+                        filesOfGroupDTO.setType(jsonObject.getString("type"));
+                    }
+
+                    if (jsonObject.has("post_time")) {
+                        JSONObject postTimeObject = jsonObject.getJSONObject("post_time");
+                        String dateString = postTimeObject.getString("$date");
+                        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
+                        Date postTime = dateFormat.parse(dateString);
+                        filesOfGroupDTO.setCreateAt(postTime);
+                    }
+
+                    if (jsonObject.has("updated_at")) {
+                        JSONObject updatedAtObject = jsonObject.getJSONObject("updated_at");
+                        String dateString = updatedAtObject.getString("$date");
+                        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
+                        Date updatedAt = dateFormat.parse(dateString);
+                        filesOfGroupDTO.setUpdateAt(updatedAt);
+                    }
+
+                    filesDTO.add(filesOfGroupDTO);
+                }
+            } catch (JSONException e) {
+                e.printStackTrace();
+            } catch (ParseException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        return filesDTO;
+    }
+
+    @Override
+    public Page<PhotosOfGroupDTO> findLatestPhotosByGroupId(String groupId, int page, int size) {
+        PageRequest pageable = PageRequest.of(page, size);
+        Page<String> photos = postRepository.findPhotosOfPostByGroupId(groupId, pageable);
+
+        List<PhotosOfGroupDTO> photosDTOList = new ArrayList<>();
+
+        for (String photo : photos.getContent()) {
+            try {
+                // Parse JSON string to JSONObject
+                JSONObject jsonObject = new JSONObject(photo);
+
+                // Check if the JSON object has "photos" field
+                if (jsonObject.has("photos")) {
+                    PhotosOfGroupDTO photoDTO = new PhotosOfGroupDTO();
+                    photoDTO.setPhotos(jsonObject.getString("photos"));
+
+                    if (jsonObject.has("_id")) {
+                        photoDTO.setPostId(jsonObject.getString("_id"));
+                    }
+
+                    if (jsonObject.has("user_id")) {
+                        UserProfileResponse userProfileResponse = userClientService.getUser(jsonObject.getString("user_id"));
+                        photoDTO.setUserName(userProfileResponse.getUserName());
+                        photoDTO.setUserId(jsonObject.getString("user_id"));
+                    }
+
+                    if (jsonObject.has("group_id")) {
+                        GroupProfileResponse groupProfileResponse = groupClientService.getGroup(jsonObject.getString("group_id"));
+                        photoDTO.setPostGroupName(groupProfileResponse.getGroupName());
+                        photoDTO.setUserId(jsonObject.getString("group_id"));
+                    }
+
+                    photosDTOList.add(photoDTO);
+                }
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
+        }
+
+        // Create a Page object from the list of DTOs and return
+        return new PageImpl<>(photosDTOList, pageable, photos.getTotalElements());
+    }
+
+    @Override
+    public List<PostsResponse> findPostsByAdminRoleInGroup(String groupId, Pageable pageable) {
+        List<Post> userPosts = postRepository.findPostsByAdminRoleInGroup(groupId, pageable);
+
+        GroupProfileResponse groupProfileResponse = null;
+
+        List<PostsResponse> simplifiedUserPosts = new ArrayList<>();
+        for (Post post : userPosts) {
+            UserProfileResponse userOfPostResponse = userClientService.getUser(post.getUserId());
+            if (post.getGroupId() != null && !post.getGroupId().isEmpty()) {
+                groupProfileResponse = groupClientService.getGroup(post.getGroupId());
+            }
+            PostsResponse postsResponse = new PostsResponse(post, userOfPostResponse, groupProfileResponse);
+            simplifiedUserPosts.add(postsResponse);
+        }
+        return simplifiedUserPosts;
     }
 
 }

@@ -4,6 +4,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import vn.iostar.groupservice.dto.FilesOfGroupDTO;
+import vn.iostar.groupservice.dto.PhotosOfGroupDTO;
 import vn.iostar.postservice.dto.GenericResponse;
 import vn.iostar.postservice.dto.GenericResponseAdmin;
 import vn.iostar.postservice.dto.request.CreatePostRequestDTO;
@@ -78,6 +79,9 @@ public interface PostService {
     ResponseEntity<GenericResponse> getPostOfPostGroup(String currentUserId, Pageable pageable);
     // Lấy danh sách file của 1 nhóm
     List<FilesOfGroupDTO> findLatestFilesByGroupId(String groupId);
-
+    // Lấy danh sách photo của 1 nhóm
+    Page<PhotosOfGroupDTO> findLatestPhotosByGroupId(String groupId, int page, int size);
+    // Lấy những bài viết trong nhóm do Admin đăng
+    List<PostsResponse> findPostsByAdminRoleInGroup(String groupId, Pageable pageable);
 
 }

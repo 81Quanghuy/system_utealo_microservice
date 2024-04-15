@@ -191,99 +191,6 @@ public class GroupController {
     }
 
     /**
-     * Lấy những bài share của group theo id chưa xong
-     * @param authorizationHeader authorizationHeader
-     * @param postGroupId postGroupId
-     * @param page page
-     * @param size size
-     * @return GenericResponse
-     */
-    @GetMapping("/{postGroupId}/shares")
-    public ResponseEntity<GenericResponse> getGroupSharePosts(
-            @RequestHeader("Authorization") String authorizationHeader,
-            @PathVariable("postGroupId") String postGroupId, @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size) {
-        String token = authorizationHeader.substring(7);
-        String currentUserId = jwtService.extractUserId(token);
-        Pageable pageable = Pageable.ofSize(size).withPage(page);
-        return groupService.getGroupSharePosts(currentUserId, postGroupId, pageable);
-    }
-
-    /**
-     * Lấy tất cả bài viết của group mà user đã tham gia theo id Chưa xong
-     * @param authorizationHeader authorizationHeader
-     * @param page page
-     * @param size size
-     * @return GenericResponse
-     */
-
-    @GetMapping("/posts")
-    public ResponseEntity<GenericResponse> getPostOfUserPostGroup(
-            @RequestHeader("Authorization") String authorizationHeader, @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size) {
-        String token = authorizationHeader.substring(7);
-        String currentUserId = jwtService.extractUserId(token);
-        Pageable pageable = PageRequest.of(page, size);
-        return groupService.getPostOfPostGroup(currentUserId, pageable);
-    }
-
-    /**
-     * Lấy tất cả bài viết của group theo id chua lam
-     * @param authorizationHeader authorizationHeader
-     * @param postGroupId postGroupId
-     * @param page page
-     * @param size size
-     * @return GenericResponse
-     */
-    @GetMapping("/{postGroupId}/posts")
-    public ResponseEntity<GenericResponse> getPostOfPostGroup(
-            @RequestHeader("Authorization") String authorizationHeader, @PathVariable Integer postGroupId,
-            @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "20") int size) {
-        String token = authorizationHeader.substring(7);
-        String currentUserId = jwtService.extractUserId(token);
-        Pageable pageable = PageRequest.of(page, size);
-        return groupService.getGroupPosts(currentUserId, postGroupId,pageable);
-    }
-
-    /**
-     * Lấy tất cả file trong bài viết của group theo id chua lam
-     * @param groupId groupId
-     * @return FilesOfGroupDTO
-     */
-
-    @GetMapping("/files/{groupId}")
-    public List<FilesOfGroupDTO> getLatestFilesOfGroup(@PathVariable("groupId") Integer groupId) {
-        return groupService.findLatestFilesByGroupId(groupId);
-    }
-
-    /**
-     *    Lấy tất cả file trong bài viết của group theo id chua lam
-     * @param page page
-     * @param size size
-     * @param groupId groupId
-     * @return PhotosOfGroupDTO
-     */
-    @GetMapping("/photos/{groupId}")
-    public Page<PhotosOfGroupDTO> getLatestPhotoOfGroup(@RequestParam(defaultValue = "0") int page,
-                                                        @RequestParam(defaultValue = "5") int size, @PathVariable("groupId") String groupId) {
-        Pageable pageable = PageRequest.of(page, size);
-        return groupService.findLatestPhotosByGroupId(groupId, pageable);
-    }
-
-
-    // Group Client
-    @GetMapping("/getGroup/{groupId}")
-    public GroupProfileResponse getGroup(@PathVariable String groupId) {
-        Optional<Group> group = groupService.findById(groupId);
-
-        if (group.isEmpty()) {
-            throw new RuntimeException("Group not found.");
-        }
-        return mapperService.mapToGroupProfileResponse(group.get());
-
-    }
-
-    /**
      * Tìm kiếm nhóm theo tên
      * @param authorizationHeader authorizationHeader
      * @param search search
@@ -295,6 +202,18 @@ public class GroupController {
         String token = authorizationHeader.substring(7);
         String currentUserId = jwtService.extractUserId(token);
         return groupService.findByPostGroupNameContainingIgnoreCase(search, currentUserId);
+    }
+
+    // Group Client
+    @GetMapping("/getGroup/{groupId}")
+    public GroupProfileResponse getGroup(@PathVariable String groupId) {
+        Optional<Group> group = groupService.findById(groupId);
+
+        if (group.isEmpty()) {
+            throw new RuntimeException("Group not found.");
+        }
+        return mapperService.mapToGroupProfileResponse(group.get());
+
     }
 
     // Lấy danh sách id của nhóm theo userId

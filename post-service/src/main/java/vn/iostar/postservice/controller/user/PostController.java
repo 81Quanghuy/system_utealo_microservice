@@ -2,6 +2,7 @@ package vn.iostar.postservice.controller.user;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpHeaders;
@@ -10,14 +11,17 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import vn.iostar.groupservice.dto.FilesOfGroupDTO;
+import vn.iostar.groupservice.dto.PhotosOfGroupDTO;
 import vn.iostar.postservice.dto.GenericResponse;
 import vn.iostar.postservice.dto.request.CreatePostRequestDTO;
 import vn.iostar.postservice.dto.request.PostUpdateRequest;
+import vn.iostar.postservice.dto.response.GroupProfileResponse;
 import vn.iostar.postservice.dto.response.PostsResponse;
 import vn.iostar.postservice.entity.Post;
 import vn.iostar.postservice.jwt.service.JwtService;
 import vn.iostar.postservice.service.PostService;
 import vn.iostar.postservice.service.ShareService;
+import vn.iostar.postservice.service.client.GroupClientService;
 
 import java.util.List;
 import java.util.Optional;
@@ -30,6 +34,7 @@ public class PostController {
     private final PostService postService;
     private final JwtService jwtService;
     private final ShareService shareService;
+    private final GroupClientService groupClientService;
 
     // Xem chi tiết bài viết
     @GetMapping("/{postId}")
@@ -157,5 +162,32 @@ public class PostController {
     @GetMapping("/files/{groupId}")
     public List<FilesOfGroupDTO> getLatestFilesOfGroup(@PathVariable("groupId") String groupId) {
         return postService.findLatestFilesByGroupId(groupId);
+    }
+
+    // Lấy danh sách photo của 1 nhóm
+    @GetMapping("/photos/{groupId}")
+    public Page<PhotosOfGroupDTO> getLatestPhotoOfGroup(@RequestParam(defaultValue = "0") int page,
+                                                        @RequestParam(defaultValue = "5") int size, @PathVariable("groupId") String groupId) {
+        return postService.findLatestPhotosByGroupId(groupId, page, size);
+    }
+
+    // Lấy những bài viết trong nhóm do Admin đăng
+    @GetMapping("/roleAdmin/{groupId}")
+    public ResponseEntity<GenericResponse> getPostsByAdminRoleInGroup(@PathVariable("groupId") String groupId,
+                                                                      @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "5") int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        List<PostsResponse> groupPosts = postService.findPostsByAdminRoleInGroup(groupId, pageable);
+        GroupProfileResponse groupProfileResponse = groupClientService.getGroup(groupId);
+        if (groupProfileResponse == null) {
+            throw new RuntimeException("Group not found.");
+        } else if (groupPosts.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(GenericResponse.builder().success(false).message("No posts found for admin of this group")
+                            .statusCode(HttpStatus.NOT_FOUND.value()).build());
+        } else {
+            return ResponseEntity
+                    .ok(GenericResponse.builder().success(true).message("Retrieved posts of admin successfully")
+                            .result(groupPosts).statusCode(HttpStatus.OK.value()).build());
+        }
     }
 }

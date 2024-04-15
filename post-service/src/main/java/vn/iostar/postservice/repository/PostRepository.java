@@ -76,15 +76,22 @@ public interface PostRepository extends MongoRepository<Post, String> {
             "]}"
     )
     List<Post> findPostsInTimeLine(List<String> userIds,List<String> groupIds, Pageable pageable);
-
     // Lấy những bài post của nhóm
     List<Post> findByGroupIdOrderByPostTimeDesc(String postGroupId, Pageable pageable);
     // Lấy tất cả các bài share của những nhóm mình tham gia
     @Query("{$and:[{$or:[{'groupId': {$in: ?0}}]}]}")
     List<Post> findAllPostsInUserGroups(List<String> groupIds, Pageable pageable);
+    // Lấy danh sách file của 1 nhóm
+    @Query(value = "{'groupId': ?0, 'files': {$nin: [null, '']}}")
+    List<String> findFilesOfPostByGroupId(String groupId);
+    // Lấy danh sách photo của 1 nhóm
+    @Query(value = "{'groupId': ?0, 'photos': {$nin: [null, '']}}")
+    Page<String> findPhotosOfPostByGroupId(String groupId, Pageable pageable);
+    // Lấy những bài viết trong nhóm do Admin đăng
+    List<Post> findPostsByAdminRoleInGroup(String groupId, Pageable pageable);
 
-    @Query(value = "{'groupId': ?0}", fields = "{'files': 1, 'userId': 1, 'userName': 1, 'postId': 1, 'type': 1, 'createAt': 1, 'updateAt': 1}")
-    List<FilesOfGroupDTO> findFilesOfPostByGroupId(String groupId);
+
+
 
 
 }

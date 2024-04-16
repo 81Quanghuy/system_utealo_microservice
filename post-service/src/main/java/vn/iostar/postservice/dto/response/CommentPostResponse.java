@@ -29,7 +29,13 @@ public class CommentPostResponse {
 		this.createTime = comment.getCreateTime();
 		this.photos = comment.getPhotos();
 		this.userName = userProfileResponse.getUserName();
-		this.postId = comment.getPost().getId();
+		if (comment.getPost() != null) {
+			this.postId = comment.getPost().getId();
+		} else if (comment.getShare() != null) {
+			this.postId = comment.getShare().getId();
+		} else {
+			this.postId = null;
+		}
 		this.userAvatar = userProfileResponse.getAvatar();
 		this.userId = comment.getUserId();
 	}

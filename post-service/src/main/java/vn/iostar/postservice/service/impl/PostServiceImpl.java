@@ -850,7 +850,9 @@ public class PostServiceImpl implements PostService {
 
     @Override
     public List<PostsResponse> findPostsByAdminRoleInGroup(String groupId, Pageable pageable) {
-        List<Post> userPosts = postRepository.findPostsByAdminRoleInGroup(groupId, pageable);
+
+        List<String> userIds = groupClientService.getAdminsInGroup(groupId);
+        List<Post> userPosts = postRepository.findPostsByAdminRoleInGroup(userIds, pageable);
 
         GroupProfileResponse groupProfileResponse = null;
 

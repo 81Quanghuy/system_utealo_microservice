@@ -1,5 +1,6 @@
 package vn.iostar.postservice.dto.response;
 
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
@@ -44,12 +45,12 @@ public class SharesResponse {
         if (share.getComments() != null) {
             this.comments = share.getComments();
         } else {
-            this.comments = null;
+            this.comments = new ArrayList<>();
         }
         if (share.getLikes() != null) {
             this.likes = share.getLikes();
         } else {
-            this.likes = null;
+            this.likes = new ArrayList<>();
         }
     }
 

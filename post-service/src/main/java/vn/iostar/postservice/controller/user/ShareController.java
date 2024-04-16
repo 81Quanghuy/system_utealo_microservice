@@ -71,7 +71,7 @@ public class ShareController {
 
     // Tạo bài share
     @PostMapping("/create")
-    public ResponseEntity<Object> createSharePost(@ModelAttribute SharePostRequestDTO requestDTO,
+    public ResponseEntity<Object> createSharePost(@RequestBody SharePostRequestDTO requestDTO,
                                                   @RequestHeader("Authorization") String token) {
         return shareService.sharePost(token, requestDTO);
     }

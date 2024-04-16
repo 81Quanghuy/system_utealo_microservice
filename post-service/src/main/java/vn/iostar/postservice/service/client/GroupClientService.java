@@ -17,4 +17,7 @@ public interface GroupClientService {
     @GetMapping("/list/group-ids/{userId}")
     List<String> getGroupIdsByUserId(@PathVariable String userId);
 
+    @GetMapping("/list/admins/{groupId}")
+    List<String> getAdminsInGroup(@PathVariable String groupId) ;
+
 }

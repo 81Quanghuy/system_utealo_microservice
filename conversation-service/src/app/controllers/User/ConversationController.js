@@ -12,6 +12,8 @@ const mongoose = require('mongoose');
 const { responseError } = require('./../../../utils/Response/error');
 const { getListData } = require('./../../../utils/Response/listData');
 const getLocationByIPAddress = require('./../../../configs/location');
+const {getListConversation} = require("../../../utils/Response/listData");
+const {populateUser} = require("../../../utils/clients/userClient");
 // set encryption algorithm
 const algorithm = 'aes-256-cbc';
 
@@ -211,14 +213,15 @@ class ConversationController {
 
     // [Post] add a new conversation
     async add(req, res, next) {
-        return res.status(200).json(req.user);
         // validate request
         const schema = Joi.object({
             members: Joi.array()
                 .items(
                     Joi.object({
-                        user: Joi.string().required(),
+                        userId: Joi.string().required(),
                         nickname: Joi.string().min(3).max(100),
+                        avatar: Joi.string(),
+                        addedBy: Joi.string(),
                     })
                 )
                 .required(),
@@ -235,131 +238,43 @@ class ConversationController {
             return next(createError.BadRequest(error.details[0].message));
         }
 
-        // remove name if req.body.member.length = 1
-        if (req.body.members.length === 1) {
-            req.body.name = undefined;
-        }
-
         try {
             if (req.body.members.length < 1) {
                 return responseError(res, 400, 'Cuộc hội thoại phải có ít nhất 2 thành viên');
             }
-            if (req.body.members.length == 1) {
-                const conv = await Conversation.aggregate([
-                    {
-                        $match: {
-                            $and: [
-                                {
-                                    members: {
-                                        $elemMatch: { user: mongoose.Types.ObjectId(req.body.members[0].user) },
-                                    },
-                                },
-                                { members: { $elemMatch: { user: mongoose.Types.ObjectId(req.user._id) } } },
-                                {
-                                    members: {
-                                        $size: 2,
-                                    },
-                                },
-                                // check type = 'direct'
-                                { type: 'direct' },
-                            ],
-                        },
-                    },
-                ]);
-                // Check conversation with 2 members. It's only 1
-                if (!conv[0]) {
-                    await Promise.all(
-                        req.body.members.map(async (member) => {
-                            const user = await User.findById(member.user);
-                            if (!user)
-                                return next(
-                                    createError.NotFound('Không tìm thấy người dùng để thêm vào cuộc hội thoại')
-                                );
-
-                            member.nickname = user.fullname;
-                            member.addedBy = req.user._id;
-                            return member;
-                        })
-                    );
-                    req.body.type = 'direct';
-
-                    const newConversation = new Conversation(req.body);
-                    newConversation.members.push({
-                        user: req.user._id,
-                        nickname: req.user.fullname,
-                        role: 'member',
-                        addedBy: req.user._id,
-                    });
-                    newConversation.creator = req.user._id;
-                    newConversation.history.push({
-                        editor: req.user._id,
-                        content: `<b>${req.user.fullname}</b> đã tạo cuộc hội thoại`,
-                    });
-
-                    // save the conversation
-                    const savedConversation = await newConversation.save();
-
-                    // create message system
-                    const messageSystem = new Message({
-                        conversation: savedConversation._id,
-                        text: `<b>${req.user.fullname}</b> đã tạo cuộc hội thoại`,
-                        isSystem: true,
-                    });
-                    await messageSystem.save();
-
-                    newConversation.lastest_message = messageSystem;
-
-                    return res.status(200).json(await populateConversation(savedConversation._id));
-                } else {
-                    const conversation = await populateConversation(conv[0]._id);
-                    return res.status(200).json(conversation);
-                }
-            } else {
-                await Promise.all(
-                    req.body.members.map(async (member) => {
-                        const user = await User.findById(member.user);
-                        if (!user)
-                            return next(createError.NotFound('Không tìm thấy người dùng để thêm vào cuộc hội thoại'));
-
-                        member.nickname = user.fullname;
-                        member.addedBy = req.user._id;
-                        return member;
-                    })
-                );
-
-                if (!req.body.name) {
-                    req.body.name = req.body.members.map((x) => x.nickname).join(', ');
-                }
-
-                req.body.type = 'group';
-
-                const newConversation = new Conversation(req.body);
+            else{
+                let newConversation = new Conversation({
+                    members: req.body.members,
+                    name:  req.body.name,
+                    avatar :  req.body.avatar
+                });
                 newConversation.members.push({
-                    user: req.user._id,
-                    nickname: req.user.fullname,
+                    userId: req.user.userId,
+                    nickname: req.user.userName,
                     role: 'admin',
-                    addedBy: req.user._id,
+                    addedBy: req.user.userId,
+                    avatar: req.user.avatar,
                 });
-
+                newConversation.creatorId = req.user.userId;
                 newConversation.history.push({
-                    editor: req.user._id,
-                    content: `<b>${req.user.fullname}</b> đã tạo cuộc hội thoại`,
+                    editorId: req.user.userId,
+                    content: `<b>${req.user.userName}</b> đã tạo cuộc hội thoại`,
                 });
-
+                    // save the conversation
                 const savedConversation = await newConversation.save();
 
                 // create message system
                 const messageSystem = new Message({
                     conversation: savedConversation._id,
-                    text: `<b>${req.user.fullname}</b> đã tạo cuộc hội thoại`,
-                    isSystem: true,
+                    text: `<b>${req.user.userName}</b> đã tạo cuộc hội thoại`,
+                    isSystem: false,
                 });
                 await messageSystem.save();
-
                 newConversation.lastest_message = messageSystem;
-
-                return res.status(200).json(await populateConversation(savedConversation._id));
+                await savedConversation.save();
+                return res.status(200).json(savedConversation);
             }
+
         } catch (err) {
             console.log(err);
             return next(
@@ -380,90 +295,34 @@ class ConversationController {
         const q = req.query.key ?? '';
 
         try {
-            Conversation.paginate(
-                {
-                    members: {
-                        $elemMatch: {
-                            user: req.user._id,
-                        },
-                    },
-                    $or: [
-                        {
-                            $and: [
-                                { name: { $exists: true } }, // Name field exists
-                                { name: { $regex: q, $options: 'i' } }, // Name matches the search query
-                            ],
-                        },
-                        {
-                            $and: [
-                                { name: { $exists: false } }, // Name field does not exist
-                                {
-                                    members: {
-                                        $elemMatch: {
-                                            nickname: { $regex: q, $options: 'i' }, // Nickname matches the search query
-                                        },
-                                    },
-                                },
-                            ],
-                        },
-                    ],
-                },
-                {
-                    offset,
-                    limit,
-                    sort: { updatedAt: -1 },
-                    populate: [
-                        {
-                            path: 'lastest_message',
-                            populate: {
-                                path: 'sender',
-                            },
-                        },
-                        {
-                            path: 'members.user',
-                            select: '_id fullname profilePicture isOnline isOnline',
-                            populate: {
-                                path: 'profilePicture',
-                                select: '_id link',
-                            },
-                        },
-                        {
-                            path: 'avatar',
-                        },
-                        {
-                            path: 'members.addedBy',
-                            select: '_id fullname profilePicture isOnline',
-                            populate: {
-                                path: 'profilePicture',
-                                select: '_id link',
-                            },
-                        },
-                        {
-                            path: 'members.changedNicknameBy',
-                            select: '_id fullname profilePicture isOnline',
-                            populate: {
-                                path: 'profilePicture',
-                                select: '_id link',
-                            },
-                        },
-                    ],
+            // Tìm tất cả các cuộc trò chuyện mà có thành viên có userId là giá trị của tham số
+            const conversations = await Conversation.find({ 'members.userId': req.user.userId }).populate({
+                path: 'lastest_message',
+                select: 'senderId text createdAt updatedAt readerId',
                 }
             )
-                .then((data) => {
-                    data.docs.forEach((item) => {
-                        if (item.lastest_message && item.lastest_message.iv) {
-                            const iv = Buffer.from(item.lastest_message.iv, 'base64');
-                            const decipher = crypto.createDecipheriv(algorithm, key, iv);
-                            let decryptedData = decipher.update(item.lastest_message.text, 'hex', 'utf-8');
-                            decryptedData += decipher.final('utf-8');
-                            item.lastest_message.text = decryptedData;
-                        }
-                    });
-                    getListData(res, data);
-                })
-                .catch((err) => {
-                    return responseError(res, 500, err.message ?? 'Some error occurred while retrieving tutorials.');
-                });
+            // lay creatAt va UpdateAt cua lastest message
+            conversations.forEach((item) => {
+            if (item.lastest_message && item.lastest_message.iv) {
+                const iv = Buffer.from(item.lastest_message.iv, 'base64');
+                const decipher = crypto.createDecipheriv(algorithm, key, iv);
+                let decryptedData = decipher.update(item.lastest_message.text, 'hex', 'utf-8');
+                decryptedData += decipher.final('utf-8');
+                item.lastest_message.text = decryptedData;
+            }
+           });
+
+            const data = {
+                totalDocs: conversations.length,
+                docs: conversations,
+                page: 1,
+                limit: 10,
+                totalPages: 1,
+                offset: 0,
+                prevPage: null,
+                nextPage: null,
+            };
+            return getListConversation(res,true, 'Danh sách cuộc trò chuyện', conversations, 200);
         } catch (err) {
             console.log(err);
             return next(
@@ -494,8 +353,8 @@ class ConversationController {
     // get conversation by id
     async getConversationById(req, res) {
         try {
-            const conversation = await populateConversation(req.params.id);
-            if (conversation.members.some((member) => member.user._id.toString() === req.user._id.toString())) {
+            const conversation =await Conversation.findById(req.params.id);
+            if (conversation.members.some((member) => member.userId === req.user.userId)) {
                 return res.status(200).json(conversation);
             } else {
                 return responseError(res, 401, 'Bạn không có trong conversation này');

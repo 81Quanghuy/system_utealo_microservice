@@ -34,6 +34,7 @@ public class FriendController {
                 .result(friend).statusCode(HttpStatus.OK.value()).build());
     }
 
+
     //Laays danh saach ban be theo userId co su dung phan trang
     @GetMapping("/list/pageable/{userId}")
     public ResponseEntity<GenericResponse> getListFriendByUserId(@PathVariable("userId") String userId,

@@ -6,7 +6,7 @@ const ConversationController = require('../app/controllers/User/ConversationCont
 
 const { isAuth , getUser} = AuthorMiddleware;
 // new conv
-router.post('/create', isAuth, ConversationController.add);
+router.post('/create', getUser, ConversationController.add);
 router.get('/random',isAuth, ConversationController.createRandomConversation);
 router.get('/video-call', isAuth, ConversationController.createRoomIDVideoCall);
 
@@ -15,8 +15,8 @@ router.get('/video-call', isAuth, ConversationController.createRoomIDVideoCall);
 // get conv of a user
 router.get('/getAll', ConversationController.getAll);
 router.get('/search', isAuth, ConversationController.search);
-router.get('/', isAuth, ConversationController.getConversationOfUser);
-router.get('/:id', isAuth, ConversationController.getConversationById);
+router.get('/', getUser, ConversationController.getConversationOfUser);
+router.get('/:id', getUser, ConversationController.getConversationById);
 // get conv includes two userId
 router.get('/find/:userId', isAuth, ConversationController.getConversationByUserIds);
 // get media of a conversation

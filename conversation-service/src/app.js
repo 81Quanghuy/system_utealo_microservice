@@ -13,11 +13,7 @@ const HOSTS = require("./configs/cors");
 
 const app = express();
 
-app.use(
-  cors({
-    origin: HOSTS,
-  })
-);
+
 app.use(helmet());
 
 // Create folder Logs if not exist

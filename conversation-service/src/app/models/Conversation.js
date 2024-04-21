@@ -55,6 +55,9 @@ const member = mongoose.Schema(
         addedBy: {
             type: String,
         },
+        avatar: {
+            type: String,
+        },
     },
     { _id: false }
 );
@@ -98,5 +101,6 @@ ConversationSchema.plugin(mongooseDelete, {
 
 // paginate
 ConversationSchema.plugin(mongoosePaginate);
+//khai bao constructor
 
 module.exports = mongoose.model('Conversation', ConversationSchema);

@@ -1,4 +1,12 @@
 module.exports = {
+	getListConversation(res,success, message, listConversation,statusCode) {
+		res.status(200).send({
+			success: success,
+			message: message,
+			result: listConversation,
+			statusCode: statusCode,
+		});
+	},
 	getListData(res, data) {
 		res.status(200).send({
 			totalItems: data.totalDocs,

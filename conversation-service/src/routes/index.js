@@ -8,33 +8,33 @@ const bot = require("../utils/SlackLogger/bot");
 function route(app) {
 
   // cors handle
-  app.use((req, res, next) => {
-    const allowedOrigins = [
-      "http://localhost:9000",
-      "http://localhost:3000",
-      "https://tana.social",
-      "https://tana-admin.vercel.app",
-      "https://tana.social",
-    ];
-    const { origin } = req.headers;
-    if (allowedOrigins.includes(origin)) {
-      res.setHeader("Access-Control-Allow-Origin", origin);
-    }
-    // res.setHeader('Access-Control-Allow-Origin', '*');
-    // res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
-    res.header(
-      "Access-Control-Allow-Headers",
-      "Origin, X-Requested-With, Content-Type, Accept"
-    );
-    if (req.method === "OPTIONS") {
-      res.header(
-        "Access-Control-Allow-Methods",
-        "PUT, POST, PATCH, DELETE, GET"
-      );
-      return res.status(200).json({});
-    }
-    next();
-  });
+  // app.use((req, res, next) => {
+  //   const allowedOrigins = [
+  //     "http://localhost:9000",
+  //     "http://localhost:3000",
+  //     "https://tana.social",
+  //     "https://tana-admin.vercel.app",
+  //     "https://tana.social",
+  //   ];
+  //   const { origin } = req.headers;
+  //   if (allowedOrigins.includes(origin)) {
+  //     res.setHeader("Access-Control-Allow-Origin", origin);
+  //   }
+  //   // res.setHeader('Access-Control-Allow-Origin', '*');
+  //   // res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+  //   res.header(
+  //     "Access-Control-Allow-Headers",
+  //     "Origin, X-Requested-With, Content-Type, Accept"
+  //   );
+  //   if (req.method === "OPTIONS") {
+  //     res.header(
+  //       "Access-Control-Allow-Methods",
+  //       "PUT, POST, PATCH, DELETE, GET"
+  //     );
+  //     return res.status(200).json({});
+  //   }
+  //   next();
+  // });
 
   // limit access to 20 requests per 1 minutes
  // app.use(limiter);

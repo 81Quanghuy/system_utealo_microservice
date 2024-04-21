@@ -3,6 +3,7 @@ package vn.iostar.groupservice.repository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.mongodb.repository.MongoRepository;
+import org.springframework.data.mongodb.repository.Query;
 import org.springframework.stereotype.Repository;
 import vn.iostar.groupservice.constant.GroupMemberRoleType;
 import vn.iostar.groupservice.dto.response.GroupPostResponse;
@@ -23,4 +24,6 @@ public interface GroupMemberRepository extends MongoRepository<GroupMember, Stri
     List<GroupMember> findAllByGroupIdAndRoleIn(String groupId, List<GroupMemberRoleType> roles);
     Boolean existsByUserIdAndGroupId(String userId, String groupId);
     List<GroupMember> findByUserId(String userId);
+    @Query(value="{ 'group.id' : ?0, 'role' : 'Admin' }", fields="{ 'userId' : 1}")
+    List<GroupMember> findUserIdAdminInGroup(String groupId);
 }

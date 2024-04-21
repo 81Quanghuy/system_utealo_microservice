@@ -86,7 +86,7 @@ public class ShareServiceImpl implements ShareService {
         share.setUserId(user.getUserId());
         share.setPrivacyLevel(requestDTO.getPrivacyLevel());
         if (requestDTO.getPostGroupId() != null)
-            if (requestDTO.getPostGroupId() != "" || requestDTO.getPostGroupId() != null) {
+            if (requestDTO.getPostGroupId() != "" && requestDTO.getPostGroupId() != null && Integer.valueOf(requestDTO.getPostGroupId()) != 0) {
                 postGroup = groupClientService.getGroup(requestDTO.getPostGroupId());
             if (postGroup != null) {
                 share.setPostGroupId(postGroup.getId());
@@ -113,7 +113,7 @@ public class ShareServiceImpl implements ShareService {
         share.setContent(requestDTO.getContent());
         share.setPrivacyLevel(requestDTO.getPrivacyLevel());
         if (requestDTO.getPostGroupId() != null) {
-            if (requestDTO.getPostGroupId() != "") {
+            if (requestDTO.getPostGroupId() != "" && requestDTO.getPostGroupId() != null && Integer.valueOf(requestDTO.getPostGroupId()) != 0){
                 GroupProfileResponse groupProfileResponse = groupClientService.getGroup(requestDTO.getPostGroupId());
                 if (groupProfileResponse != null)
                     share.setPostGroupId(groupProfileResponse.getId());

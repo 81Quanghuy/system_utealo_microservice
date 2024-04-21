@@ -375,9 +375,13 @@ public class CommentServiceImpl implements CommentService {
     @Override
     public ResponseEntity<GenericResponse> getCountCommentOfPost(String postId) {
         Optional<Post> post = postService.findById(postId);
-        if (post.isEmpty())
-            throw new RuntimeException("Post not found");
-        List<Comment> comments = commentRepository.findByPostIdOrderByCreateTimeDesc(postId);
+        Optional<Share> share = shareService.findById(postId);
+        List<Comment> comments = new ArrayList<>();
+        if (!post.isEmpty())  {
+            comments = commentRepository.findByPostIdOrderByCreateTimeDesc(postId);
+        } else if (!share.isEmpty()) {
+            comments = commentRepository.findByShareIdOrderByCreateTimeDesc(postId);
+        }
         if (!comments.isEmpty()) {
             List<CommentPostResponse> commentPostResponses = new ArrayList<>();
             for (Comment comment : comments) {

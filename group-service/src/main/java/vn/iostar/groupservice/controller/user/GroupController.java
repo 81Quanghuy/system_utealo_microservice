@@ -24,6 +24,7 @@ import vn.iostar.groupservice.service.GroupRequestService;
 import vn.iostar.groupservice.service.GroupService;
 import vn.iostar.groupservice.service.MapperService;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -222,6 +223,15 @@ public class GroupController {
         List<GroupMember> groupMembers = groupMemberRepository.findByUserId(userId);
         return groupMembers.stream()
                 .map(groupMember -> groupMember.getGroup().getId())
+                .collect(Collectors.toList());
+    }
+
+    // Lấy danh sách userId là admin trong 1 nhóm
+    @GetMapping("/list/admins/{groupId}")
+    public List<String> getAdminsInGroup(@PathVariable String groupId) {
+        List<GroupMember> groupMembers = groupMemberRepository.findUserIdAdminInGroup(groupId);
+        return groupMembers.stream()
+                .map(GroupMember::getUserId)
                 .collect(Collectors.toList());
     }
 

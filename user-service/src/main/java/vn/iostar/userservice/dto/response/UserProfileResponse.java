@@ -25,6 +25,7 @@ public class UserProfileResponse {
 	private String isActive;
     private Boolean isVerified;
 	private boolean isAccountActive;
+    private Date lastLogin;
 	private Date createdAt;
 	private Date updatedAt;
 	private RoleName roleName;
@@ -51,6 +52,7 @@ public class UserProfileResponse {
         this.isAccountActive = user.getAccount().getIsActive();
         this.createdAt = user.getAccount().getCreatedAt();
         this.updatedAt = user.getAccount().getUpdatedAt();
+        this.lastLogin = user.getAccount().getLastLoginAt();
         this.roleName = user.getRole().getRoleName();
         this.isVerified = user.getIsVerified();
 	}

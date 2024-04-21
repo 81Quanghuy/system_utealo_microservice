@@ -211,6 +211,61 @@ class ConversationController {
         }
     }
 
+    // Create conversation with user
+    async createConversationUser(req, res, next) {
+        const user = await populateUser(req.body.userId);
+        if (!user) {
+            return responseError(res, 404, 'Không tìm thấy User');
+        }
+        try {
+            if (req.body.userId === req.user.userId) {
+                return responseError(res, 400, 'Không thể tạo cuộc trò chuyện với chính mình');
+            }
+            const name = `${req.user.userName} ${user.userName}`;
+            const checkConversation = await Conversation.findOne({
+                name: name,});
+            if (checkConversation) {
+                return res.status(200).json(checkConversation);
+            }
+
+            const conversation = new Conversation({
+                members: [
+                    {
+                        userId: req.body.userId,
+                        role: 'member',
+                        nickname: req.body.userName,
+                        avatar: req.body.avatar,
+
+                    },
+                    {
+                        userId: req.user.userId,
+                        role: 'member',
+                        nickname: req.user.userName,
+                        avatar: req.user.avatar,
+                    },
+                ],
+                creator: req.user.userId,
+                type: 'direct',
+            });
+            conversation.name = `${req.user.userName} ${req.body.userName}`;
+            await conversation.save();
+            return res.status(200).json(conversation);
+        }
+        catch (err) {
+            console.error(err);
+            return next(
+                createError.InternalServerError(
+                    `${err.message}\nin method: ${req.method} of ${req.originalUrl}\nwith body: ${JSON.stringify(
+                        req.body,
+                        null,
+                        2
+                    )}`
+                )
+            );
+
+        }
+
+    }
     // [Post] add a new conversation
     async add(req, res, next) {
         // validate request
@@ -220,8 +275,8 @@ class ConversationController {
                     Joi.object({
                         userId: Joi.string().required(),
                         nickname: Joi.string().min(3).max(100),
-                        avatar: Joi.string(),
                         addedBy: Joi.string(),
+                        avatar: Joi.string(),
                     })
                 )
                 .required(),
@@ -239,7 +294,7 @@ class ConversationController {
         }
 
         try {
-            if (req.body.members.length < 1) {
+            if (req.body.members.length < 2) {
                 return responseError(res, 400, 'Cuộc hội thoại phải có ít nhất 2 thành viên');
             }
             else{

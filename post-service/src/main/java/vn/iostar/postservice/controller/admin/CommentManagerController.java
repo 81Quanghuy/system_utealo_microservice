@@ -23,7 +23,7 @@ import java.util.Map;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/api/v1/admin/commentManager")
+@RequestMapping("/api/v1/comment/admin")
 public class CommentManagerController {
 
     private final CommentService commentService;

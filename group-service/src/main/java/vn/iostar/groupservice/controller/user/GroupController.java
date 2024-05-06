@@ -235,4 +235,13 @@ public class GroupController {
                 .collect(Collectors.toList());
     }
 
+    // Tìm kiếm bài viết, user, nhóm
+    @GetMapping("/search/key")
+    public ResponseEntity<GenericResponse> searchAll(@RequestHeader("Authorization") String authorizationHeader,
+                                                            @RequestParam("search") String search) {
+        String token = authorizationHeader.substring(7);
+        String userIdToken = jwtService.extractUserId(token);
+        return groupService.searchGroupAndUserContainingIgnoreCase(search, userIdToken);
+    }
+
 }

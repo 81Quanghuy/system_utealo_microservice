@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import vn.iostar.userservice.dto.ListUsers;
+import vn.iostar.userservice.dto.SearchUser;
 import vn.iostar.userservice.dto.response.UserResponse;
 import vn.iostar.userservice.entity.User;
 import vn.iostar.userservice.constant.RoleName;
@@ -53,6 +54,10 @@ public interface UserRepository extends JpaRepository<User, String> {
             + "JOIN u.account a " + "WHERE u.userName LIKE %:query% " + "OR u.phone LIKE %:query% "
             + "OR a.email LIKE %:query% ")
     List<UserResponse> searchUser(String query);
+
+    @Query("SELECT NEW vn.iostar.userservice.dto.SearchUser(u.userId, u.userName) " + "FROM User u "
+            + "WHERE u.userName LIKE %:search%")
+    List<SearchUser> findUsersByName(@Param("search") String search);
 
 }
 

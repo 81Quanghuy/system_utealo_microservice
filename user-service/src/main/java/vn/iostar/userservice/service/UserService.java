@@ -140,4 +140,5 @@ public interface UserService {
 	List<FriendResponse> getFriendByListUserId(UserIds listUserId);
 
 	ResponseEntity<GenericResponse> forgotPassword(User user);
+
 }

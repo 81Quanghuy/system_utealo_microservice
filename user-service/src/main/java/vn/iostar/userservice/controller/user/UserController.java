@@ -19,6 +19,7 @@ import org.springframework.validation.BindingResult;
 import org.springframework.web.multipart.MultipartFile;
 import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
+import vn.iostar.userservice.dto.SearchUser;
 import vn.iostar.userservice.dto.UserIds;
 import vn.iostar.userservice.dto.request.ChangePasswordRequest;
 import vn.iostar.userservice.dto.request.PasswordResetRequest;
@@ -30,6 +31,7 @@ import vn.iostar.userservice.dto.response.UserProfileResponse;
 import vn.iostar.userservice.entity.PasswordResetOtp;
 import vn.iostar.userservice.entity.User;
 import vn.iostar.userservice.jwt.service.JwtService;
+import vn.iostar.userservice.repository.UserRepository;
 import vn.iostar.userservice.service.AccountService;
 import vn.iostar.userservice.service.CloudinaryService;
 import vn.iostar.userservice.service.UserService;
@@ -62,6 +64,8 @@ public class UserController {
     private final TemplateEngine templateEngine;
 
     private final Environment env;
+
+    private final UserRepository userRepository;
 
     @GetMapping("/profile")
     public ResponseEntity<GenericResponse> getInformation(@RequestHeader("Authorization") String authorizationHeader) {
@@ -199,15 +203,6 @@ public class UserController {
 
     }
 
-    // Tìm kiếm bài viết, user, nhóm
-//    @GetMapping("/search/key")
-//    public ResponseEntity<GenericResponse> searchPostGroups(@RequestHeader("Authorization") String authorizationHeader,
-//                                                            @RequestParam("search") String search) {
-//        String token = authorizationHeader.substring(7);
-//        String userIdToken = jwtTokenProvider.getUserIdFromJwt(token);
-//        return groupService.searchGroupAndUserContainingIgnoreCase(search, userIdToken);
-//    }
-
     @GetMapping("/getIsActiveOfUser/{userId}")
     public boolean getIsActiveOfUser(@PathVariable("userId") String userId) {
         Optional<User> user = userService.findById(userId);
@@ -284,5 +279,10 @@ public class UserController {
         }
 
         return new UserProfileResponse(user.get());
+    }
+
+    @GetMapping("/searchUser")
+    public List<SearchUser> getUsersByName(@RequestParam("search") String search) {
+        return userRepository.findUsersByName(search);
     }
 }

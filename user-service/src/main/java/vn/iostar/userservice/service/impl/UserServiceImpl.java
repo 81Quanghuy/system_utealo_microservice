@@ -1040,4 +1040,5 @@ public class UserServiceImpl implements UserService {
         return ResponseEntity.ok().body(new GenericResponse(true, "Đã gửi email xác " +
                 "nhận đổi mật khẩu!", null, HttpStatus.OK.value()));
     }
+
 }

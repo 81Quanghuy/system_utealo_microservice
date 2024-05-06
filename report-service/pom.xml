@@ -68,8 +68,12 @@
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-annotations</artifactId>
         </dependency>
+        <dependency>
+            <groupId>vn.iostar</groupId>
+            <artifactId>post-service</artifactId>
+            <version>1.0-SNAPSHOT</version> <!-- Phiên bản của post-service -->
+        </dependency>
     </dependencies>
-
     <build>
         <plugins>
             <plugin>

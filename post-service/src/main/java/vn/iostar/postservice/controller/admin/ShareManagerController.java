@@ -22,7 +22,7 @@ import java.util.Map;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/api/v1/admin/shareManager")
+@RequestMapping("/api/v1/share/admin")
 public class ShareManagerController {
 
     private final ShareService shareService;

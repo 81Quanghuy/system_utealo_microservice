@@ -17,7 +17,7 @@ import java.util.Map;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/api/v1/admin/groupManager")
+@RequestMapping("/api/v1/group/admin")
 public class GroupManagerController {
 
     private final GroupService postGroupService;

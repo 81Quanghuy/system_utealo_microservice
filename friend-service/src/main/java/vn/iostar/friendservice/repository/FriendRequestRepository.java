@@ -5,6 +5,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.data.mongodb.repository.Query;
 import org.springframework.stereotype.Repository;
+import vn.iostar.friendservice.entity.Friend;
 import vn.iostar.friendservice.entity.FriendRequest;
 
 import java.util.List;
@@ -23,4 +24,5 @@ public interface FriendRequestRepository extends MongoRepository<FriendRequest, 
     List<FriendRequest> findAllBySenderId(String senderId);
     Page<FriendRequest> findAllBySenderId(String senderId, Pageable pageable);
 
+    Optional<FriendRequest> findBySenderIdAndRecipientId(String senderId, String recipientId);
 }

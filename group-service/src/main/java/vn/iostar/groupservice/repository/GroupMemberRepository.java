@@ -26,4 +26,5 @@ public interface GroupMemberRepository extends MongoRepository<GroupMember, Stri
     List<GroupMember> findByUserId(String userId);
     @Query(value="{ 'group.id' : ?0, 'role' : 'Admin' }", fields="{ 'userId' : 1}")
     List<GroupMember> findUserIdAdminInGroup(String groupId);
+
 }

@@ -6,4 +6,5 @@ import vn.iostar.reportservice.entity.Report;
 
 @Repository
 public interface ReportRepository extends MongoRepository<Report, String>{
+
 }

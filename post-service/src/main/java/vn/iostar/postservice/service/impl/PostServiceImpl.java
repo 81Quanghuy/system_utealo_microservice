@@ -116,7 +116,7 @@ public class PostServiceImpl implements PostService {
         }
 
         GroupProfileResponse groupProfileResponse = null;
-        if (requestDTO.getPostGroupId() == null || Integer.valueOf(requestDTO.getPostGroupId()) == 0) {
+        if (requestDTO.getPostGroupId() == null || (requestDTO.getPostGroupId().isEmpty() || "0".equals(requestDTO.getPostGroupId()))) {
             post.setGroupId(null);
         } else {
             // Kiểm tra xem người dùng có quyền đăng bài trong nhóm không
@@ -698,7 +698,8 @@ public class PostServiceImpl implements PostService {
             if (post.getGroupId() != null && !post.getGroupId().isEmpty()) {
                 groupProfileResponse = groupClientService.getGroup(post.getGroupId());
             }
-            PostsResponse postsResponse = new PostsResponse(post, userOfPostResponse, groupProfileResponse);
+            UserProfileResponse user = userClientService.getUser(post.getUserId());
+            PostsResponse postsResponse = new PostsResponse(post, user, groupProfileResponse);
             simplifiedUserPosts.add(postsResponse);
         }
 

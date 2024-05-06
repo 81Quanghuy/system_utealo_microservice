@@ -1,10 +1,8 @@
 package vn.iostar.groupservice.service.client;
 
 import org.springframework.cloud.openfeign.FeignClient;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.*;
+import vn.iostar.groupservice.dto.SearchUser;
 import vn.iostar.groupservice.dto.UserIds;
 import vn.iostar.groupservice.dto.response.FriendResponse;
 import vn.iostar.groupservice.dto.response.UserProfileResponse;
@@ -19,4 +17,6 @@ public interface UserClientService {
     List<FriendResponse> getFriendByListUserId(@RequestBody UserIds list_userId) ;
     @GetMapping("/getUser/{userId}")
     UserProfileResponse getUser(@PathVariable String userId);
+    @GetMapping("/searchUser")
+    List<SearchUser> getUsersByName(@RequestParam("search") String search);
 }

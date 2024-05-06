@@ -12,10 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import vn.iostar.groupservice.constant.GroupMemberRoleType;
 import vn.iostar.groupservice.constant.RoleName;
-import vn.iostar.groupservice.dto.FilesOfGroupDTO;
-import vn.iostar.groupservice.dto.PhotosOfGroupDTO;
-import vn.iostar.groupservice.dto.PostGroupDTO;
-import vn.iostar.groupservice.dto.SearchPostGroup;
+import vn.iostar.groupservice.dto.*;
 import vn.iostar.groupservice.dto.request.GroupCreateRequest;
 import vn.iostar.groupservice.dto.response.*;
 import vn.iostar.groupservice.entity.Group;
@@ -30,6 +27,8 @@ import vn.iostar.groupservice.repository.GroupRequestRepository;
 import vn.iostar.groupservice.service.GroupService;
 import vn.iostar.groupservice.service.MapperService;
 import vn.iostar.groupservice.service.client.FileClientService;
+import vn.iostar.groupservice.service.client.FriendClientService;
+import vn.iostar.groupservice.service.client.PostClientService;
 import vn.iostar.groupservice.service.client.UserClientService;
 
 import java.io.IOException;
@@ -51,6 +50,8 @@ public class GroupServiceImpl implements GroupService {
     private final JwtService jwtService;
     private final FileClientService fileClientService;
     private final UserClientService userClientService;
+    private final FriendClientService friendClientService;
+    private final PostClientService postClientService;
 
     @Override
     public ResponseEntity<GenericResponse> getPostGroupByUserId(String authorizationHeader) {
@@ -592,5 +593,57 @@ public class GroupServiceImpl implements GroupService {
         }
     }
 
+    @Override
+    public ResponseEntity<GenericResponse> searchGroupAndUserContainingIgnoreCase(String search, String userIdToken) {
+        UserProfileResponse user = userClientService.getUser(userIdToken);
+        List<SearchPostGroup> postGroups = groupRepository.findByPostGroupNameIgnoreCaseContaining(search);
+        List<SearchPostGroup> simplifiedGroupPosts = new ArrayList<>();
+        // Lặp qua danh sách SearchPostGroup và thiết lập giá trị checkUserInGroup
+        for (SearchPostGroup group : postGroups) {
+            Optional<Group> postGroupOptional = findById(group.getId());
+            if (postGroupOptional.isPresent()) {
+                String checkUser = checkUserInGroup(user.getUserId(), group.getId());
+                if (checkUser.equals("Admin") || checkUser.equals("Member")) {
+                    group.setCheckUserInGroup("isMember");
+                } else {
+                    group.setCheckUserInGroup("isNotMember");
+                }
+                simplifiedGroupPosts.add(group);
+            }
+            group.setCountMember(groupMemberRepository.countByGroupId(group.getId()));
+            group.setCountFriendJoinnedGroup(0);
+
+        }
+        List<SearchUser> users = userClientService.getUsersByName(search);
+        List<SearchUser> simplifiedUsers = new ArrayList<>();
+        // Lặp qua danh sách SearchUser và thiết lập giá trị getStatusByUserId
+        for (SearchUser userItem : users) {
+            ResponseEntity<GenericResponse> check = friendClientService.getStatusByUserId(userIdToken, userItem.getUserId());
+            if (check.equals("Bạn bè")) {
+                userItem.setCheckStatusFriend("isFriend");
+            } else {
+                userItem.setCheckStatusFriend("isNotFriend");
+            }
+            simplifiedUsers.add(userItem);
+            UserProfileResponse userOptional = userClientService.getUser(userItem.getUserId());
+            if (userOptional != null) {
+                userItem.setNumberFriend(0);
+                userItem.setAddress(userOptional.getAddress());
+                userItem.setAvatar(userOptional.getAvatar());
+                userItem.setBackground(userOptional.getBackground());
+                userItem.setBio(userOptional.getAbout());
+            }
+
+        }
+        List<PostsResponse> simplifiedUserPosts = new ArrayList<>();
+        simplifiedUserPosts = postClientService.getPosts(search);
+        List<Object> combinedList = new ArrayList<>();
+        combinedList.addAll(postGroups);
+        combinedList.addAll(users);
+        combinedList.addAll(simplifiedUserPosts);
+
+        return ResponseEntity.ok(GenericResponse.builder().success(true).message("Get successfully")
+                .result(combinedList).statusCode(HttpStatus.OK.value()).build());
+    }
 
 }

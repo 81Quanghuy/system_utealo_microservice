@@ -11,6 +11,12 @@ const MessageSchema = new mongoose.Schema(
 		senderId: {
 			type: String,
 		},
+		react:[
+			{
+				type:mongoose.SchemaTypes.ObjectId,
+				ref:'ReactMessage'
+			},
+		],
 		readerId: [
 			{
 				type: String,

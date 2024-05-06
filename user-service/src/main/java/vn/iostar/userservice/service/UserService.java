@@ -140,4 +140,6 @@ public interface UserService {
 	List<FriendResponse> getFriendByListUserId(UserIds listUserId);
 
 	ResponseEntity<GenericResponse> forgotPassword(User user);
+
+	ResponseEntity<GenericResponse> updateOnline(String userId, Boolean isOnline);
 }

@@ -24,7 +24,7 @@ public class Profile implements Serializable{
     @Column(name = "profile_id")
     private int profileId;
     
-    @OneToOne(fetch = FetchType.LAZY)
+    @OneToOne
     @JoinColumn(name = "user_id")
     private User user;
     

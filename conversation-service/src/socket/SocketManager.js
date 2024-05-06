@@ -31,9 +31,10 @@ class SocketManager {
 
 	sendToList(userIds, event, data) {
 		userIds.forEach((userId) => {
-			this.send(userId, event, data);
+			this.send(userId, event, data)
 		});
 	}
+
 
 	// send all
 	sendAll(event, data) {

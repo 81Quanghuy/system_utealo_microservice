@@ -29,9 +29,7 @@ public class UserProfileResponse {
 	private Date createdAt;
 	private Date updatedAt;
 	private RoleName roleName;
-//	private List<FriendResponse> friends = new ArrayList<>();
-//
-//	private List<GroupPostResponse> postGroup;
+    private Boolean isOnline;
 
 	public UserProfileResponse(User user) {
 		this.userId = user.getUserId();
@@ -55,6 +53,7 @@ public class UserProfileResponse {
         this.lastLogin = user.getAccount().getLastLoginAt();
         this.roleName = user.getRole().getRoleName();
         this.isVerified = user.getIsVerified();
+        this.isOnline = user.getIsOnline();
 	}
 
 }

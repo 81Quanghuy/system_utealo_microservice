@@ -44,8 +44,7 @@ public class TokenServiceImpl implements TokenService {
             if (optionalUser.isPresent() && optionalUser.get().getIsActive()) {
                 // List<RefreshToken> refreshTokens =
                 // refreshTokenRepository.findAllByUser_UserIdAndExpiredIsFalseAndRevokedIsFalse(userId);
-                Optional<Token> token = refreshTokenRepository
-                        .findByUser_UserIdAndExpiredAtIsFalseAndIsRevokedIsFalse(userId);
+                Optional<Token> token = refreshTokenRepository.findByToken(refreshToken);
                 if (token.isPresent() && jwtTokenProvider.validateToken(token.get().getToken())) {
                     if (!token.get().getToken().equals(refreshToken)) {
                         return ResponseEntity.status(404)

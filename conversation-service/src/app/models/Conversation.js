@@ -55,6 +55,13 @@ const member = mongoose.Schema(
         addedBy: {
             type: String,
         },
+        isOnline: {
+            type: Boolean,
+            default: false,
+        },
+        lastLogin: {
+            type: Date,
+        },
         avatar: {
             type: String,
         },

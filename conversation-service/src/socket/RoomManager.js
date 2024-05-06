@@ -4,8 +4,10 @@ const apiKey = process.env.API_KEY_VIDEOCALL;
 //const { populateUser } = require('../utils/Populate/User');
 
 const Conversation = require('../app/models/Conversation');
+const Message = require('../app/models/Message');
 const SocketManager = require('./SocketManager');
 const { eventName } = require('./constant');
+const {data} = require("express-session/session/cookie");
 
 function RoomManager(socket, io) {
     // Video call TODO: API => send event
@@ -58,6 +60,7 @@ function RoomManager(socket, io) {
     socket.on(eventName.TYPING_MESSAGE, async (data) => {
         console.log('typingMessage-----------', data);
         const conversation = await Conversation.findById(data.conversation);
+        console.log('conversation', conversation)
         if (!conversation) return;
 
         io.to(data.conversation).emit(eventName.TYPING_MESSAGE, data);

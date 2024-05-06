@@ -280,7 +280,15 @@ public class UserController {
 
         return new UserProfileResponse(user.get());
     }
-
+    // cap nhat online cua user
+    @PutMapping("/updateOnline")
+    public ResponseEntity<GenericResponse> updateOnline(@RequestHeader("Authorization") String authorizationHeader,
+        @RequestParam("isOnline") Boolean isOnline) {
+        String token = authorizationHeader.substring(7);
+        String userId = jwtService.extractUserId(token);
+       return userService.updateOnline(userId,isOnline);
+    }
+  
     @GetMapping("/searchUser")
     public List<SearchUser> getUsersByName(@RequestParam("search") String search) {
         return userRepository.findUsersByName(search);

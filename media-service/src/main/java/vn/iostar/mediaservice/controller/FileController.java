@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import vn.iostar.mediaservice.dto.FileDto;
 import vn.iostar.mediaservice.dto.request.DeleteRequest;
+import vn.iostar.mediaservice.dto.request.FileRequest;
 import vn.iostar.mediaservice.dto.response.GenericResponse;
 import vn.iostar.mediaservice.jwt.service.JwtService;
 import vn.iostar.mediaservice.service.FileService;
@@ -149,5 +150,25 @@ public class FileController {
         String accessToken = authorizationHeader.substring(7);
         String userId = jwtService.extractUserId(accessToken);
         return fileService.getGroupDocument(userId, page, size);
+    }
+
+    //Tai anh trong message
+    @PostMapping(value = "/uploadMessageImage", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<GenericResponse> uploadMessageImage(
+            @RequestHeader(HttpHeaders.AUTHORIZATION) String authorizationHeader ,
+            @RequestPart("files") List<MultipartFile> files) throws IOException {
+        String accessToken = authorizationHeader.substring(7);
+        String userId = jwtService.extractUserId(accessToken);
+        return fileService.uploadMessageImages(files, userId);
+
+    }
+
+    //Lay anh trong message
+    @GetMapping("/getMedia/{mediaId}")
+    public ResponseEntity<GenericResponse> getMessageImage(@RequestHeader(HttpHeaders.AUTHORIZATION) String authorizationHeader,
+                                                           @PathVariable String mediaId) {
+        String accessToken = authorizationHeader.substring(7);
+        String userId = jwtService.extractUserId(accessToken);
+        return fileService.getMessageImage(userId, mediaId);
     }
 }

@@ -5,6 +5,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.multipart.MultipartFile;
 import vn.iostar.mediaservice.dto.FileDto;
 import vn.iostar.mediaservice.dto.request.DeleteRequest;
+import vn.iostar.mediaservice.dto.request.FileRequest;
 import vn.iostar.mediaservice.dto.response.GenericResponse;
 
 import java.io.IOException;
@@ -45,4 +46,7 @@ public interface FileService {
 
     ResponseEntity<GenericResponse> getGroupDocument(String userId, Integer page, Integer size);
 
+    ResponseEntity<GenericResponse> uploadMessageImages(List<MultipartFile> files, String userId) throws IOException;
+
+    ResponseEntity<GenericResponse> getMessageImage(String userId, String mediaId);
 }

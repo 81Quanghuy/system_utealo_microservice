@@ -16,8 +16,13 @@ public class MapperServiceImpl implements MapperService {
     @Override
     public FileDto mapToFileDto(File file) {
         return FileDto.builder()
+                .id(file.getId())
                 .authorId(file.getAuthorId())
                 .refUrl(file.getRefUrl())
+                .name(file.getName())
+                .size(file.getSize())
+                .isMessage(file.getIsMessage())
+                .groupId(file.getGroupId())
                 .type(file.getType().getName())
                 .createdAt(DateUtil.date2String(file.getCreatedAt(), AppConstant.LOCAL_DATE_TIME_FORMAT))
                 .build();

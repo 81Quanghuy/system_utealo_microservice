@@ -186,11 +186,11 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public String validateVerificationAccount(String token) {
-        Token verificationToken = tokenRepository.findByToken(token);
-        if (verificationToken == null) {
+        Optional<Token> verificationToken = tokenRepository.findByToken(token);
+        if (verificationToken.isEmpty()) {
             return "Token không hợp lệ, vui lòng kiểm tra token lần nữa!";
         }
-        User user = verificationToken.getUser();
+        User user = verificationToken.get().getUser();
         user.setIsVerified(true);
         userRepository.save(user);
         return "Xác minh tài khoản thành công, vui lòng đăng nhập!";
@@ -1039,6 +1039,25 @@ public class UserServiceImpl implements UserService {
         kafkaTemplate.send(KafkaTopicName.EMAIL_FORGOT_PASSWORD_TOPIC, passwordRequest);
         return ResponseEntity.ok().body(new GenericResponse(true, "Đã gửi email xác " +
                 "nhận đổi mật khẩu!", null, HttpStatus.OK.value()));
+    }
+
+    @Transactional
+    @Override
+    public ResponseEntity<GenericResponse> updateOnline(String userId, Boolean isOnline) {
+        Optional<User> user = findById(userId);
+        if (user.isEmpty()) {
+           return ResponseEntity.status(HttpStatus.NOT_FOUND).body(
+                   new GenericResponse(false,
+                           "Người dùng không tồn tại",
+                           null,
+                           HttpStatus.NOT_FOUND.value()));
+        }
+        user.get().setIsOnline(isOnline);
+        save(user.get());
+        return ResponseEntity.ok().body(new GenericResponse(true,
+                "Cập nhật trạng thái online thành công!",
+                new UserResponse(user.get()),
+                HttpStatus.OK.value()));
     }
 
 }

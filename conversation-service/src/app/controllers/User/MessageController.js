@@ -2,6 +2,7 @@ const Joi = require('joi');
 const createError = require('http-errors');
 const crypto = require('crypto');
 const Message = require('./../../models/Message');
+const ReactMessage = require('../../models/ReactMessage')
 const { getPagination } = require('./../../../utils/Pagination');
 const Conversation = require('./../../models/Conversation');
 const { getListData } = require('./../../../utils/Response/listData');
@@ -10,7 +11,8 @@ const SocketManager = require('./../../../socket/SocketManager');
 const { eventName } = require('./../../../socket/constant');
 
 const { responseError } = require('./../../../utils/Response/error');
-
+const ReactDTO = require('../../../utils/DTO/ReactDTO')
+const {userId} = require("../../../utils/DTO/ReactDTO");
 // set encryption algorithm
 const algorithm = 'aes-256-cbc';
 
@@ -34,8 +36,9 @@ class MessageController {
                 return next(createError(400, error.details[0].message));
             }
 
-            const conversation = await Conversation.findById(req.params.conversationId);
-            if (conversation.members.some((mem) => mem.user.toString() === req.user._id.toString())) {
+            const conversation = await Conversation.findById(req.params.conversationId || req.query.conversationId);
+
+            if (conversation.members.some((mem) => mem.userId=== req.user.userId.toString())) {
                 // random 16 digit initialization vector
                 const iv = crypto.randomBytes(16);
 
@@ -51,33 +54,27 @@ class MessageController {
                 newMessage.iv = base64data;
                 newMessage.text = encryptedData;
                 newMessage.conversation = conversation._id;
-                newMessage.sender = req.user._id;
+                newMessage.senderId = req.user.userId;
                 const savedMessage = await newMessage.save();
                 // populate sender
-                const message = await Message.findById(savedMessage._id)
-                    .populate({
-                        path: 'sender',
-                        select: '_id  fullname profilePicture',
-                        populate: {
-                            path: 'profilePicture',
-                            select: '_id link',
-                        },
-                    })
-                    .populate({
-                        path: 'media',
-                    });
+                const message = await Message.findById(savedMessage._id);
                 conversation.lastest_message = savedMessage._id;
                 await conversation.save();
                 message.text = req.body.text;
 
                 const userIds = conversation.members
-                    .filter((member) => member.user.toString() !== message.sender._id.toString())
-                    .map((menber) => menber.user.toString());
+                    .filter((member) => member.userId !== message.senderId)
+                    .map((item) => item.userId);
 
                 // send socket
                 SocketManager.sendToList(userIds, eventName.SEND_MESSAGE, message);
 
-                res.status(200).json(message);
+                res.status(200).json({
+                    success: true,
+                    message: 'Tin nhắn đã được gửi',
+                    result: message,
+                    statusCode: 200,
+                });
             } else {
                 next(createError(403, 'Bạn không có trong cuộc hội thoại này!!!'));
             }
@@ -118,11 +115,18 @@ class MessageController {
     // [Delete] delete a message
     async delete(req, res, next) {
         try {
-            const message = await Message.findById(req.params.id);
-            if (message.sender.toString() === req.user._id.toString()) {
+            const message = await Message.findById(req.body._id);
+            if (message.senderId === req.user.userId) {
                 // await Message.delete({ _id: req.params.id });
                 await message.delete();
                 res.status(200).json(message);
+                const conversation = await Conversation.findById(message.conversation);
+
+                const userIds = conversation.members
+                    .filter((member) => member.userId !== req.user.userId)
+                    .map((item) => item.userId);
+
+                SocketManager.sendToList(userIds, eventName.DELETE_MESSAGE, message);
             } else {
                 return responseError(res, 401, 'Bạn không có quyền xóa tin nhắn này');
             }
@@ -157,36 +161,28 @@ class MessageController {
             const { limit, offset } = getPagination(req.query.page, req.query.size, req.query.offset);
 
             const conversation = await Conversation.findById(req.params.conversationId);
-            // if (!conversation) return res.status(404).send('Không tìm thấy cuộc hội thoại');
+             if (!conversation) return res.status(404).send('Không tìm thấy cuộc hội thoại');
 
             // check user has existing user deleted conversation
             let index = -1;
-            index = conversation.user_deleted.findIndex((item) => item.userId.toString() === req.user._id.toString());
+            index = conversation.user_deleted.findIndex((item) => item.userId.toString() === req.user.userId);
             let deletedDate = new Date(-1); // date BC
             if (index !== -1) {
                 deletedDate = conversation.user_deleted[index].deletedAt;
             }
-            if (conversation.members.some((mem) => mem.user.toString() === req.user._id.toString())) {
+            if (conversation.members.some((mem) => mem.userId === req.user.userId)) {
                 Message.paginate(
-                    { conversation: req.params.conversationId, createdAt: { $gte: deletedDate } },
                     {
-                        offset,
-                        limit,
-                        sort: { createdAt: -1 },
-                        populate: [
-                            {
-                                path: 'sender',
-                                select: '_id  fullname profilePicture',
-                                populate: {
-                                    path: 'profilePicture',
-                                    select: '_id link',
-                                },
-                            },
-                            {
-                                path: 'media',
-                            },
-                        ],
-                    }
+                        conversation: req.params.conversationId,
+                        createdAt: { $gt: deletedDate },
+                    }, { offset, limit,sort: { createdAt: -1 },
+                    populate: [
+                    {
+                        path: 'react',
+                        select: '_id  react userId ',
+                    },
+                ],}
+
                 )
                     .then((data) => {
                         data.docs.forEach((message) => {
@@ -219,7 +215,68 @@ class MessageController {
             );
         }
     }
+    async reactMessage(req,res,next){
+        const message = await Message.findById(req.body.messageId).populate('react','_id react userId');
+        let newReact = new ReactMessage();
+        let checkDetect = '';
+        if(message.react.length >0){
+            for (let i = 0; i < message.react.length; i++) {
+                if(message.react[i].userId === req.body.userId){
+                    const updateReact = await ReactMessage.findById(message.react[i]._id);
+                    if(message.react[i].react === req.body.react){
+                       newReact = updateReact;
+                        checkDetect = "delete";
+                    }
+                    else {
+                        updateReact.react = req.body.react;
+                        newReact = updateReact;
+                        checkDetect = "update";
+                    }
+                }
+            }
+            if(checkDetect ===""){
+                newReact.react = req.body.react;
+                newReact.userId = req.body.userId;
+                checkDetect = "add";
+            }
+        } else {
+            newReact.react = req.body.react;
+            newReact.userId = req.body.userId;
+            checkDetect = "add";
+        }
+        switch (checkDetect) {
+            case "add":
+                message.react.push(newReact);
+                await newReact.save();
+                break;
+            case "update":
+                message.react.forEach((item) => {
+                    if(item.userId === req.body.userId){
+                        item.react = req.body.react;
+                    }
+                });
+                await newReact.save();
+                break;
+            case "delete":
+              message.react =  message.react.filter((item) => item.userId !== req.body.userId);
+              await newReact.deleteOne();
+                break;
+            default:
+                break;
 
+        }
+        const savedMessage = await message.save();
+        const conversation = await Conversation.findById(req.body.conversationId);
+        const userIds = conversation.members
+            .filter((member) => member.userId !== req.user.userId)
+            .map((item) => item.userId);
+        SocketManager.sendToList(userIds, eventName.REACT_MESSAGE, savedMessage);
+        return res.status(200).json(savedMessage);
+    }
+    async removeMessage(req,res,next){
+        const message = await Message.findById(req.body.messageId);
+        return res.status(200).json("message");
+    }
     // Chat with Chatgpt
     async chatWithChatgpt(req, res, next) {
         try {

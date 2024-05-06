@@ -26,8 +26,10 @@ exports.isAuth = async (req, res, next) => {
 };
 exports.getUser = async (req, res, next) => {
 	try {
+		console.log(req.headers)
 		// Lấy access token từ header
 		const accessToken = getAccessTokenFromHeader(req);
+
 		if (!accessToken) {
 			return res.status(401).json('Không tìm thấy access token!');
 		}

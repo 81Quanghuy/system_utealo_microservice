@@ -10,9 +10,6 @@ router.post('/create', getUser, ConversationController.add);
 router.post('/create/user', getUser, ConversationController.createConversationUser);
 router.get('/random',isAuth, ConversationController.createRandomConversation);
 router.get('/video-call', isAuth, ConversationController.createRoomIDVideoCall);
-
-// router.put("/updateDB", ConversationController.updateMembersInDatabase);
-
 // get conv of a user
 router.get('/getAll', ConversationController.getAll);
 router.get('/search', isAuth, ConversationController.search);

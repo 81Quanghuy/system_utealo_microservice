@@ -141,4 +141,6 @@ public interface UserService {
 
 	ResponseEntity<GenericResponse> forgotPassword(User user);
 
+	ResponseEntity<GenericResponse> updateOnline(String userId, Boolean isOnline);
+
 }

@@ -12,10 +12,6 @@ const ReactMessageSchema = new mongoose.Schema(
         userId: {
             type: String,
         },
-        message: {
-            type: mongoose.SchemaTypes.ObjectId,
-            ref: "Message",
-        },
         createdAt: {
             type: Date,
             default: Date.now,

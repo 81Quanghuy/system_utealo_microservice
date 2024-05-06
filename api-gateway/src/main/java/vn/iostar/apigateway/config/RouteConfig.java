@@ -23,7 +23,7 @@ public class RouteConfig {
     private final AdminAuthFilter adminAuthFilter;
     private final String API_V1 = "/api/v1/";
     private final Map<String, List<String>> services = Map.of(
-            "conversation-service", pathConfig(List.of("conversation", "messages")),
+            "conversation-service", pathConfig(List.of("conversation", "messages","notification")),
             "friend-service", pathConfig(List.of("friend", "friend-request")),
             "group-service", pathConfig(List.of("groupPost", "group-members", "events","group-request")),
             "media-service", pathConfig(List.of("files", "albums")),

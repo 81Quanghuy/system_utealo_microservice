@@ -10,7 +10,7 @@ exports.extractUserIdFromToken = async (token) => {
       const readFileAsync = util.promisify(fs.readFile);
       const secretKeyPath =  process.env.KEY_PATH;
       const secretKey = await readFileAsync(secretKeyPath);
-      return jwt.verify(token, secretKey);
+      return jwt.decode(token, secretKey);
   } catch (error) {
     throw error;
   }

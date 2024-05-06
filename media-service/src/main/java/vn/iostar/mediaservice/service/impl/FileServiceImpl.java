@@ -12,6 +12,7 @@ import vn.iostar.mediaservice.constant.AppConstant;
 import vn.iostar.mediaservice.constant.FileEnum;
 import vn.iostar.mediaservice.dto.FileDto;
 import vn.iostar.mediaservice.dto.request.DeleteRequest;
+import vn.iostar.mediaservice.dto.request.FileRequest;
 import vn.iostar.mediaservice.dto.response.GenericResponse;
 import vn.iostar.mediaservice.entity.File;
 import vn.iostar.mediaservice.entity.FileType;
@@ -26,10 +27,7 @@ import vn.iostar.mediaservice.service.MapperService;
 import vn.iostar.mediaservice.util.DateUtil;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 
 @Service
 @Slf4j
@@ -163,6 +161,63 @@ public class FileServiceImpl implements FileService {
                 .statusCode(200)
                 .build());
     }
+    public FileDto uploadMessageImage(MultipartFile file, String userId) throws IOException{
+        log.info("FileServiceImpl, uploadMessageImage");
+        try {
+            if (file.isEmpty() || file.getOriginalFilename() == null) {
+                throw new UnsupportedMediaTypeException("File is null. Please upload a valid file.");
+            }
+            String fileName = file.getOriginalFilename();
+            Date now = new Date();
+            String name = DateUtil.date2String(now, AppConstant.FULL_DATE_TIME_FORMAT) + "_" + getFileName(fileName);
+            File fileEntity = fileRepository.save(File.builder()
+                    .id(UUID.randomUUID().toString())
+                    .authorId(userId)
+                    .size(file.getSize())
+                    .name(name)
+                    .isMessage(true)
+                    .refUrl(Objects.requireNonNull(file.getContentType()).startsWith("image/") ? cloudinaryService.uploadImage(file, name, "/messages")
+                            : cloudinaryService.uploadMediaFile(file, name, "/messages"))
+                    .type(fileTypeRepository.findByExtensionContaining(getFileExtension(fileName))
+                            .orElseThrow(() -> new NotFoundException("File type not found")))
+                    .createdAt(now)
+                    .build());
+            return  mapperService.mapToFileDto(fileEntity);
+
+        } catch (Exception e) {
+            throw new BadRequestException("Upload file failed");
+        }
+    }
+
+    @Override
+    public ResponseEntity<GenericResponse> uploadMessageImages(List<MultipartFile> files, String userId) throws IOException{
+       List<FileDto> fileDtos = new ArrayList<>();
+        for (MultipartFile file : files) {
+            fileDtos.add(uploadMessageImage(file, userId));
+        }
+        return ResponseEntity.ok().body(GenericResponse.builder()
+                .success(true)
+                .message("Upload file successfully")
+                .result(fileDtos)
+                .statusCode(200)
+                .build());
+    }
+
+    @Override
+    public ResponseEntity<GenericResponse> getMessageImage(String userId, String mediaId) {
+        log.info("FileServiceImpl, getMessageImage");
+        Optional<File> file = fileRepository.findById(mediaId);
+        if (file.isEmpty()) {
+            throw new NotFoundException("File not found");
+        }
+        FileDto fileDto = mapperService.mapToFileDto(file.get());
+        return ResponseEntity.ok().body(GenericResponse.builder()
+                .success(true)
+                .message("Get media successfully")
+                .result(fileDto)
+                .statusCode(200)
+                .build());
+    }
 
     public String getFileExtension(String fileName) {
         return fileName.substring(fileName.lastIndexOf(".") + 1);
@@ -176,8 +231,8 @@ public class FileServiceImpl implements FileService {
      * @param userId     String
      * @param mediaFiles MultiparFile
      * @param folder     String "/folder"
-     * @return
-     * @throws IOException
+     * @return List<FileDto>
+     * @throws IOException IOException
      */
     public List<FileDto> uploadMediaFile(String userId, List<MultipartFile> mediaFiles,
                                          String folder, String groupId) throws IOException {

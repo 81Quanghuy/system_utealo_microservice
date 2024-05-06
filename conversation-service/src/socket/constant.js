@@ -7,6 +7,8 @@ const eventName = {
 	STOP_TYPING_MESSAGE: 'stopTypingMessage',
 	CREATE_VIDEO_CALL: 'createVideoCall',
 	NOTIFICATION: 'notification',
+	REACT_MESSAGE: 'react-message',
+	DELETE_MESSAGE: 'delete-message',
 };
 
 const notificationType = {

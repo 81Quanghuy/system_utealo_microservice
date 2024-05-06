@@ -10,3 +10,18 @@ exports.populateUser = async (userId) => {
 		return null;
 	}
 };
+//cap nhat online user
+exports.updateOnlineUser = async (accessToken ,isOnline) => {
+	try {
+		const headers = {
+			'Content-Type': 'application/json',
+			Authorization: `Bearer ${accessToken}`,
+		}
+		const user = await axios.put(`${process.env.AXIOS_API_SERVICE}/user/
+		updateOnline?isOnline=${isOnline}`, {}, {headers});
+		return user.data;
+	} catch (error) {
+		console.log(error);
+		return null;
+	}
+};

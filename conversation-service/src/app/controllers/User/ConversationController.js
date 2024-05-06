@@ -1,3 +1,5 @@
+// noinspection DuplicatedCode
+
 const axios = require('axios');
 const createError = require('http-errors');
 const Joi = require('joi');
@@ -301,7 +303,8 @@ class ConversationController {
                 let newConversation = new Conversation({
                     members: req.body.members,
                     name:  req.body.name,
-                    avatar :  req.body.avatar
+                    avatar :  req.body.avatar,
+
                 });
                 newConversation.members.push({
                     userId: req.user.userId,
@@ -309,6 +312,7 @@ class ConversationController {
                     role: 'admin',
                     addedBy: req.user.userId,
                     avatar: req.user.avatar,
+
                 });
                 newConversation.creatorId = req.user.userId;
                 newConversation.history.push({
@@ -322,7 +326,7 @@ class ConversationController {
                 const messageSystem = new Message({
                     conversation: savedConversation._id,
                     text: `<b>${req.user.userName}</b> đã tạo cuộc hội thoại`,
-                    isSystem: false,
+                    isSystem: true,
                 });
                 await messageSystem.save();
                 newConversation.lastest_message = messageSystem;
@@ -353,31 +357,18 @@ class ConversationController {
             // Tìm tất cả các cuộc trò chuyện mà có thành viên có userId là giá trị của tham số
             const conversations = await Conversation.find({ 'members.userId': req.user.userId }).populate({
                 path: 'lastest_message',
-                select: 'senderId text createdAt updatedAt readerId',
-                }
-            )
-            // lay creatAt va UpdateAt cua lastest message
+                select: 'senderId text createdAt updatedAt readerId iv',
+            });
             conversations.forEach((item) => {
-            if (item.lastest_message && item.lastest_message.iv) {
-                const iv = Buffer.from(item.lastest_message.iv, 'base64');
-                const decipher = crypto.createDecipheriv(algorithm, key, iv);
-                let decryptedData = decipher.update(item.lastest_message.text, 'hex', 'utf-8');
-                decryptedData += decipher.final('utf-8');
-                item.lastest_message.text = decryptedData;
-            }
-           });
-
-            const data = {
-                totalDocs: conversations.length,
-                docs: conversations,
-                page: 1,
-                limit: 10,
-                totalPages: 1,
-                offset: 0,
-                prevPage: null,
-                nextPage: null,
-            };
-            return getListConversation(res,true, 'Danh sách cuộc trò chuyện', conversations, 200);
+                if (item.lastest_message && item.lastest_message.iv) {
+                    const iv = Buffer.from(item.lastest_message.iv, 'base64');
+                    const decipher = crypto.createDecipheriv(algorithm, key, iv);
+                    let decryptedData = decipher.update(item.lastest_message.text, 'hex', 'utf-8');
+                    decryptedData += decipher.final('utf-8');
+                    item.lastest_message.text = decryptedData;
+                }
+            });
+            return getListConversation(res, true, 'Danh sách cuộc trò chuyện', conversations, 200);
         } catch (err) {
             console.log(err);
             return next(
@@ -391,6 +382,8 @@ class ConversationController {
             );
         }
     }
+
+
 
     // [Get] get all conversations
     async getAll(req, res) {
@@ -409,7 +402,22 @@ class ConversationController {
     async getConversationById(req, res) {
         try {
             const conversation =await Conversation.findById(req.params.id);
-            if (conversation.members.some((member) => member.userId === req.user.userId)) {
+            if (conversation && conversation.members.some((member) => member.userId === req.user.userId)) {
+                // lay creatAt va UpdateAt cua lastest message
+                if (conversation.lastest_message && conversation.lastest_message.iv) {
+                    const iv = Buffer.from(conversation.lastest_message.iv, 'base64');
+                    const decipher = crypto.createDecipheriv(algorithm, key, iv);
+                    let decryptedData = decipher.update(conversation.lastest_message.text, 'hex', 'utf-8');
+                    decryptedData += decipher.final('utf-8');
+                    conversation.lastest_message.text = decryptedData;
+                }
+
+                // lấy trạng thái online của người trong cuộc trò chuyện
+                for (let member of conversation.members) {
+                    const user = await populateUser(member.userId);
+                    member.isOnline = user.isOnline;
+                    member.lastLogin = user.lastLogin;
+                }
                 return res.status(200).json(conversation);
             } else {
                 return responseError(res, 401, 'Bạn không có trong conversation này');

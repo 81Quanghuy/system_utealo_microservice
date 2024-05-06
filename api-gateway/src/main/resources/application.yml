@@ -5,6 +5,7 @@ eureka:
     service-url:
       defaultZone: http://localhost:8761/eureka/
 
+
 server:
   port: 9000
 
@@ -16,10 +17,10 @@ spring:
   cloud:
     gateway:
       routes:
-        - id: websocket_route
-          uri: lb:ws://conversation-service
+        - id: conversation-service
+          uri: lb://conversation-service
           predicates:
-            - Path=/ws/**
+            - Path=/socket.io/**
           filters:
             - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials
 

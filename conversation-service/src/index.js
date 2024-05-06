@@ -14,9 +14,8 @@ const io = socketIo(server, {
     origin: HOSTS,
   },
 });
-// const io = socketio(server);
 const Socket = require('./socket/index');
-
+Socket(io);
 // require db
 const db = require("./configs/db/index");
 // connect to DB

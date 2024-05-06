@@ -36,6 +36,15 @@ public class File implements Serializable {
     @Field(name = "file_ref_url")
     private String refUrl;
 
+    @Field(name = "file_name")
+    private String name;
+
+    @Field(name = "file_size")
+    private Long size;
+
+    @Field(name= "is_message")
+    private Boolean isMessage;
+
     @DocumentReference
     @Field(name = "file_type")
     private FileType type;

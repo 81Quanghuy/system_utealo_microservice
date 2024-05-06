@@ -90,4 +90,7 @@ public interface PostRepository extends MongoRepository<Post, String> {
     // Lấy những bài viết trong nhóm do Admin đăng
     @Query(value = "{'userId': {$in: ?0}}")
     List<Post> findPostsByAdminRoleInGroup(List<String> userIds, Pageable pageable);
+
+    List<Post> findByContentIgnoreCaseContaining(String searchTerm, Pageable pageable);
+
 }

@@ -90,6 +90,7 @@ public interface GroupService {
     List<SearchPostGroup> getGroupsInMonth();
 
     ResponseEntity<GenericResponseAdmin> getPostGroupJoinByUserId(String userId, int page, int itemsPerPage);
-
+    // Tìm kiếm tất cả nhóm và người dùng
+    ResponseEntity<GenericResponse> searchGroupAndUserContainingIgnoreCase(String search, String userIdToken);
 
 }

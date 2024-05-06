@@ -560,7 +560,8 @@ public class ShareServiceImpl implements ShareService {
             if (share.getPostGroupId() != null && !share.getPostGroupId().isEmpty()) {
                 groupProfileResponse = groupClientService.getGroup(share.getPostGroupId());
             }
-            SharesResponse sharePostsResponse = new SharesResponse(share, user, groupProfileResponse);
+            UserProfileResponse userProfileResponse = userClientService.getUser(share.getUserId());
+            SharesResponse sharePostsResponse = new SharesResponse(share, userProfileResponse, groupProfileResponse);
             simplifiedUserPosts.add(sharePostsResponse);
         }
 

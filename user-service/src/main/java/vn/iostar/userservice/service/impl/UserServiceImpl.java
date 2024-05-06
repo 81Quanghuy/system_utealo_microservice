@@ -1059,4 +1059,5 @@ public class UserServiceImpl implements UserService {
                 new UserResponse(user.get()),
                 HttpStatus.OK.value()));
     }
+
 }

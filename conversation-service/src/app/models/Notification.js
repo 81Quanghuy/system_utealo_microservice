@@ -13,6 +13,9 @@ const NotificationSchema = new mongoose.Schema(
         content: {
             type: String,
         },
+        link: {
+            type: String,
+        },
         type: {
             type: String,
         },
@@ -35,7 +38,6 @@ const NotificationSchema = new mongoose.Schema(
         photo: {
             type: String,
         },
-
         deleted: {
             type: Boolean,
             default: false,

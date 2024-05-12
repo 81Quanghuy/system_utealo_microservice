@@ -1,26 +1,22 @@
 const express = require('express');
 
 const router = express.Router({ mergeParams: true });
-const MessageController = require('./../app/controllers/User/MessageController');
+const NotificationController = require('./../app/controllers/User/NotificationController');
 const AuthorMiddleware = require("../app/middlewares/AuthMiddleware");
 const { isAuth , getUser} = AuthorMiddleware;
 
 // add
-router.post('/',getUser, MessageController.add);
+router.post('/',getUser, NotificationController.addConversation);
 
-// chat with chatgpt
-router.post('/chatbot', MessageController.chatWithChatgpt);
+// get all notification of user paginated
+router.get('/',getUser, NotificationController.getAll);
+//read notification
+router.put('/read',getUser, NotificationController.readNotification);
+//delete notification
+router.delete('/:id',getUser, NotificationController.deleteNotification);
+//delete all notification
+router.delete('/',getUser, NotificationController.deleteAllNotification);
+//read all notification
+router.put('/read-all',getUser, NotificationController.readAllNotification);
 
-// get
-router.get('/:conversationId',getUser, MessageController.fetchMessages);
-// router.get('/', MessageController.getAll);
-
-// delete
-router.delete('/',getUser, MessageController.delete);
-
-// update reader
-router.put('/:id', MessageController.update);
-
-router.post("/react",getUser,MessageController.reactMessage);
-router.put("/removeMessage",MessageController.removeMessage);
 module.exports = router;

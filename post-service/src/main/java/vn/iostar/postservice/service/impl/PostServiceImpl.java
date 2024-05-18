@@ -57,6 +57,7 @@ public class PostServiceImpl implements PostService {
     private final CommentRepository commentRepository;
     private final LikeRepository likeRepository;
     private final FriendClientService friendClientService;
+    private final ShareRepository shareRepository;
 
     @Override
     public <S extends Post> S save(S entity) {
@@ -151,7 +152,6 @@ public class PostServiceImpl implements PostService {
         String accessToken = token.substring(7);
         String currentUserId = jwtService.extractUserId(accessToken);
         String a = userId.replace("\"", "").replace("\r\n\r\n", "");
-        ;
         if (!currentUserId.equals(userId.replace("\"", "").replace("\r\n\r\n", ""))) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .body(new GenericResponse(false, "Delete denied!", null, HttpStatus.NOT_FOUND.value()));
@@ -173,6 +173,7 @@ public class PostServiceImpl implements PostService {
             }
             post.setComments(new ArrayList<>());
             post.setLikes(new ArrayList<>());
+            shareRepository.deleteByPostId(postId);
             postRepository.delete(post);
 
             return ResponseEntity.ok()

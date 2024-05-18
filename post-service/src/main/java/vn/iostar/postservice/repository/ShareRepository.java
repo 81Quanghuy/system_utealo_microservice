@@ -48,4 +48,7 @@ public interface ShareRepository extends MongoRepository<Share, String> {
     // Lấy những bài share post của nhóm
     List<Share> findByPostGroupIdOrderByCreateAtDesc(String postGroupId, Pageable pageable);
 
+    // Xóa bài share theo postId
+    void deleteByPostId(String postId);
+
 }

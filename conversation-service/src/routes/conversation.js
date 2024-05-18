@@ -31,4 +31,7 @@ router.delete('/user-deleted/:id', isAuth, ConversationController.userDeletedAll
 // delete conv
 router.delete('/:id', isAuth, ConversationController.delete);
 
+//get file in conversation
+router.post('/:id/files', isAuth, ConversationController.getFiles);
+
 module.exports = router;

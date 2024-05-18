@@ -16,6 +16,7 @@ const { getListData } = require('./../../../utils/Response/listData');
 const getLocationByIPAddress = require('./../../../configs/location');
 const {getListConversation} = require("../../../utils/Response/listData");
 const {populateUser} = require("../../../utils/clients/userClient");
+const {populateMedia, populateListMedia} = require("../../../utils/clients/mediaClient");
 // set encryption algorithm
 const algorithm = 'aes-256-cbc';
 
@@ -1047,6 +1048,31 @@ class ConversationController {
             const url = `https://api.videosdk.live/v2/rooms`;
             const response = await axios(url, options);
             return res.json(response.data);
+        } catch (err) {
+            console.log(err);
+            return next(
+                createError.InternalServerError(
+                    `${err.message}\nin method: ${req.method} of ${req.originalUrl}\nwith body: ${JSON.stringify(
+                        req.body,
+                        null,
+                        2
+                    )}`
+                )
+            );
+        }
+    }
+
+    async getFiles(req, res, next) {
+        try {
+            const listMessage = await Message.find({ conversation: req.params.id })
+            if (!listMessage) {
+                return responseError(res, 404, 'Không tìm thấy cuộc hội thoại');
+            }
+            //Chi lay mediaId cua message co trong listMessage
+            const listMediaId = listMessage.flatMap(message => message.mediaId);
+            let listMedia = await populateListMedia(
+                {mediaIds: listMediaId, type: req.body.type ,page: req.query.page || 0, size: req.query.size || 20});
+            return res.status(200).json(listMedia.data);
         } catch (err) {
             console.log(err);
             return next(

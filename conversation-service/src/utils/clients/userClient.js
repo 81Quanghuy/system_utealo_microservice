@@ -17,6 +17,7 @@ exports.updateOnlineUser = async (accessToken ,isOnline) => {
 			'Content-Type': 'application/json',
 			Authorization: `Bearer ${accessToken}`,
 		}
+		console.log("accessToken",accessToken);
 		const user = await axios.put(`${process.env.AXIOS_API_SERVICE}/user/
 		updateOnline?isOnline=${isOnline}`, {}, {headers});
 		return user.data;

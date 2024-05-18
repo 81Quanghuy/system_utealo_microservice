@@ -2,6 +2,7 @@ package vn.iostar.mediaservice.service.impl;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -14,6 +15,7 @@ import vn.iostar.mediaservice.dto.FileDto;
 import vn.iostar.mediaservice.dto.request.DeleteRequest;
 import vn.iostar.mediaservice.dto.request.FileRequest;
 import vn.iostar.mediaservice.dto.response.GenericResponse;
+import vn.iostar.mediaservice.dto.response.ListMediaResponse;
 import vn.iostar.mediaservice.entity.File;
 import vn.iostar.mediaservice.entity.FileType;
 import vn.iostar.mediaservice.exception.wrapper.BadRequestException;
@@ -204,7 +206,7 @@ public class FileServiceImpl implements FileService {
     }
 
     @Override
-    public ResponseEntity<GenericResponse> getMessageImage(String userId, String mediaId) {
+    public ResponseEntity<GenericResponse> getMessageImage(String mediaId) {
         log.info("FileServiceImpl, getMessageImage");
         Optional<File> file = fileRepository.findById(mediaId);
         if (file.isEmpty()) {
@@ -217,6 +219,12 @@ public class FileServiceImpl implements FileService {
                 .result(fileDto)
                 .statusCode(200)
                 .build());
+    }
+
+    @Override
+    public Page<File> getMediaList(ListMediaResponse fileRequest, Pageable pageable) {
+        log.info("FileServiceImpl, getMediaList");
+        return fileRepository.findAllByIdInAndTypeIdInOrderByCreatedAtDesc(fileRequest.getMediaIds(), fileRequest.getType(),pageable);
     }
 
     public String getFileExtension(String fileName) {

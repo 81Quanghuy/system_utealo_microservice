@@ -2,6 +2,9 @@ package vn.iostar.mediaservice.controller;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -11,10 +14,13 @@ import vn.iostar.mediaservice.dto.FileDto;
 import vn.iostar.mediaservice.dto.request.DeleteRequest;
 import vn.iostar.mediaservice.dto.request.FileRequest;
 import vn.iostar.mediaservice.dto.response.GenericResponse;
+import vn.iostar.mediaservice.dto.response.ListMediaResponse;
+import vn.iostar.mediaservice.entity.File;
 import vn.iostar.mediaservice.jwt.service.JwtService;
 import vn.iostar.mediaservice.service.FileService;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -165,10 +171,15 @@ public class FileController {
 
     //Lay anh trong message
     @GetMapping("/getMedia/{mediaId}")
-    public ResponseEntity<GenericResponse> getMessageImage(@RequestHeader(HttpHeaders.AUTHORIZATION) String authorizationHeader,
-                                                           @PathVariable String mediaId) {
-        String accessToken = authorizationHeader.substring(7);
-        String userId = jwtService.extractUserId(accessToken);
-        return fileService.getMessageImage(userId, mediaId);
+    public ResponseEntity<GenericResponse> getMessageImage(@PathVariable String mediaId) {
+        return fileService.getMessageImage(mediaId);
+    }
+    //Get list media by list mediaId
+    @PostMapping("/getMediaList")
+    public Page<File> getMediaList(@RequestBody ListMediaResponse fileRequest,
+                                   @RequestParam(value = "page", defaultValue = "0") Integer page,
+                                   @RequestParam(value = "size", defaultValue = "4") Integer size){
+        Pageable pageable = PageRequest.of(page, size);
+        return fileService.getMediaList(fileRequest,pageable);
     }
 }

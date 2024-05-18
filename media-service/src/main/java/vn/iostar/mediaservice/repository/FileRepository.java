@@ -20,4 +20,7 @@ public interface FileRepository extends MongoRepository<File, String> {
     Page<File> findAllByGroupIdAndTypeId(String userId, String id, Pageable pageable);
 
     Page<File> findAllByGroupIdAndTypeIdIn(String userId, List<String> ids, Pageable pageable);
+    // lay danh sach file theo list id va sap xep theo thoi gian tao giam dan voi type la document
+    Page<File> findAllByIdInAndTypeIdInOrderByCreatedAtDesc(List<String> ids, List<String> typeId, Pageable pageable);
+    Page<File> findAllByIdInOrderByCreatedAtDesc(List<String> ids, Pageable pageable);
 }

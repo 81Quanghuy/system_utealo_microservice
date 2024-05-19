@@ -231,8 +231,9 @@ public class ShareServiceImpl implements ShareService {
         pagination.setPages((int) Math.ceil((double) totalShares / itemsPerPage));
 
         if (userSharesPage.isEmpty()) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(GenericResponseAdmin.builder().success(false)
-                    .message("No Shares Found").statusCode(HttpStatus.NOT_FOUND.value()).build());
+            return ResponseEntity
+                    .ok(GenericResponseAdmin.builder().success(true).message("No Shares Found!")
+                            .result(userSharesPage).pagination(pagination).statusCode(HttpStatus.OK.value()).build());
         } else {
             return ResponseEntity
                     .ok(GenericResponseAdmin.builder().success(true).message("Retrieved List Shares Successfully")

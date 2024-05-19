@@ -93,6 +93,17 @@
             <artifactId>group-service</artifactId>
             <version>1.0-SNAPSHOT</version> <!-- Phiên bản của group-service -->
         </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-redis</artifactId>
+        </dependency>
+
+        <!-- Lettuce Core (Redis client) -->
+        <dependency>
+            <groupId>redis.clients</groupId>
+            <artifactId>jedis</artifactId>
+            <version>4.4.1</version>
+        </dependency>
     </dependencies>
     <build>
         <plugins>

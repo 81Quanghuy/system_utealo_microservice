@@ -1,5 +1,6 @@
 package vn.iostar.postservice.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
@@ -17,7 +18,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-public interface PostService {
+public interface PostService extends RedisService{
 
     <S extends Post> S save(S entity);
     Optional<Post> findById(String id);
@@ -28,7 +29,7 @@ public interface PostService {
     // Sửa bài post của mình
     ResponseEntity<Object> updatePost(String postId, PostUpdateRequest request, String currentUserId) throws Exception;
     // Xem chi tiết bài post
-    ResponseEntity<GenericResponse> getPost(String userIdToken, String postId);
+    ResponseEntity<GenericResponse> getPost(String userIdToken, String postId) throws JsonProcessingException;
     // Lấy những bài post của mình
     List<PostsResponse> findUserPosts(String currentUserId, String userId, Pageable pageable);
     // Lấy tất cả hình của user đó
@@ -72,7 +73,7 @@ public interface PostService {
     // Lấy tất cả bài post của 1 user trong 1 tháng có phân trang
     Page<PostsResponse> findAllPostsInMonthByUserId(int page, int itemsPerPage, String userId);
     // Lấy những bài post trên bảng tin của người dùng
-    ResponseEntity<GenericResponse> getPostTimelineByUserId(String userId, int page, int size) throws RuntimeException;
+    ResponseEntity<GenericResponse> getPostTimelineByUserId(String userId, int page, int size) throws RuntimeException, JsonProcessingException;
     // Lấy tất cả bài post của 1 nhóm
     ResponseEntity<GenericResponse> getGroupPosts(String userIdToken, String postGroupId, Integer page, Integer size);
     // Lấy tất cả các bài post của những nhóm mình tham gia

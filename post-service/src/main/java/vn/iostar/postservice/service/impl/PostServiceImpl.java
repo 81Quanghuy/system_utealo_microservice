@@ -1,10 +1,12 @@
 package vn.iostar.postservice.service.impl;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.springframework.data.domain.*;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -30,6 +32,7 @@ import vn.iostar.postservice.repository.PostRepository;
 import vn.iostar.postservice.repository.ShareRepository;
 import vn.iostar.postservice.service.CloudinaryService;
 import vn.iostar.postservice.service.PostService;
+import vn.iostar.postservice.service.RedisService;
 import vn.iostar.postservice.service.client.FriendClientService;
 import vn.iostar.postservice.service.client.GroupClientService;
 import vn.iostar.postservice.service.client.UserClientService;
@@ -46,8 +49,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
-@RequiredArgsConstructor
-public class PostServiceImpl implements PostService {
+public class PostServiceImpl extends RedisServiceImpl implements PostService {
 
     private final PostRepository postRepository;
     private final JwtService jwtService;
@@ -58,6 +60,21 @@ public class PostServiceImpl implements PostService {
     private final LikeRepository likeRepository;
     private final FriendClientService friendClientService;
     private final ShareRepository shareRepository;
+
+    ObjectMapper objectMapper;
+
+    public PostServiceImpl(RedisTemplate<String, Object> redisTemplate, PostRepository postRepository, JwtService jwtService, UserClientService userClientService, GroupClientService groupClientService, CloudinaryService cloudinaryService, CommentRepository commentRepository, LikeRepository likeRepository, FriendClientService friendClientService, ShareRepository shareRepository) {
+        super(redisTemplate);
+        this.postRepository = postRepository;
+        this.jwtService = jwtService;
+        this.userClientService = userClientService;
+        this.groupClientService = groupClientService;
+        this.cloudinaryService = cloudinaryService;
+        this.commentRepository = commentRepository;
+        this.likeRepository = likeRepository;
+        this.friendClientService = friendClientService;
+        this.shareRepository = shareRepository;
+    }
 
     @Override
     public <S extends Post> S save(S entity) {
@@ -238,7 +255,16 @@ public class PostServiceImpl implements PostService {
     }
 
     @Override
-    public ResponseEntity<GenericResponse> getPost(String currentId, String postId) {
+    public ResponseEntity<GenericResponse> getPost(String currentId, String postId) throws JsonProcessingException {
+
+        objectMapper = new ObjectMapper();
+        if (this.hashExists("posts",postId)) {
+            Object jobs = this.hashGet("posts" ,postId);
+            HashMap<String, Object> data = objectMapper.readValue(jobs.toString(), HashMap.class);
+            return ResponseEntity.ok(GenericResponse.builder().success(true).message("Retrieving user profile successfully from redis")
+                    .result(data).statusCode(HttpStatus.OK.value()).build());
+        }
+
         Optional<Post> post = postRepository.findById(postId);
         UserProfileResponse userOfPostResponse = userClientService.getUser(currentId);
         GroupProfileResponse groupProfileResponse = null;
@@ -249,8 +275,11 @@ public class PostServiceImpl implements PostService {
             return ResponseEntity.ok(GenericResponse.builder().success(null).message("not found post").result(null)
                     .statusCode(HttpStatus.NOT_FOUND.value()).build());
 
+
+
         PostsResponse postsResponse = new PostsResponse(post.get(), userOfPostResponse, groupProfileResponse);
 
+        this.hashSet("posts",postId, objectMapper.writeValueAsString(postsResponse));
 
         return ResponseEntity.ok(GenericResponse.builder().success(true).message("Retrieving user profile successfully")
                 .result(postsResponse).statusCode(HttpStatus.OK.value()).build());
@@ -360,8 +389,9 @@ public class PostServiceImpl implements PostService {
         pagination.setPages((int) Math.ceil((double) totalPosts / itemsPerPage));
 
         if (userPostsPage.isEmpty()) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(GenericResponseAdmin.builder().success(false)
-                    .message("No Posts Found").statusCode(HttpStatus.NOT_FOUND.value()).build());
+            return ResponseEntity
+                    .ok(GenericResponseAdmin.builder().success(true).message("Not found posts")
+                            .result(userPostsPage).pagination(pagination).statusCode(HttpStatus.OK.value()).build());
         } else {
             return ResponseEntity
                     .ok(GenericResponseAdmin.builder().success(true).message("Retrieved List Posts Successfully")
@@ -680,8 +710,18 @@ public class PostServiceImpl implements PostService {
     // Lấy những bài post liên quan đến user như cá nhân, nhóm, bạn bè
     @Override
     public ResponseEntity<GenericResponse> getPostTimelineByUserId(String userId, int page, int size)
-            throws RuntimeException {
+            throws RuntimeException, JsonProcessingException {
 
+        objectMapper = new ObjectMapper();
+        String indexStr = String.valueOf(page)+String.valueOf(size) + userId;
+        if (this.hashExists("postsTimeline", indexStr)) {
+            Object postsTimeline = this.hashGet("postsTimeline", indexStr);
+            HashMap<String, Object> data = objectMapper.readValue((String) postsTimeline, HashMap.class);
+            Object postsTimelineObj = data.get("postsTimeline");
+            ArrayList<HashMap<String, Object>> postsTimelineList = (ArrayList<HashMap<String, Object>>) postsTimelineObj;
+            return ResponseEntity.ok(GenericResponse.builder().success(true).message("Retrieving user profile successfully from redis")
+                    .result(postsTimelineList).statusCode(HttpStatus.OK.value()).build());
+        }
         UserProfileResponse userOfPostResponse = userClientService.getUser(userId);
         if (userOfPostResponse == null) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(GenericResponse.builder().success(false)
@@ -703,6 +743,11 @@ public class PostServiceImpl implements PostService {
             PostsResponse postsResponse = new PostsResponse(post, user, groupProfileResponse);
             simplifiedUserPosts.add(postsResponse);
         }
+        HashMap<String, Object> response = new HashMap<>();
+        response = new HashMap<>();
+        response.put("postsTimeline", simplifiedUserPosts);
+        String jsonData = objectMapper.writeValueAsString(response);
+        this.hashSet("postsTimeline", indexStr, jsonData);
 
         return ResponseEntity.ok(GenericResponse.builder().success(true).message("Retrieved user posts successfully")
                 .result(simplifiedUserPosts).statusCode(HttpStatus.OK.value()).build());

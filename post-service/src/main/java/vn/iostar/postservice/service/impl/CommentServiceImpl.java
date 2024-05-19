@@ -613,8 +613,9 @@ public class CommentServiceImpl implements CommentService {
         pagination.setPages((int) Math.ceil((double) totalComments / itemsPerPage));
 
         if (commentsPage.isEmpty()) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(GenericResponseAdmin.builder().success(false)
-                    .message("No Comments Found").statusCode(HttpStatus.NOT_FOUND.value()).build());
+            return ResponseEntity
+                    .ok(GenericResponseAdmin.builder().success(true).message("No Comments Found")
+                            .result(commentsPage).pagination(pagination).statusCode(HttpStatus.OK.value()).build());
         } else {
             return ResponseEntity
                     .ok(GenericResponseAdmin.builder().success(true).message("Retrieved List Comments Successfully")

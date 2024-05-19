@@ -1,5 +1,6 @@
 package vn.iostar.postservice.controller.user;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -44,7 +45,7 @@ public class PostController {
 
     // Xem chi tiết bài viết
     @GetMapping("/{postId}")
-    public ResponseEntity<GenericResponse> getPost(@RequestHeader("Authorization") String authorizationHeader, @PathVariable("postId") String postId) {
+    public ResponseEntity<GenericResponse> getPost(@RequestHeader("Authorization") String authorizationHeader, @PathVariable("postId") String postId) throws JsonProcessingException {
         String token = authorizationHeader.substring(7);
         String currentUserId = jwtService.extractUserId(token);
         return postService.getPost(currentUserId, postId);
@@ -122,7 +123,7 @@ public class PostController {
 
     // Lấy những bài post liên quan đến mình như: nhóm, bạn bè, cá nhân
     @GetMapping("/get/timeLine")
-    public ResponseEntity<GenericResponse> getPostsByUserAndFriendsAndGroups(@RequestHeader("Authorization") String authorizationHeader, @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "20") int size) {
+    public ResponseEntity<GenericResponse> getPostsByUserAndFriendsAndGroups(@RequestHeader("Authorization") String authorizationHeader, @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "20") int size) throws JsonProcessingException {
         String token = authorizationHeader.substring(7);
         String currentUserId = jwtService.extractUserId(token);
         return postService.getPostTimelineByUserId(currentUserId, page, size);

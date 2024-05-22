@@ -9,6 +9,7 @@ const eventName = {
 	NOTIFICATION: 'notification',
 	REACT_MESSAGE: 'react-message',
 	DELETE_MESSAGE: 'delete-message',
+	CONVERSATION: 'conversation',
 };
 
 const notificationType = {

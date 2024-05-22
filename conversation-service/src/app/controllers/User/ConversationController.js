@@ -17,6 +17,8 @@ const getLocationByIPAddress = require('./../../../configs/location');
 const {getListConversation} = require("../../../utils/Response/listData");
 const {populateUser} = require("../../../utils/clients/userClient");
 const {populateMedia, populateListMedia} = require("../../../utils/clients/mediaClient");
+const SocketManager = require("../../../socket/SocketManager");
+const {eventName} = require("../../../socket/constant");
 // set encryption algorithm
 const algorithm = 'aes-256-cbc';
 
@@ -134,39 +136,42 @@ class ConversationController {
             if (!conversation) {
                 return responseError(res, 404, 'Không tìm thấy cuộc trò chuyện');
             }
-
-            if (conversation.members.length === 2) {
-                return responseError(res, 400, 'Không thể rời khỏi cuộc trò chuyện 2 người');
-            }
-
             let index = -1;
-            index = conversation.members.findIndex((item) => item.user.toString() === req.user._id.toString());
-            if (index !== -1) {
-                const adminOfConversation = conversation.members.filter((member) => member.role === 'admin');
-                conversation.members.splice(index, 1);
-                if (
-                    adminOfConversation.length === 1 &&
-                    adminOfConversation[0].user.toString() === req.user._id.toString()
-                ) {
-                    // set all members to admin
-                    conversation.members.forEach((member) => {
-                        member.role = 'admin';
-                    });
-                }
-                // create message system
-                const messageSystem = new Message({
-                    conversation: conversation._id,
-                    text: `<b>${req.user.fullname}</b> đã rời khỏi cuộc hội thoại này`,
-                    isSystem: true,
-                }).save();
+            index = conversation.members.findIndex((item) => item.userId === req.user.userId);
 
-                // set lastest message
-                conversation.lastest_message = messageSystem._id;
-                await conversation.save();
-                return res.status(200).send('Bạn đã rời khỏi cuộc trò chuyện này');
-            } else {
-                return responseError(res, 404, 'Bạn không có cuộc hội thoại này');
-            }
+                console.log(conversation.members.length)
+                if(index !== -1){
+                    const adminOfConversation = conversation.members.filter((member) => member.role === 'admin');
+                    conversation.members.splice(index, 1);
+                    // ramdom admin
+                    if (adminOfConversation.length === 1) {
+                        const newAdmin = conversation.members.find((member) => member.userId !== req.user.userId);
+                        if (newAdmin) {
+                            newAdmin.role = 'admin';
+                        }
+
+                    }
+                    // create message system
+                    const messageSystem = new Message({
+                        conversation: conversation._id,
+                        text: `<b>${req.user.userName}</b> đã rời khỏi cuộc hội thoại này`,
+                        isSystem: true,
+                    }).save();
+
+                    // set lastest message
+                    conversation.lastest_message = messageSystem._id;
+                    await conversation.save();
+                    const userIds = conversation.members
+                        .filter((member) => member.userId !== req.user.userId)
+                        .map((item) => item.userId);
+
+                    // send socket
+                    SocketManager.sendToList(userIds, eventName.SEND_MESSAGE, messageSystem);
+                    return res.status(200).send('Bạn đã rời khỏi cuộc trò chuyện này');
+                } else {
+                    return responseError(res, 404, 'Bạn không có cuộc hội thoại này');
+                }
+
         } catch (err) {
             console.error(err);
             return next(
@@ -225,10 +230,17 @@ class ConversationController {
                 return responseError(res, 400, 'Không thể tạo cuộc trò chuyện với chính mình');
             }
             const name = `${req.user.userName} ${user.userName}`;
+            const revertName = `${user.userName} ${req.user.userName}`;
             const checkConversation = await Conversation.findOne({
                 name: name,});
+            const checkConversation1 = await Conversation.findOne({
+                name: revertName,});
+
             if (checkConversation) {
                 return res.status(200).json(checkConversation);
+            }
+            if(checkConversation1){
+                return res.status(200).json(checkConversation1);
             }
 
             const conversation = new Conversation({
@@ -305,7 +317,7 @@ class ConversationController {
                     members: req.body.members,
                     name:  req.body.name,
                     avatar :  req.body.avatar,
-
+                    type: 'group',
                 });
                 newConversation.members.push({
                     userId: req.user.userId,
@@ -313,7 +325,6 @@ class ConversationController {
                     role: 'admin',
                     addedBy: req.user.userId,
                     avatar: req.user.avatar,
-
                 });
                 newConversation.creatorId = req.user.userId;
                 newConversation.history.push({
@@ -546,6 +557,7 @@ class ConversationController {
     // [PUT] update conversation
     async update(req, res, next) {
         try {
+
             // validate request
             const schema = Joi.object({
                 name: Joi.string().min(3).max(255),
@@ -558,7 +570,7 @@ class ConversationController {
             }
 
             const conversation = await Conversation.findById(req.params.id);
-            if (conversation.members.some((member) => member.user.toString() === req.user._id.toString())) {
+            if (conversation.members.some((member) => member.userId.toString() === req.user.userId.toString())) {
                 let contentMessage = '';
 
                 for (const key of Object.keys(req.body)) {
@@ -571,39 +583,48 @@ class ConversationController {
                     } else if (key === 'name' && conversation.members.length == 2) {
                         // change nickname of orther member
                         const member = conversation.members.find(
-                            (member) => member.user.toString() !== req.user._id.toString()
+                            (member) => member.userId !== req.user.userId.toString()
                         );
 
                         contentMessage += `đã đổi biệt danh của ${member.nickname} thành ${req.body[key]}`;
 
                         member.nickname = req.body[key];
-                        member.changedNicknameBy = req.user._id;
+                        member.changedNicknameBy = req.user.userName;
                     }
                 }
 
                 // Check update
                 if (contentMessage) {
                     conversation.history.push({
-                        editor: req.user._id,
-                        content: `<b>${req.user.fullname}</b> ${contentMessage}`,
+                        editor: req.user.userId,
+                        content: `<b>${req.user.userName}</b> ${contentMessage}`,
                     });
 
                     // create message system
                     const messageSystem = new Message({
                         conversation: req.params.id,
-                        text: `<b>${req.user.fullname}</b> ${contentMessage}`,
+                        text: `<b>${req.user.userName}</b> ${contentMessage}`,
                         isSystem: true,
                     });
                     await messageSystem.save();
 
                     // update lastest message
                     conversation.lastest_message = messageSystem._id;
+
+                    const userIds = conversation.members
+                        .filter((member) => member.userId !== req.user.userId)
+                        .map((item) => item.userId);
+                    // send socket
+                    SocketManager.sendToList(userIds, eventName.SEND_MESSAGE, messageSystem);
+                    SocketManager.sendToList(userIds, eventName.CONVERSATION, conversation);
                 }
 
                 await conversation.save();
 
                 // populate
                 const savedConversation = await populateConversation(conversation._id);
+
+
                 return res.status(200).json(savedConversation);
             } else {
                 return responseError(res, 403, 'Bạn không nằm trong cuộc hội thoại này');

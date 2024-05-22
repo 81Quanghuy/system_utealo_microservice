@@ -22,9 +22,9 @@ router.get('/:id/files/:type', isAuth, ConversationController.getAllMedia);
 
 // update conv
 
-router.patch('/:id/members/:type', isAuth, ConversationController.updateMembers);
-router.put('/:id/leave', isAuth, ConversationController.leaveConversation);
-router.put('/:id', isAuth, ConversationController.update);
+router.put('/update/:id/:type', isAuth, ConversationController.updateMembers);
+router.put('/:id/leave', getUser, ConversationController.leaveConversation);
+router.put('/:id', getUser, ConversationController.update);
 // update member of conv
 
 router.delete('/user-deleted/:id', isAuth, ConversationController.userDeletedAllMessages);

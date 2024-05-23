@@ -63,12 +63,11 @@ class MessageController {
                 message.text = req.body.text;
 
                 const userIds = conversation.members
-                    .filter((member) => member.userId !== message.senderId)
+                    .filter((member) => member.userId !== req.user.userId)
                     .map((item) => item.userId);
 
                 // send socket
                 SocketManager.sendToList(userIds, eventName.SEND_MESSAGE, message);
-
                 res.status(200).json({
                     success: true,
                     message: 'Tin nhắn đã được gửi',
@@ -267,10 +266,15 @@ class MessageController {
         }
         const savedMessage = await message.save();
         const conversation = await Conversation.findById(req.body.conversationId);
-        const userIds = conversation.members
-            .filter((member) => member.userId !== req.user.userId)
-            .map((item) => item.userId);
-        SocketManager.sendToList(userIds, eventName.REACT_MESSAGE, savedMessage);
+        if (conversation){
+            const userIds = conversation.members
+                .filter((member) => member.userId !== req.user.userId)
+                .map((item) => item.userId);
+            SocketManager.sendToList(userIds, eventName.REACT_MESSAGE, savedMessage);
+        }
+        else{
+            return res.status(200).json("loi mme roi");
+        }
         return res.status(200).json(savedMessage);
     }
     async removeMessage(req,res,next){

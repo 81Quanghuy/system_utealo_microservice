@@ -152,7 +152,7 @@ class ConversationController {
 
                     }
                     // create message system
-                    const messageSystem = new Message({
+                    const messageSystem = await new Message({
                         conversation: conversation._id,
                         text: `<b>${req.user.userName}</b> đã rời khỏi cuộc hội thoại này`,
                         isSystem: true,
@@ -160,13 +160,19 @@ class ConversationController {
 
                     // set lastest message
                     conversation.lastest_message = messageSystem._id;
-                    await conversation.save();
-                    const userIds = conversation.members
-                        .filter((member) => member.userId !== req.user.userId)
-                        .map((item) => item.userId);
+                    if(conversation.members.length === 0){
+                        await Conversation.deleteOne({_id: req.params.id});
+                    }else{
+                        await conversation.save();
+                        const userIds = conversation.members
+                            .filter((member) => member.userId !== req.user.userId)
+                            .map((item) => item.userId);
 
-                    // send socket
-                    SocketManager.sendToList(userIds, eventName.SEND_MESSAGE, messageSystem);
+                        // send socket
+                        SocketManager.sendToList(userIds, eventName.SEND_MESSAGE, messageSystem);
+                    }
+
+
                     return res.status(200).send('Bạn đã rời khỏi cuộc trò chuyện này');
                 } else {
                     return responseError(res, 404, 'Bạn không có cuộc hội thoại này');
@@ -647,201 +653,47 @@ class ConversationController {
     async updateMembers(req, res, next) {
         try {
             const conversation = await Conversation.findById(req.params.id);
-            if (conversation.members.some((member) => member.user.toString() === req.user._id.toString())) {
-                const adminOfConversation = conversation.members
-                    .filter((member) => member.role === 'admin')
-                    .map((member) => member.user.toString());
+            if(!conversation){
+                return responseError(res, 404, 'Không tìm thấy cuộc hội thoại');
+            }
+            if (conversation.members.some((member) => member.userId === req.user.userId)) {
                 let contentMessage = '';
                 // add members
-                if (req.params.type === 'add') {
-                    // validate request
-                    const schema = Joi.object({
-                        newMembers: Joi.array()
-                            .items(
-                                Joi.object({
-                                    user: Joi.string().required(),
-                                    nickname: Joi.string(),
-                                })
-                            )
-                            .required(),
-                    }).unknown();
-                    const { error } = schema.validate(req.body);
-                    if (error) {
-                        return responseError(res, 400, error.details[0].message);
-                    }
-                    // check member is exist in conversation
-                    const membersOfConversation = conversation.members.map((member) => member.user.toString());
-                    const membersFromRequest = req.body.newMembers.map((member) => member.user.toString());
-                    const sameMembers = membersOfConversation.filter((member) => membersFromRequest.includes(member));
-                    if (sameMembers.length > 0) {
-                        return responseError(res, 403, 'Thành viên đã tồn tại trong cuộc hội thoại');
-                    }
-                    // set addedBy for new members
-                    req.body.newMembers.forEach((member) => {
-                        member.addedBy = req.user._id;
-                    });
-                    // check members.length =2 => create new conversation
-                    if (conversation.members.length == 2 && conversation.type == 'direct') {
-                        const newConversation = new Conversation({
-                            members: conversation.members.concat(req.body.newMembers),
-                            name: req.body.name,
-                            creator: req.user._id,
-                            type: 'group',
-                        });
+                // validate request
 
-                        // create message system
-                        const messageSystem = new Message({
-                            conversation: newConversation._id,
-                            text: `<b>${req.user.fullname}</b> đã tạo cuộc hội thoại này`,
-                            isSystem: true,
-                        });
-
-                        await messageSystem.save();
-
-                        newConversation.lastest_message = messageSystem._id;
-                        await newConversation.save();
-                        // populate
-                        const savedConversation = await populateConversation(newConversation._id);
-                        return res.status(200).json(savedConversation);
-                    }
-
-                    conversation.members = conversation.members.concat(req.body.newMembers);
-                    // get fullname of new member
-                    const user = await User.findById(req.body.newMembers[0].user);
-                    if (req.body.newMembers.length == 1) {
-                        contentMessage = `đã thêm <b>${user.fullname}</b> vào cuộc hội thoại này`;
-                    } else {
-                        contentMessage = `đã thêm <b>${user.fullname}</b> và <b>${
-                            req.body.newMembers.length - 1
-                        }</b> thành viên khác vào cuộc hội thoại này`;
-                    }
-                } else if (req.params.type === 'remove') {
-                    // validate request
-                    const schema = Joi.object({
-                        userID: Joi.string().required(),
-                    }).unknown();
-                    const { error } = schema.validate(req.body);
-                    if (error) {
-                        return responseError(res, 400, error.details[0].message);
-                    }
-
-                    if (adminOfConversation.includes(req.user._id.toString())) {
-                        if (conversation.members.length == 2 && conversation.type == 'direct') {
-                            return responseError(
-                                res,
-                                403,
-                                'Bạn không thể xóa thành viên trong cuộc trò chuyện giữa 2 người'
-                            );
-                        }
-                        // get nickname of user will be removed
-                        let nickname = conversation.members
-                            .filter((member) => member.user.toString() === req.body.userID.toString())
-                            .map((member) => member.nickname);
-                        if (!nickname) {
-                            // get fullname of user will be removed
-                            const user = await User.findById(req.body.userID).select('fullname');
-                            nickname = user.fullname;
-                        }
-                        contentMessage = `đã xóa ${nickname} khỏi cuộc hội thoại này`;
-                        conversation.members = conversation.members.filter(
-                            (member) => member.user.toString() !== req.body.userID.toString()
-                        );
-                    } else {
-                        return responseError(res, 403, 'Bạn không có quyền xóa thành viên');
-                    }
-                } else if (req.params.type === 'changeRole') {
-                    // validate request
-                    const schema = Joi.object({
-                        userID: Joi.string().required(),
-                        role: Joi.string().valid('admin', 'member').required(),
-                    }).unknown();
-                    const { error } = schema.validate(req.body);
-                    if (error) {
-                        return responseError(res, 400, error.details[0].message);
-                    }
-
-                    if (conversation.members.length == 2 && conversation.type == 'direct') {
-                        return responseError(res, 400, 'Không thể thay đổi quyền trong cuộc trò chuyện giữa 2 người');
-                    }
-
-                    if (adminOfConversation.includes(req.user._id.toString())) {
-                        // get nickname of user will be removed
-                        // const member = conversation.members.filter(member => member.user.toString() === req.body.userID.toString());
-                        const index = conversation.members.findIndex(
-                            (member) => member.user.toString() === req.body.userID.toString()
-                        );
-
-                        // user cannot update role for self
-                        if (req.body.userID.toString() === req.user._id.toString()) {
-                            return responseError(res, 403, 'Bạn không thể thay đổi vai trò của chính mình');
-                        }
-
-                        let { nickname } = conversation.members[index];
-                        if (!nickname) {
-                            // get fullname of user will be removed
-                            const user = await User.findById(req.body.userID).select('fullname');
-                            nickname = user.fullname;
-                        }
-                        if (index > -1 && conversation.members[index].role !== req.body.role) {
-                            conversation.members[index].role = req.body.role;
-                            contentMessage = `đã thay đổi vai trò của <b>${nickname}</b> thành <b>${req.body.role}</b>`;
-                        }
-                    } else {
-                        return responseError(res, 403, 'Bạn không có quyền thay đổi vai trò thành viên');
-                    }
-                } else if (req.params.type === 'changeNickname') {
-                    // validate request
-                    const schema = Joi.object({
-                        userID: Joi.string().required(),
-                        nickname: Joi.string().min(0).max(50),
-                    }).unknown();
-                    const { error } = schema.validate(req.body);
-                    if (error) {
-                        return responseError(res, 400, error.details[0].message);
-                    }
-                    // get nickname of user will be removed
-                    const index = conversation.members.findIndex(
-                        (member) => member.user.toString() === req.body.userID.toString()
-                    );
-                    const { nickname } = conversation.members[index];
-                    if (!nickname) {
-                        // get fullname of user will be removed
-                        const user = await User.findById(req.body.userID).select('fullname');
-                        conversation.members[index].nickname = req.body.nickname;
-                        conversation.members[index].changedNicknameBy = req.user._id;
-                        contentMessage = `đã đổi tên hiển thị của <b>${user.fullname}</b> thành <b>${req.body.nickname}</b>`;
-                    } else {
-                        contentMessage = `đã thay đổi biệt danh của <b>${nickname}</b> thành <b>${req.body.nickname}</b>`;
-                        conversation.members[index].nickname = req.body.nickname;
-                        conversation.members[index].changedNicknameBy = req.user._id;
-                    }
-                } else {
-                    return responseError(res, 404, 'Không tìm thấy phương thức');
+                // check member is exist in conversation
+                const membersOfConversation = conversation.members.map((member) => member.userId);
+                const membersFromRequest = req.body.newMembers.map((member) => member.userId);
+                const sameMembers = membersOfConversation.filter((member) => membersFromRequest.includes(member));
+                if (sameMembers.length > 0) {
+                    return responseError(res, 403, 'Thành viên đã tồn tại trong cuộc hội thoại');
                 }
-
-                if (contentMessage != '') {
-                    conversation.history.push({
-                        editor: req.user._id,
-                        content: `<b>${req.user.fullname}</b> ${contentMessage}`,
-                    });
-
-                    // create message system
-                    const messageSystem = new Message({
-                        conversation: req.params.id,
-                        text: `<b>${req.user.fullname}</b> ${contentMessage}`,
-                        isSystem: true,
-                    });
-                    await messageSystem.save();
-                    // update last message
-                    conversation.lastest_message = messageSystem._id;
-                }
-
+                // check user is admin of conversation
+                contentMessage += `${req.user.userName} đã thêm `;
+                req.body.newMembers.forEach((member) => {
+                    contentMessage += `<b>${member.username}</b>, `;
+                    const newMember = {
+                        avatar: member.avatar,
+                        addedAt: Date.now(),
+                        isOnline: member.isOnline,
+                        userId: member.userId,
+                        role: 'member',
+                        nickname: member.username,
+                    }
+                    conversation.members.push(newMember);
+                });
+                // create message system
+                const messageSystem = new Message({
+                    conversation: req.params.id,
+                    text: contentMessage + 'vào cuộc hội thoại',
+                    isSystem: true,
+                });
+                await messageSystem.save();
+                conversation.lastest_message = messageSystem._id;
                 await conversation.save();
-                // populate
-                const savedConversation = await populateConversation(conversation._id);
-                res.status(200).json(savedConversation);
+                return res.status(200).json(conversation);
             } else {
-                return responseError(res, 404, 'Bạn không năm trong cuộc hội thoại này');
+                return responseError(res, 403, 'Bạn không có quyền thêm thành viên vào cuộc hội thoại này');
             }
         } catch (err) {
             console.error(err);
@@ -895,16 +747,14 @@ class ConversationController {
             if (!conversation) {
                 return res.status(404).json('Không tìm thấy cuộc hội thoại');
             }
-            const adminOfConversation = conversation.members
-                .filter((member) => member.role === 'admin')
-                .map((member) => member.user.toString());
-            if (adminOfConversation.includes(req.user._id.toString()) || req.user.role.name === 'ADMIN') {
-                await conversation.delete();
-                // delete all message in conversation
-                await Message.deleteMany({ conversation: req.params.id });
-
+            //check user is admin of conversation
+            const userAdmin = conversation.members.filter((member) => member.role === 'admin' && member.userId === req.user.userId);
+            if (userAdmin.length > 0) {
+                await Conversation.deleteOne({ _id: req.params.id });
+                await Message.deleteOne({ conversation: req.params.id });
                 return res.status(200).json('Đã xóa cuộc hội thoại thành công');
-            } else {
+            }
+            else{
                 return responseError(res, 403, 'Bạn không có quyền xóa cuộc hội thoại này');
             }
         } catch (err) {
@@ -1095,6 +945,94 @@ class ConversationController {
                 {mediaIds: listMediaId, type: req.body.type ,page: req.query.page || 0, size: req.query.size || 20});
             return res.status(200).json(listMedia.data);
         } catch (err) {
+            console.log(err);
+            return next(
+                createError.InternalServerError(
+                    `${err.message}\nin method: ${req.method} of ${req.originalUrl}\nwith body: ${JSON.stringify(
+                        req.body,
+                        null,
+                        2
+                    )}`
+                )
+            );
+        }
+    }
+
+    async changeRole(req, res, next) {
+        try {
+            const conversation = await Conversation.findById(req.body.conversationId);
+            if (!conversation) {
+                return responseError(res, 404, 'Không tìm thấy cuộc hội thoại');
+            }
+            const member = conversation.members.find((member) => member.userId === req.body.userId);
+            if (!member) {
+                return responseError(res, 404, 'Không tìm thấy thành viên trong cuộc hội thoại');
+            }
+            const adminMenber = conversation.members.find((member) => member.role === 'admin');
+            if (adminMenber.userId !== req.user.userId) {
+                return responseError(res, 403, 'Bạn không có quyền thay đổi vai trò');
+            }
+            member.role = req.body.role;
+            const myMember = conversation.members.find((member) => member.userId === req.user.userId);
+            myMember.role ='member';
+            const messageSystem =await new Message({
+                conversation: conversation._id,
+                text: `<b>${req.user.userName}</b> đã thay đổi vai trò của <b>${member.nickname}</b> thành ${req.body.role}`,
+                isSystem: true,
+            }).save();
+            await conversation.save();
+            conversation.lastest_message = messageSystem._id;
+            const userIds = conversation.members
+                .filter((member) => member.userId !== req.user.userId)
+                .map((item) => item.userId);
+            // send socket
+            SocketManager.sendToList(userIds, eventName.SEND_MESSAGE, messageSystem);
+            return res.status(200).json(conversation);
+        } catch (err) {
+            console.log(err);
+            return next(
+                createError.InternalServerError(
+                    `${err.message}\nin method: ${req.method} of ${req.originalUrl}\nwith body: ${JSON.stringify(
+                        req.body,
+                        null,
+                        2
+                    )}`
+                )
+            );
+        }
+    }
+
+    async updateMember(req, res, next) {
+        try {
+            const conversation = await Conversation.findById(req.body.conversationId);
+            if (!conversation) {
+                return responseError(res, 404, 'Không tìm thấy cuộc hội thoại');
+            }
+            const member = conversation.members.find((member) => member.userId === req.body.userId);
+            if (!member) {
+                return responseError(res, 404, 'Không tìm thấy thành viên trong cuộc hội thoại');
+            }
+            const adminMenber = conversation.members.find((member) => member.role === 'admin');
+            if (adminMenber.userId !== req.user.userId) {
+                return responseError(res, 403, 'Bạn không có quyền thay đổi vai trò');
+            }
+            conversation.members = conversation.members.filter((member) => member.userId !== req.body.userId);
+            await conversation.save();
+            const messageSystem = await new Message({
+                conversation: conversation._id,
+                text: `<b>${req.user.userName}</b> đã xóa <b>${member.nickname}</b> khỏi cuộc hội thoại`,
+                isSystem: true,
+            }).save();
+            conversation.lastest_message = messageSystem._id;
+            const userIds = conversation.members
+                .filter((member) => member.userId !== req.user.userId)
+                .map((item) => item.userId);
+            // send socket
+            console.log("messageSystem",messageSystem);
+            SocketManager.sendToList(userIds, eventName.SEND_MESSAGE, messageSystem);
+            return res.status(200).json(conversation);
+        }
+        catch (err) {
             console.log(err);
             return next(
                 createError.InternalServerError(

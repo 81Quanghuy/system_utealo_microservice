@@ -23,7 +23,7 @@ public interface PostService extends RedisService{
     <S extends Post> S save(S entity);
     Optional<Post> findById(String id);
     // Tạo bài post
-    ResponseEntity<Object> createUserPost(String token, CreatePostRequestDTO requestDTO);
+    ResponseEntity<Object> createUserPost(String token, CreatePostRequestDTO requestDTO) throws JsonProcessingException;
     // Xóa bài post của mình
     ResponseEntity<GenericResponse> deletePost(String postId, String token, String userId);
     // Sửa bài post của mình
@@ -75,9 +75,9 @@ public interface PostService extends RedisService{
     // Lấy những bài post trên bảng tin của người dùng
     ResponseEntity<GenericResponse> getPostTimelineByUserId(String userId, int page, int size) throws RuntimeException, JsonProcessingException;
     // Lấy tất cả bài post của 1 nhóm
-    ResponseEntity<GenericResponse> getGroupPosts(String userIdToken, String postGroupId, Integer page, Integer size);
+    ResponseEntity<GenericResponse> getGroupPosts(String userIdToken, String postGroupId, Integer page, Integer size) throws JsonProcessingException;
     // Lấy tất cả các bài post của những nhóm mình tham gia
-    ResponseEntity<GenericResponse> getPostOfPostGroup(String currentUserId, Pageable pageable);
+    ResponseEntity<GenericResponse> getPostOfPostGroup(String currentUserId, Integer page, Integer size) throws JsonProcessingException;
     // Lấy danh sách file của 1 nhóm
     List<FilesOfGroupDTO> findLatestFilesByGroupId(String groupId);
     // Lấy danh sách photo của 1 nhóm

@@ -1,9 +1,12 @@
 package vn.iostar.postservice.service.impl;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -40,8 +43,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.*;
 
 @Service
-@RequiredArgsConstructor
-public class ShareServiceImpl implements ShareService {
+public class ShareServiceImpl extends RedisServiceImpl implements ShareService {
 
     private final ShareRepository shareRepository;
     private final PostService postService;
@@ -51,6 +53,18 @@ public class ShareServiceImpl implements ShareService {
     private final CommentRepository commentRepository;
     private final LikeRepository likeRepository;
     private final FriendClientService friendClientService;
+
+    public ShareServiceImpl(RedisTemplate<String, Object> redisTemplate, ShareRepository shareRepository, PostService postService, JwtService jwtService, UserClientService userClientService, GroupClientService groupClientService, CommentRepository commentRepository, LikeRepository likeRepository, FriendClientService friendClientService) {
+        super(redisTemplate);
+        this.shareRepository = shareRepository;
+        this.postService = postService;
+        this.jwtService = jwtService;
+        this.userClientService = userClientService;
+        this.groupClientService = groupClientService;
+        this.commentRepository = commentRepository;
+        this.likeRepository = likeRepository;
+        this.friendClientService = friendClientService;
+    }
 
     @Override
     public <S extends Share> S save(S entity) {
@@ -94,8 +108,11 @@ public class ShareServiceImpl implements ShareService {
 
         }
         save(share);
+        if (this.exists("sharesOfTimeLine")) this.delete("sharesOfTimeLine");
+        if (this.exists("sharesOfUser")) this.delete("sharesOfUser");
+        if (this.exists("sharesOfGroup")) this.delete("sharesOfGroup");
+        if (this.exists("sharesOfGroupJoin")) this.delete("sharesOfGroupJoin");
         SharesResponse sharesResponse = new SharesResponse(share, userProfileResponse, postGroup);
-
         GenericResponse response = GenericResponse.builder().success(true).message("Share Post Successfully")
                 .result(sharesResponse).statusCode(200).build();
 
@@ -119,9 +136,12 @@ public class ShareServiceImpl implements ShareService {
                     share.setPostGroupId(groupProfileResponse.getId());
             }
         }
-
         share.setUpdateAt(requestDTO.getUpdateAt());
         save(share);
+        if (this.exists("sharesOfTimeLine")) this.delete("sharesOfTimeLine");
+        if (this.exists("sharesOfUser")) this.delete("sharesOfUser");
+        if (this.exists("sharesOfGroup")) this.delete("sharesOfGroup");
+        if (this.exists("sharesOfGroupJoin")) this.delete("sharesOfGroupJoin");
         return ResponseEntity.ok(GenericResponse.builder().success(true).message("Update successful").result(null)
                 .statusCode(200).build());
     }
@@ -155,6 +175,10 @@ public class ShareServiceImpl implements ShareService {
             share.setComments(new ArrayList<>());
             share.setLikes(new ArrayList<>());
             shareRepository.delete(share);
+            if (this.exists("sharesOfTimeLine")) this.delete("sharesOfTimeLine");
+            if (this.exists("sharesOfUser")) this.delete("sharesOfUser");
+            if (this.exists("sharesOfGroup")) this.delete("sharesOfGroup");
+            if (this.exists("sharesOfGroupJoin")) this.delete("sharesOfGroupJoin");
             return ResponseEntity.ok()
                     .body(new GenericResponse(true, "Delete Successful!", null, HttpStatus.OK.value()));
         }
@@ -542,8 +566,18 @@ public class ShareServiceImpl implements ShareService {
     }
 
     @Override
-    public ResponseEntity<GenericResponse> getTimeLineSharePosts(String userId, Integer page, Integer size) {
+    public ResponseEntity<GenericResponse> getTimeLineSharePosts(String userId, Integer page, Integer size) throws JsonProcessingException {
 
+        ObjectMapper objectMapper = new ObjectMapper();
+        String indexStr = String.valueOf(page)+String.valueOf(size) + userId;
+        if (this.hashExists("sharesOfTimeLine", indexStr)) {
+            Object sharesTimeline = this.hashGet("sharesOfTimeLine", indexStr);
+            HashMap<String, Object> data = objectMapper.readValue((String) sharesTimeline, HashMap.class);
+            Object sharesTimelineObj = data.get("sharesOfTimeLine");
+            ArrayList<HashMap<String, Object>> sharesTimelineList = (ArrayList<HashMap<String, Object>>) sharesTimelineObj;
+            return ResponseEntity.ok(GenericResponse.builder().success(true).message("Retrieved user share posts successfully and access update from redis")
+                    .result(sharesTimelineList).statusCode(HttpStatus.OK.value()).build());
+        }
         UserProfileResponse user = userClientService.getUser(userId);
         if (user == null) {
             return ResponseEntity.ofNullable(GenericResponse.builder().success(false).message("User not found")
@@ -566,15 +600,31 @@ public class ShareServiceImpl implements ShareService {
             simplifiedUserPosts.add(sharePostsResponse);
         }
 
-        return ResponseEntity.ok(GenericResponse.builder().success(true).message("Retrieved user posts successfully and access update")
+        HashMap<String, Object> response = new HashMap<>();
+        response.put("sharesOfTimeLine", simplifiedUserPosts);
+        String jsonData = objectMapper.writeValueAsString(response);
+        this.hashSet("sharesOfTimeLine", indexStr, jsonData);
+
+        return ResponseEntity.ok(GenericResponse.builder().success(true).message("Retrieved user share posts successfully and access update")
                 .result(simplifiedUserPosts).statusCode(HttpStatus.OK.value()).build());
     }
 
     @Override
-    public ResponseEntity<GenericResponse> getShareOfPostGroup(String userId, Pageable pageable) {
+    public ResponseEntity<GenericResponse> getShareOfPostGroup(String userId, Integer page, Integer size) throws JsonProcessingException {
+        ObjectMapper objectMapper = new ObjectMapper();
+        String indexStr = String.valueOf(page)+String.valueOf(size) + userId;
+        if (this.hashExists("sharesOfGroup", indexStr)) {
+            Object sharesTimeline = this.hashGet("sharesOfGroup", indexStr);
+            HashMap<String, Object> data = objectMapper.readValue((String) sharesTimeline, HashMap.class);
+            Object sharesTimelineObj = data.get("sharesOfGroup");
+            ArrayList<HashMap<String, Object>> sharesTimelineList = (ArrayList<HashMap<String, Object>>) sharesTimelineObj;
+            return ResponseEntity.ok(GenericResponse.builder().success(true).message("Retrieved share post successfully from redis")
+                    .result(sharesTimelineList).statusCode(HttpStatus.OK.value()).build());
+        }
         if (userId == null)
             return ResponseEntity.badRequest().body(new GenericResponse(false, "User not found", null, 400));
         List<String> groupIds = groupClientService.getGroupIdsByUserId(userId);
+        PageRequest pageable = PageRequest.of(page, size);
         List<Share> shares = shareRepository.findAllSharesInUserGroups(groupIds, pageable);
         List<SharesResponse> sharesResponses = new ArrayList<>();
         for (Share share : shares) {
@@ -586,6 +636,10 @@ public class ShareServiceImpl implements ShareService {
             SharesResponse sharesResponse = new SharesResponse(share, userProfileResponse, groupProfileResponse);
             sharesResponses.add(sharesResponse);
         }
+        HashMap<String, Object> response = new HashMap<>();
+        response.put("sharesOfGroup", sharesResponses);
+        String jsonData = objectMapper.writeValueAsString(response);
+        this.hashSet("sharesOfGroup", indexStr, jsonData);
         return ResponseEntity.ok(GenericResponse.builder().success(true).message("Retrieved share post successfully")
                 .result(sharesResponses).statusCode(HttpStatus.OK.value()).build());
 
@@ -593,7 +647,17 @@ public class ShareServiceImpl implements ShareService {
 
     @Override
     public ResponseEntity<GenericResponse> getGroupSharePosts(String userId, String postGroupId, Integer page,
-                                                              Integer size) {
+                                                              Integer size) throws JsonProcessingException {
+        ObjectMapper objectMapper = new ObjectMapper();
+        String indexStr = String.valueOf(page)+String.valueOf(size) + userId;
+        if (this.hashExists("sharesOfGroupJoin", indexStr)) {
+            Object sharesTimeline = this.hashGet("sharesOfGroupJoin", indexStr);
+            HashMap<String, Object> data = objectMapper.readValue((String) sharesTimeline, HashMap.class);
+            Object sharesTimelineObj = data.get("sharesOfGroupJoin");
+            ArrayList<HashMap<String, Object>> sharesTimelineList = (ArrayList<HashMap<String, Object>>) sharesTimelineObj;
+            return ResponseEntity.ok(GenericResponse.builder().success(true).message("Retrieved group share posts successfully from redis")
+                    .result(sharesTimelineList).statusCode(HttpStatus.OK.value()).build());
+        }
         if (userId == null)
             return ResponseEntity.badRequest().body(new GenericResponse(false, "User not found", null, 400));
         PageRequest pageable = PageRequest.of(page, size);
@@ -608,7 +672,11 @@ public class ShareServiceImpl implements ShareService {
             SharesResponse shareResponse = new SharesResponse(share, userProfileResponse, groupProfileResponse);
             sharesResponses.add(shareResponse);
         }
-        return ResponseEntity.ok(GenericResponse.builder().success(true).message("Retrieved group posts successfully")
+        HashMap<String, Object> response = new HashMap<>();
+        response.put("sharesOfGroupJoin", sharesResponses);
+        String jsonData = objectMapper.writeValueAsString(response);
+        this.hashSet("sharesOfGroupJoin", indexStr, jsonData);
+        return ResponseEntity.ok(GenericResponse.builder().success(true).message("Retrieved group share posts successfully")
                 .result(sharesResponses).statusCode(HttpStatus.OK.value()).build());
     }
 }

@@ -1,5 +1,6 @@
 package vn.iostar.postservice.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import org.springframework.data.util.Streamable;
 import org.springframework.http.ResponseEntity;
 import vn.iostar.postservice.dto.GenericResponse;
@@ -12,16 +13,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-public interface CommentService {
+public interface CommentService extends RedisService{
     <S extends Comment> S save(S entity);
     Optional<Comment> findById(String id);
-    ResponseEntity<GenericResponse> getCommentOfPost(String postId);
+    ResponseEntity<GenericResponse> getCommentOfPost(String postId) throws JsonProcessingException;
     ResponseEntity<Object> createCommentPost(String token, CreateCommentPostRequestDTO requestDTO);
     ResponseEntity<Object> replyCommentPost(String token, ReplyCommentPostRequestDTO requestDTO);
     ResponseEntity<Object> updateComment(String commentId, CommentUpdateRequest request, String currentUserId)
             throws Exception;
     ResponseEntity<GenericResponse> deleteCommentOfPost(String commentId);
-    ResponseEntity<GenericResponse> getCommentReplyOfComment(String commentId);
+    ResponseEntity<GenericResponse> getCommentReplyOfComment(String commentId) throws JsonProcessingException;
     ResponseEntity<GenericResponse> getCountCommentOfPost(String postId);
     ResponseEntity<GenericResponse> getCommentOfShare(String shareId);
     ResponseEntity<GenericResponse> getCommentReplyOfCommentShare(String commentId);

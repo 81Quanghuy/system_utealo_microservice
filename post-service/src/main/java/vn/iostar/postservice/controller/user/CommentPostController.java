@@ -1,5 +1,6 @@
 package vn.iostar.postservice.controller.user;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -23,7 +24,7 @@ public class CommentPostController {
 
     // Lấy danh sách bình luận của 1 bài viết
     @GetMapping("/{postId}")
-    public ResponseEntity<GenericResponse> getCommentOfPost(@PathVariable("postId") String postId) {
+    public ResponseEntity<GenericResponse> getCommentOfPost(@PathVariable("postId") String postId) throws JsonProcessingException {
         return commentService.getCommentOfPost(postId);
     }
 
@@ -61,7 +62,7 @@ public class CommentPostController {
 
     // Lấy danh sách phản hổi của 1 bình luận
     @GetMapping("/{commentId}/commentReply")
-    public ResponseEntity<GenericResponse> getCommentReplyOfComment(@PathVariable("commentId") String commentId) {
+    public ResponseEntity<GenericResponse> getCommentReplyOfComment(@PathVariable("commentId") String commentId) throws JsonProcessingException {
         return commentService.getCommentReplyOfComment(commentId);
     }
 

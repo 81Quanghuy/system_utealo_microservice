@@ -1,9 +1,12 @@
 package vn.iostar.postservice.service.impl;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.util.Streamable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -38,8 +41,7 @@ import java.time.ZoneId;
 import java.util.*;
 
 @Service
-@RequiredArgsConstructor
-public class CommentServiceImpl implements CommentService {
+public class CommentServiceImpl extends RedisServiceImpl implements CommentService {
 
     private final CommentRepository commentRepository;
     private final PostRepository postRepository;
@@ -49,6 +51,19 @@ public class CommentServiceImpl implements CommentService {
     private final JwtService jwtService;
     private final PostService postService;
     private final ShareService shareService;
+    ObjectMapper objectMapper;
+
+    public CommentServiceImpl(RedisTemplate<String, Object> redisTemplate, CommentRepository commentRepository, PostRepository postRepository, ShareRepository shareRepository, CloudinaryService cloudinaryService, UserClientService userClientService, JwtService jwtService, PostService postService, ShareService shareService) {
+        super(redisTemplate);
+        this.commentRepository = commentRepository;
+        this.postRepository = postRepository;
+        this.shareRepository = shareRepository;
+        this.cloudinaryService = cloudinaryService;
+        this.userClientService = userClientService;
+        this.jwtService = jwtService;
+        this.postService = postService;
+        this.shareService = shareService;
+    }
 
     @Override
     public <S extends Comment> S save(S entity) {
@@ -61,7 +76,17 @@ public class CommentServiceImpl implements CommentService {
     }
 
     @Override
-    public ResponseEntity<GenericResponse> getCommentOfPost(String postId) {
+    public ResponseEntity<GenericResponse> getCommentOfPost(String postId) throws JsonProcessingException {
+        objectMapper = new ObjectMapper();
+        String indexStr = postId;
+        if (this.hashExists("commentOfPost", indexStr)) {
+            Object postsTimeline = this.hashGet("commentOfPost", indexStr);
+            HashMap<String, Object> data = objectMapper.readValue((String) postsTimeline, HashMap.class);
+            Object commentOfPost = data.get("commentOfPost");
+            ArrayList<HashMap<String, Object>> pcommentOfPostList = (ArrayList<HashMap<String, Object>>) commentOfPost;
+            return ResponseEntity.ok(GenericResponse.builder().success(true).message("Retrieving comment of post successfully")
+                    .result(pcommentOfPostList).statusCode(HttpStatus.OK.value()).build());
+        }
         Optional<Post> post = postService.findById(postId);
         if (post.isEmpty())
             return ResponseEntity.ok(GenericResponse.builder().success(false).message("Post not found").result(false)
@@ -70,6 +95,10 @@ public class CommentServiceImpl implements CommentService {
         if (comments.isEmpty())
             return ResponseEntity.ok(GenericResponse.builder().success(false).message("This post has no comment")
                     .result(false).statusCode(HttpStatus.OK.value()).build());
+        HashMap<String, Object> response = new HashMap<>();
+        response.put("commentOfPost", comments);
+        String jsonData = objectMapper.writeValueAsString(response);
+        this.hashSet("commentOfPost", indexStr, jsonData);
         return ResponseEntity
                 .ok(GenericResponse.builder().success(true).message("Retrieving comment of post successfully")
                         .result(comments).statusCode(HttpStatus.OK.value()).build());
@@ -133,7 +162,8 @@ public class CommentServiceImpl implements CommentService {
 
         // Cập nhật lại post vào MongoDB
         postRepository.save(post.get());
-
+        if (this.exists("commentOfPost")) this.delete("commentOfPost");
+        if (this.exists("commentReplyOfCommentPost")) this.delete("commentReplyOfCommentPost");
         GenericResponse response = GenericResponse.builder().success(true).message("Comment Post Successfully")
                 .result(new CommentPostResponse(comment.getId(), comment.getContent(), comment.getCreateTime(),
                         comment.getPhotos(), userProfileResponse.getUserName(),comment.getPost().getId(), userProfileResponse.getAvatar(),  userProfileResponse.getUserId()))
@@ -191,7 +221,8 @@ public class CommentServiceImpl implements CommentService {
 
         // Cập nhật lại post vào MongoDB
         postRepository.save(post.get());
-
+        if (this.exists("commentOfPost")) this.delete("commentOfPost");
+        if (this.exists("commentReplyOfCommentPost")) this.delete("commentReplyOfCommentPost");
         GenericResponse response = GenericResponse.builder().success(true).message("Comment Post Successfully")
                 .result(new CommentPostResponse(comment.getId(), comment.getContent(), comment.getCreateTime(),
                         comment.getPhotos(), user.getUserName(), comment.getPost().getId(),
@@ -226,6 +257,8 @@ public class CommentServiceImpl implements CommentService {
         }
         comment.setUpdatedAt(new Date());
         save(comment);
+        if (this.exists("commentOfPost")) this.delete("commentOfPost");
+        if (this.exists("commentReplyOfCommentPost")) this.delete("commentReplyOfCommentPost");
         return ResponseEntity.ok(GenericResponse.builder().success(true).message("Update successful").result(null)
                 .statusCode(200).build());
     }
@@ -323,7 +356,8 @@ public class CommentServiceImpl implements CommentService {
                     shareRepository.save(share);
                 }
             }
-
+            if (this.exists("commentOfPost")) this.delete("commentOfPost");
+            if (this.exists("commentReplyOfCommentPost")) this.delete("commentReplyOfCommentPost");
             return ResponseEntity.ok()
                     .body(new GenericResponse(true, "Delete Successful!", null, HttpStatus.OK.value()));
         } else {
@@ -334,7 +368,17 @@ public class CommentServiceImpl implements CommentService {
 
 
     @Override
-    public ResponseEntity<GenericResponse> getCommentReplyOfComment(String commentId) {
+    public ResponseEntity<GenericResponse> getCommentReplyOfComment(String commentId) throws JsonProcessingException {
+        objectMapper = new ObjectMapper();
+        String indexStr = commentId;
+        if (this.hashExists("commentReplyOfCommentPost", indexStr)) {
+            Object postsTimeline = this.hashGet("commentReplyOfCommentPost", indexStr);
+            HashMap<String, Object> data = objectMapper.readValue((String) postsTimeline, HashMap.class);
+            Object commentReplyOfCommentPostObj = data.get("commentReplyOfCommentPost");
+            ArrayList<HashMap<String, Object>> commentReplyOfCommentPostList = (ArrayList<HashMap<String, Object>>) commentReplyOfCommentPostObj;
+            return ResponseEntity.ok(GenericResponse.builder().success(true).message("Retrieving comment of post successfully from redis")
+                    .result(commentReplyOfCommentPostList).statusCode(HttpStatus.OK.value()).build());
+        }
         Optional<Comment> comment = findById(commentId);
         if (comment.isEmpty())
             return ResponseEntity.ok(GenericResponse.builder().success(false).message("Comment not found").result(false)
@@ -344,6 +388,10 @@ public class CommentServiceImpl implements CommentService {
             return ResponseEntity
                     .ok(GenericResponse.builder().success(false).message("This comment has no comment reply")
                             .result(false).statusCode(HttpStatus.OK.value()).build());
+        HashMap<String, Object> response = new HashMap<>();
+        response.put("commentReplyOfCommentPost", comments);
+        String jsonData = objectMapper.writeValueAsString(response);
+        this.hashSet("commentReplyOfCommentPost", indexStr, jsonData);
         return ResponseEntity
                 .ok(GenericResponse.builder().success(true).message("Retrieving comment of post successfully")
                         .result(comments).statusCode(HttpStatus.OK.value()).build());

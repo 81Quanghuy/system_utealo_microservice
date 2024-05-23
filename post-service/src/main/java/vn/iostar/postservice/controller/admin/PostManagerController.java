@@ -1,5 +1,6 @@
 package vn.iostar.postservice.controller.admin;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -47,7 +48,7 @@ public class PostManagerController {
     // Thêm bài post
     @PostMapping("/create")
     public ResponseEntity<Object> createPost(@ModelAttribute CreatePostRequestDTO requestDTO,
-                                             @RequestHeader("Authorization") String token) {
+                                             @RequestHeader("Authorization") String token) throws JsonProcessingException {
         return postService.createUserPost(token, requestDTO);
     }
 

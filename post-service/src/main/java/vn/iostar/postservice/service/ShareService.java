@@ -1,5 +1,6 @@
 package vn.iostar.postservice.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
@@ -14,7 +15,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-public interface ShareService {
+public interface ShareService extends RedisService{
     <S extends Share> S save(S entity);
     Optional<Share> findById(String id);
     ResponseEntity<Object> sharePost(String token, SharePostRequestDTO requestDTO);
@@ -63,11 +64,11 @@ public interface ShareService {
     // Lấy tất cả bài share của 1 user
     List<SharesResponse> findMySharePosts(String currentUserId, Pageable pageable);
     // Lấy những bài share liên quan đến mình như: nhóm, bạn bè, cá nhân
-    ResponseEntity<GenericResponse> getTimeLineSharePosts(String currentUserId, Integer page, Integer size);
+    ResponseEntity<GenericResponse> getTimeLineSharePosts(String currentUserId, Integer page, Integer size) throws JsonProcessingException;
     // Lấy tất cả các bài share của những nhóm mình tham gia
-    ResponseEntity<GenericResponse> getShareOfPostGroup(String currentUserId, Pageable pageable);
+    ResponseEntity<GenericResponse> getShareOfPostGroup(String currentUserId, Integer page, Integer size) throws JsonProcessingException;
     // Lấy những bài share của group theo id
     ResponseEntity<GenericResponse> getGroupSharePosts(String currentUserId, String postGroupId, Integer page,
-                                                       Integer size);
+                                                       Integer size) throws JsonProcessingException;
 
 }

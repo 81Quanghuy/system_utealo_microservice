@@ -87,7 +87,7 @@ public class PostServiceImpl extends RedisServiceImpl implements PostService {
     }
 
     @Override
-    public ResponseEntity<Object> createUserPost(String token, CreatePostRequestDTO requestDTO) {
+    public ResponseEntity<Object> createUserPost(String token, CreatePostRequestDTO requestDTO) throws JsonProcessingException {
 
         List<String> allowedFileExtensions = Arrays.asList("docx", "txt", "pdf");
 
@@ -155,10 +155,13 @@ public class PostServiceImpl extends RedisServiceImpl implements PostService {
         postsResponse.setComments(count);
         postsResponse.setLikes(count);
 
-        GenericResponse response = GenericResponse.builder().success(true).message("Post Created Successfully")
-                .result(postsResponse).statusCode(200).build();
+        if (this.exists("postsTimeline")) this.delete("postsTimeline");
+        if (this.exists("postsOfUser")) this.delete("postsOfUser");
+        if (this.exists("postsOfGroup")) this.delete("postsOfGroup");
+        if (this.exists("postsOfGroupJoin")) this.delete("postsOfGroupJoin");
 
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(GenericResponse.builder().success(true).message("Create post successfully")
+                .result(postsResponse).statusCode(HttpStatus.OK.value()).build());
     }
 
     // Xóa bài post của mình
@@ -192,6 +195,11 @@ public class PostServiceImpl extends RedisServiceImpl implements PostService {
             post.setLikes(new ArrayList<>());
             shareRepository.deleteByPostId(postId);
             postRepository.delete(post);
+
+            if (this.exists("postsTimeline")) this.delete("postsTimeline");
+            if (this.exists("postsOfUser")) this.delete("postsOfUser");
+            if (this.exists("postsOfGroup")) this.delete("postsOfGroup");
+            if (this.exists("postsOfGroupJoin")) this.delete("postsOfGroupJoin");
 
             return ResponseEntity.ok()
                     .body(new GenericResponse(true, "Delete Successful!", null, HttpStatus.OK.value()));
@@ -249,6 +257,10 @@ public class PostServiceImpl extends RedisServiceImpl implements PostService {
             e.printStackTrace();
         }
         save(post);
+        if (this.exists("postsTimeline")) this.delete("postsTimeline");
+        if (this.exists("postsOfUser")) this.delete("postsOfUser");
+        if (this.exists("postsOfGroup")) this.delete("postsOfGroup");
+        if (this.exists("postsOfGroupJoin")) this.delete("postsOfGroupJoin");
         PostsResponse postResponse = new PostsResponse(post, userOfPostResponse, groupProfileResponse);
         return ResponseEntity.ok(GenericResponse.builder().success(true).message("Update successful")
                 .result(postResponse).statusCode(200).build());
@@ -257,13 +269,13 @@ public class PostServiceImpl extends RedisServiceImpl implements PostService {
     @Override
     public ResponseEntity<GenericResponse> getPost(String currentId, String postId) throws JsonProcessingException {
 
-        objectMapper = new ObjectMapper();
-        if (this.hashExists("posts",postId)) {
-            Object jobs = this.hashGet("posts" ,postId);
-            HashMap<String, Object> data = objectMapper.readValue(jobs.toString(), HashMap.class);
-            return ResponseEntity.ok(GenericResponse.builder().success(true).message("Retrieving user profile successfully from redis")
-                    .result(data).statusCode(HttpStatus.OK.value()).build());
-        }
+//        objectMapper = new ObjectMapper();
+//        if (this.hashExists("posts",postId)) {
+//            Object jobs = this.hashGet("posts" ,postId);
+//            HashMap<String, Object> data = objectMapper.readValue(jobs.toString(), HashMap.class);
+//            return ResponseEntity.ok(GenericResponse.builder().success(true).message("Retrieving user profile successfully from redis")
+//                    .result(data).statusCode(HttpStatus.OK.value()).build());
+//        }
 
         Optional<Post> post = postRepository.findById(postId);
         UserProfileResponse userOfPostResponse = userClientService.getUser(currentId);
@@ -279,7 +291,7 @@ public class PostServiceImpl extends RedisServiceImpl implements PostService {
 
         PostsResponse postsResponse = new PostsResponse(post.get(), userOfPostResponse, groupProfileResponse);
 
-        this.hashSet("posts",postId, objectMapper.writeValueAsString(postsResponse));
+//        this.hashSet("posts",postId, objectMapper.writeValueAsString(postsResponse));
 
         return ResponseEntity.ok(GenericResponse.builder().success(true).message("Retrieving user profile successfully")
                 .result(postsResponse).statusCode(HttpStatus.OK.value()).build());
@@ -744,7 +756,6 @@ public class PostServiceImpl extends RedisServiceImpl implements PostService {
             simplifiedUserPosts.add(postsResponse);
         }
         HashMap<String, Object> response = new HashMap<>();
-        response = new HashMap<>();
         response.put("postsTimeline", simplifiedUserPosts);
         String jsonData = objectMapper.writeValueAsString(response);
         this.hashSet("postsTimeline", indexStr, jsonData);
@@ -755,7 +766,17 @@ public class PostServiceImpl extends RedisServiceImpl implements PostService {
 
     @Override
     public ResponseEntity<GenericResponse> getGroupPosts(String userId, String postGroupId, Integer page,
-                                                         Integer size) {
+                                                         Integer size) throws JsonProcessingException {
+        objectMapper = new ObjectMapper();
+        String indexStr = String.valueOf(page)+String.valueOf(size) + postGroupId;
+        if (this.hashExists("postsOfGroup", indexStr)) {
+            Object postsTimeline = this.hashGet("postsOfGroup", indexStr);
+            HashMap<String, Object> data = objectMapper.readValue((String) postsTimeline, HashMap.class);
+            Object postsTimelineObj = data.get("postsOfGroup");
+            ArrayList<HashMap<String, Object>> postsTimelineList = (ArrayList<HashMap<String, Object>>) postsTimelineObj;
+            return ResponseEntity.ok(GenericResponse.builder().success(true).message("Retrieved group posts successfully from redis")
+                    .result(postsTimelineList).statusCode(HttpStatus.OK.value()).build());
+        }
         if (userId == null)
             return ResponseEntity.badRequest().body(new GenericResponse(false, "User not found", null, 400));
         PageRequest pageable = PageRequest.of(page, size);
@@ -770,15 +791,31 @@ public class PostServiceImpl extends RedisServiceImpl implements PostService {
             PostsResponse postResponses = new PostsResponse(post, userProfileResponse, groupProfileResponse);
             postsResponses.add(postResponses);
         }
+
+        HashMap<String, Object> response = new HashMap<>();
+        response.put("postsOfGroup", postsResponses);
+        String jsonData = objectMapper.writeValueAsString(response);
+        this.hashSet("postsOfGroup", indexStr, jsonData);
         return ResponseEntity.ok(GenericResponse.builder().success(true).message("Retrieved group posts successfully")
                 .result(postsResponses).statusCode(HttpStatus.OK.value()).build());
     }
 
     @Override
-    public ResponseEntity<GenericResponse> getPostOfPostGroup(String userId, Pageable pageable) {
+    public ResponseEntity<GenericResponse> getPostOfPostGroup(String userId, Integer page, Integer size) throws JsonProcessingException {
+        objectMapper = new ObjectMapper();
+        String indexStr = String.valueOf(page)+String.valueOf(size) + userId;
+        if (this.hashExists("postsOfGroupJoin", indexStr)) {
+            Object postsTimeline = this.hashGet("postsOfGroupJoin", indexStr);
+            HashMap<String, Object> data = objectMapper.readValue((String) postsTimeline, HashMap.class);
+            Object postsTimelineObj = data.get("postsOfGroupJoin");
+            ArrayList<HashMap<String, Object>> postsTimelineList = (ArrayList<HashMap<String, Object>>) postsTimelineObj;
+            return ResponseEntity.ok(GenericResponse.builder().success(true).message("Retrieved post of group join successfully from redis")
+                    .result(postsTimelineList).statusCode(HttpStatus.OK.value()).build());
+        }
         if (userId == null)
             return ResponseEntity.badRequest().body(new GenericResponse(false, "User not found", null, 400));
         List<String> groupIds = groupClientService.getGroupIdsByUserId(userId);
+        Pageable pageable = PageRequest.of(page, size);
         List<Post> posts = postRepository.findAllPostsInUserGroups(groupIds, pageable);
         List<PostsResponse> postsResponses = new ArrayList<>();
         for (Post post : posts) {
@@ -790,7 +827,11 @@ public class PostServiceImpl extends RedisServiceImpl implements PostService {
             PostsResponse postResponse = new PostsResponse(post, userProfileResponse, groupProfileResponse);
             postsResponses.add(postResponse);
         }
-        return ResponseEntity.ok(GenericResponse.builder().success(true).message("Retrieved share post successfully")
+        HashMap<String, Object> response = new HashMap<>();
+        response.put("postsOfGroupJoin", postsResponses);
+        String jsonData = objectMapper.writeValueAsString(response);
+        this.hashSet("postsOfGroupJoin", indexStr, jsonData);
+        return ResponseEntity.ok(GenericResponse.builder().success(true).message("Retrieved post of group join successfully")
                 .result(postsResponses).statusCode(HttpStatus.OK.value()).build());
     }
 

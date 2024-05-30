@@ -12,7 +12,7 @@ router.get('/random',isAuth, ConversationController.createRandomConversation);
 router.get('/video-call', isAuth, ConversationController.createRoomIDVideoCall);
 // get conv of a user
 router.get('/getAll', ConversationController.getAll);
-router.get('/search', isAuth, ConversationController.search);
+router.get('/search', getUser, ConversationController.search);
 router.get('/', getUser, ConversationController.getConversationOfUser);
 router.get('/:id', getUser, ConversationController.getConversationById);
 // get conv includes two userId

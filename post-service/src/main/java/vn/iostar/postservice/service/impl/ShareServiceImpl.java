@@ -129,7 +129,8 @@ public class ShareServiceImpl extends RedisServiceImpl implements ShareService {
         Share share = shareOp.get();
         share.setContent(requestDTO.getContent());
         share.setPrivacyLevel(requestDTO.getPrivacyLevel());
-        if (requestDTO.getPostGroupId() != null) {
+        System.out.println(requestDTO.getPostGroupId());
+        if (requestDTO.getPostGroupId() != null && requestDTO.getPostGroupId().equals(null)) {
             if (requestDTO.getPostGroupId() != "" && requestDTO.getPostGroupId() != null && Integer.valueOf(requestDTO.getPostGroupId()) != 0){
                 GroupProfileResponse groupProfileResponse = groupClientService.getGroup(requestDTO.getPostGroupId());
                 if (groupProfileResponse != null)

@@ -195,7 +195,16 @@ public class PostServiceImpl extends RedisServiceImpl implements PostService {
             post.setLikes(new ArrayList<>());
             shareRepository.deleteByPostId(postId);
             postRepository.delete(post);
-
+            List<String> shares = post.getShares();
+            if (shares != null) {
+                for (String shareId : shares) {
+                    shareRepository.deleteById(shareId);
+                }
+            }
+            if (this.exists("sharesOfTimeLine")) this.delete("sharesOfTimeLine");
+            if (this.exists("sharesOfUser")) this.delete("sharesOfUser");
+            if (this.exists("sharesOfGroup")) this.delete("sharesOfGroup");
+            if (this.exists("sharesOfGroupJoin")) this.delete("sharesOfGroupJoin");
             if (this.exists("postsTimeline")) this.delete("postsTimeline");
             if (this.exists("postsOfUser")) this.delete("postsOfUser");
             if (this.exists("postsOfGroup")) this.delete("postsOfGroup");
@@ -745,15 +754,33 @@ public class PostServiceImpl extends RedisServiceImpl implements PostService {
         List<String> groupIds = groupClientService.getGroupIdsByUserId(userId);
         List<Post> userPosts = postRepository.findPostsInTimeLine(userIds, groupIds, pageable);
         GroupProfileResponse groupProfileResponse = null;
+        boolean checkGroup = false;
+        List<UserProfileResponse> userProfileResponses = new ArrayList<>();
 
         List<PostsResponse> simplifiedUserPosts = new ArrayList<>();
         for (Post post : userPosts) {
             if (post.getGroupId() != null && !post.getGroupId().isEmpty()) {
                 groupProfileResponse = groupClientService.getGroup(post.getGroupId());
+                checkGroup = true;
             }
-            UserProfileResponse user = userClientService.getUser(post.getUserId());
-            PostsResponse postsResponse = new PostsResponse(post, user, groupProfileResponse);
-            simplifiedUserPosts.add(postsResponse);
+            // Lấy thông tin người dùng từ user-service đưa vào list
+
+            boolean checUser = userProfileResponses.stream().noneMatch(user -> user.getUserId().equals(post.getUserId()));
+            if(checUser){
+                UserProfileResponse user = userClientService.getUser(post.getUserId());
+                userProfileResponses.add(user);
+            }
+            // lấy thông tin user của post nằm trong userProfileResponses
+            UserProfileResponse user = userProfileResponses.stream().filter(u -> u.getUserId().equals(post.getUserId()))
+                    .findFirst().orElse(null);
+            if (checkGroup) {
+                PostsResponse postsResponse = new PostsResponse(post, user, groupProfileResponse);
+                simplifiedUserPosts.add(postsResponse);
+                checkGroup = false;
+            } else {
+                PostsResponse postsResponse = new PostsResponse(post, user, null);
+                simplifiedUserPosts.add(postsResponse);
+            }
         }
         HashMap<String, Object> response = new HashMap<>();
         response.put("postsTimeline", simplifiedUserPosts);
@@ -940,17 +967,20 @@ public class PostServiceImpl extends RedisServiceImpl implements PostService {
     public List<PostsResponse> findPostsByAdminRoleInGroup(String groupId, Pageable pageable) {
 
         List<String> userIds = groupClientService.getAdminsInGroup(groupId);
-        List<Post> userPosts = postRepository.findPostsByAdminRoleInGroup(userIds, pageable);
+        List<Post> userPosts = postRepository.findPostsByAdminRoleInGroup(userIds,groupId, pageable);
 
-        GroupProfileResponse groupProfileResponse = null;
-
+        GroupProfileResponse groupProfileResponse = groupClientService.getGroup(groupId);
+        List<UserProfileResponse> userProfileResponses = new ArrayList<>();
         List<PostsResponse> simplifiedUserPosts = new ArrayList<>();
         for (Post post : userPosts) {
-            UserProfileResponse userOfPostResponse = userClientService.getUser(post.getUserId());
-            if (post.getGroupId() != null && !post.getGroupId().isEmpty()) {
-                groupProfileResponse = groupClientService.getGroup(post.getGroupId());
+            boolean checUser = userProfileResponses.stream().noneMatch(user -> user.getUserId().equals(post.getUserId()));
+            if(checUser){
+                UserProfileResponse user = userClientService.getUser(post.getUserId());
+                userProfileResponses.add(user);
             }
-            PostsResponse postsResponse = new PostsResponse(post, userOfPostResponse, groupProfileResponse);
+            UserProfileResponse user = userProfileResponses.stream().filter(u -> u.getUserId().equals(post.getUserId()))
+                    .findFirst().orElse(null);
+            PostsResponse postsResponse = new PostsResponse(post, user, groupProfileResponse);
             simplifiedUserPosts.add(postsResponse);
         }
         return simplifiedUserPosts;

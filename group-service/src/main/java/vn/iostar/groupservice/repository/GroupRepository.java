@@ -44,4 +44,7 @@ public interface GroupRepository extends MongoRepository<Group, String> {
     Page<GroupPostResponse> findPostGroupByUserId(String userId, Pageable pageable);
 
     List<SearchPostGroup> findByPostGroupNameIgnoreCaseContaining(String search);
+
+    // Lấy ra danh sách nhóm của hệ thống
+    List<Group> findAllByIsSystem(Boolean isSystem);
 }

@@ -28,93 +28,36 @@ const apiKey = process.env.API_KEY_VIDEOCALL;
 class ConversationController {
     // search conversation
     async search(req, res, next) {
+        // tìm kiếm cuộc trò chuyện theo tên mà người dùng có trong cuộc trò chuyện bỏ qua các cuộc trò chuyện có 2 thành viên
         const { limit, offset } = getPagination(req.query.page, req.query.size, req.query.offset);
-        const { q } = req.query;
+        const q = req.query.key ?? '';
         try {
-            Conversation.paginate(
-                {
-                    members: {
-                        $elemMatch: {
-                            user: req.user._id,
-                        },
-                    },
-                    $or: [
-                        {
-                            $and: [
-                                { name: { $exists: true } }, // Name field exists
-                                { name: { $regex: q, $options: 'i' } }, // Name matches the search query
-                            ],
-                        },
-                        {
-                            $and: [
-                                { name: { $exists: false } }, // Name field does not exist
-                                {
-                                    members: {
-                                        $elemMatch: {
-                                            nickname: { $regex: q, $options: 'i' }, // Nickname matches the search query
-                                        },
-                                    },
-                                },
-                            ],
-                        },
-                    ],
-                },
-                {
-                    offset,
-                    limit,
-                    sort: { updatedAt: -1 },
-                    populate: [
-                        {
-                            path: 'lastest_message',
-                            populate: {
-                                path: 'sender',
-                            },
-                        },
-                        {
-                            path: 'members.user',
-                            select: '_id fullname profilePicture isOnline isOnline',
-                            populate: {
-                                path: 'profilePicture',
-                                select: '_id link',
-                            },
-                        },
-                        {
-                            path: 'avatar',
-                        },
-                        {
-                            path: 'members.addedBy',
-                            select: '_id fullname profilePicture isOnline',
-                            populate: {
-                                path: 'profilePicture',
-                                select: '_id link',
-                            },
-                        },
-                        {
-                            path: 'members.changedNicknameBy',
-                            select: '_id fullname profilePicture isOnline',
-                            populate: {
-                                path: 'profilePicture',
-                                select: '_id link',
-                            },
-                        },
-                    ],
-                }
-            )
-                .then((data) => {
-                    data.docs.forEach((item) => {
-                        if (item.lastest_message && item.lastest_message.iv) {
-                            const iv = Buffer.from(item.lastest_message.iv, 'base64');
-                            const decipher = crypto.createDecipheriv(algorithm, key, iv);
-                            let decryptedData = decipher.update(item.lastest_message.text, 'hex', 'utf-8');
-                            decryptedData += decipher.final('utf-8');
-                            item.lastest_message.text = decryptedData;
-                        }
-                    });
-                    getListData(res, data);
+            const conversations = await Conversation.find({
+                name: { $regex: q, $options: 'i' },
+               'members.userId': req.user.userId ,
+            })
+                .populate({
+                    path: 'lastest_message',
+                    select: 'senderId text createdAt updatedAt readerId iv',
                 })
-                .catch((err) => {
-                    return responseError(res, 500, err.message ?? 'Some error occurred while retrieving tutorials.');
-                });
+                .sort({ updatedAt: -1 })
+                .skip(offset)
+                .limit(limit);
+            conversations.forEach((item) => {
+                if (item.lastest_message && item.lastest_message.iv) {
+                    const iv = Buffer.from(item.lastest_message.iv, 'base64');
+                    const decipher = crypto.createDecipheriv(algorithm, key, iv);
+                    let decryptedData = decipher.update(item.lastest_message.text, 'hex', 'utf-8');
+                    decryptedData += decipher.final('utf-8');
+                    item.lastest_message.text = decryptedData;
+                }
+                // doi ten cuoc tro chuyen neu la cuoc tro chuyen 1-1
+                if(item.members.length === 2){
+                    const member = item.members.find((member) => member.userId !== req.user.userId);
+                    item.name = member.nickname;
+                }
+            });
+            return getListConversation(res, true, 'Danh sách cuộc trò chuyện', conversations, 200);
         } catch (err) {
             console.log(err);
             return next(
@@ -127,9 +70,9 @@ class ConversationController {
                 )
             );
         }
+
     }
 
-    // TODO: Leave conversation
     async leaveConversation(req, res, next) {
         try {
             const conversation = await Conversation.findById(req.params.id);

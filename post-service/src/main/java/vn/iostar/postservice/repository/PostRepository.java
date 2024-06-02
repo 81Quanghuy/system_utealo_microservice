@@ -69,7 +69,7 @@ public interface PostRepository extends MongoRepository<Post, String> {
     // Định nghĩa hàm lấy những bài post của 1 user trong 1 tháng
     Page<Post> findByUserIdAndPostTimeBetween(String userId, Date start, Date end, Pageable pageable);
 
-    //  Lấy những bài post của mình privacyLevel khác PRIVATE, bạn bè của mình với privacyLevel khác PRIVATE, những nhóm mà mình tham gia có privacyLevel là GROUP_MEMBERS, chỉ truyền vào tham số là danh sách id và pageable
+    // Lấy ra những bài post mới nhất của người dùng theo list userId sao cho bai post co privacyLevel khong la private va danh sach bai post co trong nhom ma nguoi dung tham gia
     @Query("{$and:[" +
             "{$or:[{'userId': {$in: ?0}}, {'groupId': {$in: ?1}}]}," +
             "{'$or':[{'privacyLevel': {$ne: 'PRIVATE'}}, {'privacyLevel': 'GROUP_MEMBERS'}]}" +
@@ -87,9 +87,9 @@ public interface PostRepository extends MongoRepository<Post, String> {
     // Lấy danh sách photo của 1 nhóm
     @Query(value = "{'groupId': ?0, 'photos': {$nin: [null, '']}}")
     Page<String> findPhotosOfPostByGroupId(String groupId, Pageable pageable);
-    // Lấy những bài viết trong nhóm do Admin đăng
-    @Query(value = "{'userId': {$in: ?0}}")
-    List<Post> findPostsByAdminRoleInGroup(List<String> userIds, Pageable pageable);
+    // Lấy những bài viết trong nhóm do Admin đăng theo list userId và groupId
+    @Query(value = "{'userId': {$in: ?0}, 'groupId': ?1}")
+    List<Post> findPostsByAdminRoleInGroup(List<String> userIds, String groupId, Pageable pageable);
 
     List<Post> findByContentIgnoreCaseContaining(String searchTerm, Pageable pageable);
 

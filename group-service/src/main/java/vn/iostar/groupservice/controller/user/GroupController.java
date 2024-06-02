@@ -86,7 +86,7 @@ public class GroupController {
      * @return GenericResponse
      */
     @GetMapping("/list/owner")
-    public ResponseEntity<GenericResponse> getPostGroupOwenrByUserId(
+    public ResponseEntity<GenericResponse> getPostGroupOwnerByUserId(
             @RequestHeader("Authorization") String authorizationHeader) {
         String token = authorizationHeader.substring(7);
         String currentUserId = jwtService.extractUserId(token);
@@ -244,4 +244,9 @@ public class GroupController {
         return groupService.searchGroupAndUserContainingIgnoreCase(search, userIdToken);
     }
 
+    // Tìm kiếm các nhóm là nhóm của hệ thống
+    @GetMapping("/list/system")
+    public ResponseEntity<GenericResponse> getSystemGroups() {
+        return groupService.getSystemGroups();
+    }
 }

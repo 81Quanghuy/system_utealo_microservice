@@ -180,10 +180,7 @@ public class PostController {
     public ResponseEntity<GenericResponse> getPostsByAdminRoleInGroup(@PathVariable("groupId") String groupId, @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "5") int size) {
         Pageable pageable = PageRequest.of(page, size);
         List<PostsResponse> groupPosts = postService.findPostsByAdminRoleInGroup(groupId, pageable);
-        GroupProfileResponse groupProfileResponse = groupClientService.getGroup(groupId);
-        if (groupProfileResponse == null) {
-            throw new RuntimeException("Group not found.");
-        } else if (groupPosts.isEmpty()) {
+        if (groupPosts.isEmpty()) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(GenericResponse.builder().success(false).message("No posts found for admin of this group").statusCode(HttpStatus.NOT_FOUND.value()).build());
         } else {
             return ResponseEntity.ok(GenericResponse.builder().success(true).message("Retrieved posts of admin successfully").result(groupPosts).statusCode(HttpStatus.OK.value()).build());

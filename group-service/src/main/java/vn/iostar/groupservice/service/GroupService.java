@@ -93,4 +93,5 @@ public interface GroupService {
     // Tìm kiếm tất cả nhóm và người dùng
     ResponseEntity<GenericResponse> searchGroupAndUserContainingIgnoreCase(String search, String userIdToken);
 
+    ResponseEntity<GenericResponse> getSystemGroups();
 }

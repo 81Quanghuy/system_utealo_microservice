@@ -1,5 +1,6 @@
 package vn.iostar.groupservice.service.impl;
 
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
@@ -9,6 +10,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+
 import org.springframework.web.multipart.MultipartFile;
 import vn.iostar.groupservice.constant.GroupMemberRoleType;
 import vn.iostar.groupservice.constant.RoleName;
@@ -63,6 +65,7 @@ public class GroupServiceImpl implements GroupService {
     }
 
     @Override
+    @Transactional
     public ResponseEntity<GenericResponse> createGroup(GroupCreateRequest postGroup, String userId) {
         log.info("GroupServiceImpl, createGroup");
         Optional<Group> groupExist = groupRepository.findByPostGroupName(postGroup.getPostGroupName());
@@ -72,20 +75,30 @@ public class GroupServiceImpl implements GroupService {
         Group group = Group.builder()
                 .id(UUID.randomUUID().toString())
                 .postGroupName(postGroup.getPostGroupName())
-                .bio(postGroup.getBio() == null ? "" : postGroup.getBio()).authorId(userId)
+                .bio(postGroup.getBio() == null ? "" : postGroup.getBio())
                 .isSystem(postGroup.getIsSystem() != null && postGroup.getIsSystem())
                 .isPublic(postGroup.getIsPublic())
+                .authorId(userId)
                 .isApprovalRequired(postGroup.getIsApprovalRequired())
                 .isActive(true)
                 .createdAt(new Date()).build();
         groupRepository.save(group);
 
         // Add author to group
-        GroupMember groupMember = GroupMember.builder().id(UUID.randomUUID().toString()).userId(userId).group(group).isLocked(false).memberRequestId(userId).createdAt(new Date()).updatedAt(new Date()).role(GroupMemberRoleType.Admin).build();
+        GroupMember groupMember = GroupMember.builder()
+                .id(UUID.randomUUID().toString())
+                .userId(userId)
+                .group(group)
+                .isLocked(false)
+                .memberRequestId(userId).
+                createdAt(new Date())
+                .updatedAt(new Date())
+                .role(GroupMemberRoleType.Admin)
+                .build();
         groupMemberRepository.save(groupMember);
 
         //add group request to user
-        if (!postGroup.getUserId().isEmpty()) {
+        if (postGroup.getUserId() != null && !postGroup.getUserId().isEmpty()) {
             for (String userRequest : postGroup.getUserId()) {
                 GroupRequest groupRequest = GroupRequest.builder()
                         .id(UUID.randomUUID().toString())
@@ -644,6 +657,13 @@ public class GroupServiceImpl implements GroupService {
 
         return ResponseEntity.ok(GenericResponse.builder().success(true).message("Get successfully")
                 .result(combinedList).statusCode(HttpStatus.OK.value()).build());
+    }
+
+    @Override
+    public ResponseEntity<GenericResponse> getSystemGroups() {
+        List<Group> groups = groupRepository.findAllByIsSystem(true);
+        return ResponseEntity.ok(GenericResponse.builder().success(true).message("Get successfully")
+                .result(groups).statusCode(HttpStatus.OK.value()).build());
     }
 
 }

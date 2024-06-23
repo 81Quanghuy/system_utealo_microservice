@@ -1,11 +1,11 @@
-package jwt.service.impl;
+package vn.iostar.scheduleservice.jwt.service.impl;
 
 import io.jsonwebtoken.Claims;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import vn.iostar.postservice.jwt.service.JwtService;
-import vn.iostar.postservice.jwt.util.JwtUtil;
+import vn.iostar.scheduleservice.jwt.service.JwtService;
+import vn.iostar.scheduleservice.jwt.util.JwtUtil;
 
 import java.util.Date;
 import java.util.function.Function;

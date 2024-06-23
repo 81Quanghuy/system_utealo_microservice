@@ -1,13 +1,12 @@
-package jwt.util.impl;
-
+package vn.iostar.scheduleservice.jwt.util.impl;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.UnsupportedJwtException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
-import vn.iostar.postservice.constant.AppConstant;
-import vn.iostar.postservice.jwt.util.JwtUtil;
+import vn.iostar.scheduleservice.constant.AppConstant;
+import vn.iostar.scheduleservice.jwt.util.JwtUtil;
 
 import java.security.Key;
 import java.util.Date;

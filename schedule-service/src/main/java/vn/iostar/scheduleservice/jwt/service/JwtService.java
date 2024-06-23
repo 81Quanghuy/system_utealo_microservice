@@ -1,4 +1,4 @@
-package jwt.service;
+package vn.iostar.scheduleservice.jwt.service;
 
 import io.jsonwebtoken.Claims;
 

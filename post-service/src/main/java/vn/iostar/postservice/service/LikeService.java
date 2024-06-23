@@ -10,7 +10,7 @@ import vn.iostar.postservice.entity.Share;
 
 import java.util.Optional;
 
-public interface LikeService {
+public interface LikeService extends RedisService{
     void delete(Like entity);
     <S extends Like> S save(S entity);
     Optional<Like> findById(String id);

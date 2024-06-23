@@ -1,6 +1,7 @@
 package vn.iostar.postservice.service.impl;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -28,8 +29,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 @Service
-@RequiredArgsConstructor
-public class LikeServiceImpl implements LikeService {
+public class LikeServiceImpl extends RedisServiceImpl implements LikeService {
 
     private final LikeRepository likeRepository;
     private final PostRepository postRepository;
@@ -40,6 +40,19 @@ public class LikeServiceImpl implements LikeService {
     private final ShareRepository shareRepository;
     private final CommentService commentService;
     private final CommentRepository commentRepository;
+
+    public LikeServiceImpl(RedisTemplate<String, Object> redisTemplate, LikeRepository likeRepository, PostRepository postRepository, PostService postService, UserClientService userClientService, JwtService jwtService, ShareService shareService, ShareRepository shareRepository, CommentService commentService, CommentRepository commentRepository) {
+        super(redisTemplate);
+        this.likeRepository = likeRepository;
+        this.postRepository = postRepository;
+        this.postService = postService;
+        this.userClientService = userClientService;
+        this.jwtService = jwtService;
+        this.shareService = shareService;
+        this.shareRepository = shareRepository;
+        this.commentService = commentService;
+        this.commentRepository = commentRepository;
+    }
 
     @Override
     public void delete(Like entity) {
@@ -139,6 +152,10 @@ public class LikeServiceImpl implements LikeService {
                     postRepository.save(postLike);
                 }
             }
+            if (this.exists("postsTimeline")) this.delete("postsTimeline");
+            if (this.exists("postsOfUser")) this.delete("postsOfUser");
+            if (this.exists("postsOfGroup")) this.delete("postsOfGroup");
+            if (this.exists("postsOfGroupJoin")) this.delete("postsOfGroupJoin");
             return ResponseEntity.ok("Like post removed successfully");
         } else {
             // Nếu chưa tồn tại, tạo và lưu Like mới
@@ -160,7 +177,10 @@ public class LikeServiceImpl implements LikeService {
 
             // Cập nhật lại post vào MongoDB
             postRepository.save(post.get());
-
+            if (this.exists("postsTimeline")) this.delete("postsTimeline");
+            if (this.exists("postsOfUser")) this.delete("postsOfUser");
+            if (this.exists("postsOfGroup")) this.delete("postsOfGroup");
+            if (this.exists("postsOfGroupJoin")) this.delete("postsOfGroupJoin");
             GenericResponse response = GenericResponse.builder().success(true).message("Like Post Successfully").result(
                             new LikePostResponse(like.getId(), like.getPost().getId(), user.getUserName()))
                     .statusCode(200).build();
@@ -281,6 +301,10 @@ public class LikeServiceImpl implements LikeService {
                     shareRepository.save(shareLike);
                 }
             }
+            if (this.exists("sharesOfTimeLine")) this.delete("sharesOfTimeLine");
+            if (this.exists("sharesOfUser")) this.delete("sharesOfUser");
+            if (this.exists("sharesOfGroup")) this.delete("sharesOfGroup");
+            if (this.exists("sharesOfGroupJoin")) this.delete("sharesOfGroupJoin");
             return ResponseEntity.ok("Like share post removed successfully");
         } else {
             // Nếu chưa tồn tại, tạo và lưu Like mới
@@ -302,7 +326,10 @@ public class LikeServiceImpl implements LikeService {
 
             // Cập nhật lại share vào MongoDB
             shareRepository.save(share.get());
-
+            if (this.exists("sharesOfTimeLine")) this.delete("sharesOfTimeLine");
+            if (this.exists("sharesOfUser")) this.delete("sharesOfUser");
+            if (this.exists("sharesOfGroup")) this.delete("sharesOfGroup");
+            if (this.exists("sharesOfGroupJoin")) this.delete("sharesOfGroupJoin");
             GenericResponse response = GenericResponse.builder().success(true).message("Like Share Post Successfully").result(
                             new LikePostResponse(like.getId(), like.getShare().getId(), user.getUserName()))
                     .statusCode(200).build();
@@ -442,6 +469,8 @@ public class LikeServiceImpl implements LikeService {
                     commentRepository.save(commentLike);
                 }
             }
+            if (this.exists("commentOfPost")) this.delete("commentOfPost");
+            if (this.exists("commentReplyOfCommentPost")) this.delete("commentReplyOfCommentPost");
             return ResponseEntity.ok("Like comment removed successfully");
         } else {
             // Nếu chưa tồn tại, tạo và lưu Like mới
@@ -463,7 +492,8 @@ public class LikeServiceImpl implements LikeService {
 
             // Cập nhật lại comment vào MongoDB
             commentRepository.save(comment.get());
-
+            if (this.exists("commentOfPost")) this.delete("commentOfPost");
+            if (this.exists("commentReplyOfCommentPost")) this.delete("commentReplyOfCommentPost");
             GenericResponse response = GenericResponse.builder().success(true).message("Like Comment Successfully")
                     .result(new LikeCommentResponse(like.getId(), like.getComment().getId(),
                            user.getUserName()))

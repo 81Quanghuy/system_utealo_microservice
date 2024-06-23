@@ -1,0 +1,26 @@
+eureka:
+  instance:
+    hostname: localhost
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+server:
+  port: 8013
+spring:
+  cache:
+    type: redis
+  application:
+    name: schedule-service
+  data:
+    mongodb:
+      uri: mongodb+srv://huy:huyvff111@cluster0.wteenm1.mongodb.net/testmongo?retryWrites=true&w=majority
+      database: schedule-service
+    redis:
+      host: redis-18198.c100.us-east-1-4.ec2.redns.redis-cloud.com
+      port: 18198
+      password: CnbRHEYhr9xFnvV75vOSPYZXp0KVTSaI
+
+springdoc:
+  packages-to-scan: vn.iostar.scheduleservice
+  api-docs:
+    path: /v3/api-docs/schedule-service

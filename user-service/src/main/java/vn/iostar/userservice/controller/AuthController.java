@@ -1,6 +1,7 @@
 package     vn.iostar.userservice.controller;
 
 import jakarta.validation.Valid;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -11,15 +12,21 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import vn.iostar.userservice.constant.TokenType;
 import vn.iostar.userservice.dto.LoginDTO;
+import vn.iostar.userservice.dto.request.EmailRequest;
 import vn.iostar.userservice.dto.request.RegisterRequest;
 import vn.iostar.userservice.dto.request.TokenRequest;
 import vn.iostar.userservice.dto.response.GenericResponse;
+import vn.iostar.userservice.dto.response.UserResponse;
 import vn.iostar.userservice.entity.Account;
+import vn.iostar.userservice.entity.Profile;
 import vn.iostar.userservice.entity.Token;
+import vn.iostar.userservice.entity.User;
 import vn.iostar.userservice.exception.wrapper.BadRequestException;
 import vn.iostar.userservice.jwt.service.JwtService;
 import vn.iostar.userservice.repository.AccountRepository;
+import vn.iostar.userservice.repository.ProfileRepository;
 import vn.iostar.userservice.repository.TokenRepository;
+import vn.iostar.userservice.repository.UserRepository;
 import vn.iostar.userservice.service.AccountService;
 import vn.iostar.userservice.service.TokenService;
 
@@ -33,9 +40,11 @@ public class AuthController {
     public final PasswordEncoder passwordEncoder;
     public final AccountService accountService;
     public final TokenService tokenService;
-    public final TokenRepository tokenRepository;
-    public final AccountRepository userRepository;
     private final JwtService jwtService;
+    private final UserRepository userRepository;
+    private final AccountRepository accountRepository;
+    private final ProfileRepository profileRepository;
+
 
     @PostMapping("/login")
     @Transactional
@@ -73,4 +82,8 @@ public class AuthController {
         return tokenService.refreshAccessToken(refreshToken);
     }
 
+    @PostMapping("/sendOTP")
+    public ResponseEntity<GenericResponse> sendOTP(@RequestBody EmailRequest email) {
+        return accountService.sendOTP(email.getEmail());
+    }
 }

@@ -36,8 +36,8 @@ spring:
   mail:
     host: smtp.gmail.com
     port: 587
-    username: ngoquanghuy0510@gmail.com
-    password: iekijimtrmjenohk
+    username: ngoquanghuy0310@gmail.com
+    password: tychlmxomtkudyap
     properties:
       mail:
         smtp:
@@ -46,9 +46,9 @@ spring:
             enable: true
   datasource:
     driver-class-name: com.microsoft.sqlserver.jdbc.SQLServerDriver
-    url: jdbc:sqlserver://utealo.database.windows.net:1433;database=utealo;user=UteAdmin@utealo;;encrypt=false;trustServerCertificate=true;hostNameInCertificate=*.database.windows.net;loginTimeout=30;
-    username: UteAdmin
-    password: UteAlo@111
+    url: jdbc:sqlserver://localhost;database=user_service;encrypt=false;trustServerCertificate=true;hostNameInCertificate=*.database.windows.net;loginTimeout=30;
+    username: sa
+    password: 123
   jpa:
     hibernate:
       ddl-auto: update

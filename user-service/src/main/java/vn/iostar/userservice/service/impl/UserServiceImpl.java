@@ -1060,4 +1060,9 @@ public class UserServiceImpl implements UserService {
                 HttpStatus.OK.value()));
     }
 
+    @Override
+    public List<String> getAllUserId() {
+        return userRepository.findAllUserId();
+    }
+
 }

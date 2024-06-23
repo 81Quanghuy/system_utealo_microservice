@@ -625,19 +625,14 @@ public class CommentServiceImpl extends RedisServiceImpl implements CommentServi
         Pageable pageable = PageRequest.of(page - 1, itemsPerPage);
         Page<Comment> commentsPage = commentRepository.findAllByOrderByCreateTimeDesc(pageable);
 
-        Streamable<Object> commentResponsesPage = commentsPage.map(comment -> {
+        return commentsPage.map(comment -> {
+            UserProfileResponse userProfileResponse = userClientService.getUser(comment.getUserId());
             if (comment.getPost() != null && comment.getPost().getId() != null) {
-                UserProfileResponse userProfileResponse = userClientService.getUser(comment.getUserId());
-                CommentPostResponse cPostResponse = new CommentPostResponse(comment, userProfileResponse);
-                return cPostResponse;
-            } else if (comment.getShare() != null && comment.getShare().getId() != null) {
-                UserProfileResponse userProfileResponse = userClientService.getUser(comment.getUserId());
-                CommentShareResponse cShareResponse = new CommentShareResponse(comment, userProfileResponse);
-                return cShareResponse;
+                return new CommentPostResponse(comment, userProfileResponse);
+            } else {
+                return new CommentShareResponse(comment, userProfileResponse);
             }
-            return null;
-        }); // Lọc bất kỳ giá trị null nào nếu có
-        return commentResponsesPage;
+        });
     }
 
     @Override

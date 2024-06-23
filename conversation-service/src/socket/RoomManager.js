@@ -4,10 +4,12 @@ const apiKey = process.env.API_KEY_VIDEOCALL;
 //const { populateUser } = require('../utils/Populate/User');
 
 const Conversation = require('../app/models/Conversation');
+const Notification = require('../app/models/Notification');
 const Message = require('../app/models/Message');
 const SocketManager = require('./SocketManager');
 const { eventName } = require('./constant');
 const {data} = require("express-session/session/cookie");
+const {getAllUserId} = require("../utils/clients/userClient");
 
 function RoomManager(socket, io) {
     // Video call TODO: API => send event
@@ -72,6 +74,21 @@ function RoomManager(socket, io) {
         if (!conversation) return;
 
         io.to(data.conversation).emit(eventName.STOP_TYPING_MESSAGE, data);
+    });
+    socket.on(eventName.ADMIN_NOTIFICATION, async (data) => {
+        console.log('admin-notification', data);
+        const notification = new Notification({
+            link : data.link,
+            photo : data.photo,
+            content : data.content,
+            type : data.type,
+            senderId : data.senderId,
+            createdAt : new Date(),
+            read: false,
+        });
+        await notification.save();
+        const userIds = await getAllUserId();
+        SocketManager.sendToList(userIds, eventName.ADMIN_NOTIFICATION, notification);
     });
 }
 

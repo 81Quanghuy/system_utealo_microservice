@@ -10,6 +10,7 @@ const eventName = {
 	REACT_MESSAGE: 'react-message',
 	DELETE_MESSAGE: 'delete-message',
 	CONVERSATION: 'conversation',
+	ADMIN_NOTIFICATION: 'admin-notification',
 };
 
 const notificationType = {

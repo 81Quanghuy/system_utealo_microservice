@@ -59,5 +59,10 @@ public interface UserRepository extends JpaRepository<User, String> {
             + "WHERE u.userName LIKE %:search%")
     List<SearchUser> findUsersByName(@Param("search") String search);
 
+    // lấy tất cả userId
+    @Query("SELECT u.userId FROM User u where u.userId is not null and u.isActive = true and u.isOnline = true")
+    List<String> findAllUserId();
+
+    List<User> findByIsVerifiedFalseAndCreatedAtBefore(Date date);
 }
 

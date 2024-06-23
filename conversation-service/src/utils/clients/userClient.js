@@ -10,6 +10,16 @@ exports.populateUser = async (userId) => {
 		return null;
 	}
 };
+//lay tat ca id user
+exports.getAllUserId = async () => {
+	try {
+		const users = await axios.get(`${process.env.AXIOS_API_SERVICE}/user/getAllUserId`);
+		return users.data;
+	} catch (error) {
+		console.log(error);
+		return null;
+	}
+};
 //cap nhat online user
 exports.updateOnlineUser = async (accessToken ,isOnline) => {
 	try {

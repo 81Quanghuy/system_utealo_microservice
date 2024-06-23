@@ -5,6 +5,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 import vn.iostar.userservice.entity.Token;
 
+import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 
@@ -18,5 +19,8 @@ public interface TokenRepository extends JpaRepository<Token,String> {
     Optional<Token> findByTokenAndExpiredAtIsFalseAndIsRevokedIsFalse(String refreshToken);
 
     Optional<Token> findByToken(String token);
+
+    // lấy token đã hết hạn và chưa bị thu hồi
+    List<Token> findAllByExpiredAtBefore(Date expiredAt);
 }
 

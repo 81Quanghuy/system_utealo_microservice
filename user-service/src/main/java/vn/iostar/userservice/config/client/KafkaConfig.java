@@ -17,7 +17,7 @@ public class KafkaConfig {
                 new DeadLetterPublishingRecoverer(template), new FixedBackOff(1000L, 2L));
     }
     @Bean
-    public NewTopic topic1() {
+    public NewTopic email_register() {
         return new NewTopic(KafkaTopicName.EMAIL_REGISTER_TOPIC, 2, (short) 1);
     }
 

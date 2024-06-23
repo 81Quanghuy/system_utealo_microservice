@@ -58,7 +58,7 @@ public class User extends AbstractMappedEntity implements Serializable {
     @Builder.Default
     private Boolean isVerified = false;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "role_id")
     private Role role;
 

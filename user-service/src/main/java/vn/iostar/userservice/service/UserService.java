@@ -143,4 +143,6 @@ public interface UserService {
 
 	ResponseEntity<GenericResponse> updateOnline(String userId, Boolean isOnline);
 
+	List<String> getAllUserId();
+
 }

@@ -293,4 +293,10 @@ public class UserController {
     public List<SearchUser> getUsersByName(@RequestParam("search") String search) {
         return userRepository.findUsersByName(search);
     }
+
+    // lấy tất cả user
+    @GetMapping("/getAllUserId")
+    public List<String> getAllUserId() {
+        return userService.getAllUserId();
+    }
 }

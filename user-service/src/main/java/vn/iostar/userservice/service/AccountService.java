@@ -36,4 +36,5 @@ public interface AccountService {
     <S extends Account> List<S> saveAll(Iterable<S> entities);
 
     ResponseEntity<GenericResponse> login(LoginDTO loginDTO);
+    ResponseEntity<GenericResponse> sendOTP(String email);
 }

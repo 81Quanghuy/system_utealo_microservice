@@ -92,12 +92,19 @@ public class AccountServiceImpl implements AccountService {
         return ResponseEntity.ok().body(GenericResponse.builder().success(true).message("Login successfully!")
                 .result(tokenMap).statusCode(HttpStatus.OK.value()).build());
     }
+
+    @Override
+    public ResponseEntity<GenericResponse> sendOTP(String email) {
+        kafkaTemplate.send(KafkaTopicName.EMAIL_REGISTER_TOPIC, email);
+        return ResponseEntity.ok().body(GenericResponse.builder().success(true).message("Send OTP successfully!")
+                .result(null).statusCode(HttpStatus.OK.value()).build());
+    }
+
     @Override
     public List<Account> findAll() {
         return accountRepository.findAll();
     }
 
-    @Transactional
     public ResponseEntity<GenericResponse> userRegister(RegisterRequest registerRequest) {
 
         if (!registerRequest.getPassword().equals(registerRequest.getConfirmPassword()))

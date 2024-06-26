@@ -17,12 +17,8 @@ import java.time.LocalDateTime;
 @Data
 @Builder
 public class Email implements Serializable {
-    @Id
-    @Field(name = "email_id")
     private String id;
-
     private String email;
     private String otp;
-
     private LocalDateTime expirationTime;
 }

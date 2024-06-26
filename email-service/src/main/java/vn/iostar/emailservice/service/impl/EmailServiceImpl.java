@@ -5,16 +5,21 @@ import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.env.Environment;
+import org.springframework.http.ResponseEntity;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
+import vn.iostar.emailservice.dto.request.EmailVerificationRequest;
 import vn.iostar.emailservice.dto.request.PasswordRequest;
+import vn.iostar.emailservice.dto.response.GenericResponse;
 import vn.iostar.emailservice.entity.Email;
 import vn.iostar.emailservice.repository.EmailRepository;
 import vn.iostar.emailservice.service.EmailService;
+import vn.iostar.emailservice.service.client.UserClientService;
 
 import java.io.UnsupportedEncodingException;
 import java.time.LocalDateTime;
@@ -32,6 +37,8 @@ public class EmailServiceImpl implements EmailService {
     private final JavaMailSender mailSender;
     private final TemplateEngine templateEngine;
     private final Environment env;
+    private final UserClientService userClientService;
+
     @Override
     @Async
     public void sendOtp(String email) {
@@ -85,6 +92,25 @@ public class EmailServiceImpl implements EmailService {
         helper.setTo(email.getEmail());
         helper.setFrom(Objects.requireNonNull(env.getProperty("spring.mail.username")), "Admin UteAlo");
         mailSender.send(message);
+    }
+
+    @Override
+    public ResponseEntity<GenericResponse> verifyOtp(EmailVerificationRequest emailVerificationRequest) {
+        Optional<Email> emailVerification = findByEmail(emailVerificationRequest.getEmail());
+        if (emailVerification.isEmpty()) {
+            throw new RuntimeException("Email not found");
+        }
+
+        Email email = emailVerification.get();
+        if (!email.getOtp().equals(emailVerificationRequest.getOtp())) {
+            throw new RuntimeException("Invalid OTP");
+        }
+
+        if (email.getExpirationTime().isBefore(LocalDateTime.now())) {
+            throw new RuntimeException("OTP is expired");
+        }
+
+        return userClientService.verifyUser(emailVerificationRequest.getEmail());
     }
 
     private String generateOtp() {

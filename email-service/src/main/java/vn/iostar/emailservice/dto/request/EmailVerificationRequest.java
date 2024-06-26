@@ -10,5 +10,6 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 public class EmailVerificationRequest {
-    String email;
+    private String email;
+    private String otp;
 }

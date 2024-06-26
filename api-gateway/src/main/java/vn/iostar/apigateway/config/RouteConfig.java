@@ -31,8 +31,8 @@ public class RouteConfig {
             "user-service", pathConfig(List.of("user", "auth", "accounts", "password_reset_otp"
                     , "profiles", "roles")),
             "report-service", pathConfig(List.of("report")),
-            "schedule-service", pathConfig(List.of("schedule")
-            )
+            "schedule-service", pathConfig(List.of("schedule")),
+            "email-service", pathConfig(List.of("email"))
     );
 
     private List<String> pathConfig(List<String> paths) {

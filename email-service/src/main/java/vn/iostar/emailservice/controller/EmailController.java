@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import vn.iostar.emailservice.dto.request.EmailVerificationRequest;
 import vn.iostar.emailservice.dto.response.GenericResponse;
+import vn.iostar.emailservice.entity.Email;
 import vn.iostar.emailservice.service.EmailService;
 
 import java.util.Optional;
@@ -43,5 +44,8 @@ public class EmailController {
                             .build());
         }
     }
-
+    @PostMapping("/verifyOTP")
+    public ResponseEntity<GenericResponse> verifyOtp(@RequestBody EmailVerificationRequest emailVerificationRequest) {
+        return  emailService.verifyOtp(emailVerificationRequest);
+    }
 }

@@ -1065,4 +1065,21 @@ public class UserServiceImpl implements UserService {
         return userRepository.findAllUserId();
     }
 
+    @Override
+    public ResponseEntity<GenericResponse> verifyUser(String userId) {
+        Optional<User> user = findById(userId);
+        if (user.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(
+                    new GenericResponse(false,
+                            "Người dùng không tồn tại",
+                            null,
+                            HttpStatus.NOT_FOUND.value()));
+        }
+        user.get().setIsVerified(true);
+        save(user.get());
+        return ResponseEntity.ok().body(new GenericResponse(true,
+                "Xác thực người dùng thành công!",
+                new UserResponse(user.get()),
+                HttpStatus.OK.value()));
+    }
 }

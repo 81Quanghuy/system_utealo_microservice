@@ -20,15 +20,15 @@ public class ListenKafka {
 
     @KafkaListener(topics = KafkaTopicName.EMAIL_REGISTER_TOPIC, groupId = "email-service")
     public void consume(String email) {
-        logger.info(STR."Consumed message: \{email}");
+        logger.info("Consumed message:",email);
         emailService.sendOtp(email);
-        System.out.println(STR."Consumed message: \{email}");
+        System.out.println(email);
     }
 
     @KafkaListener(topics = KafkaTopicName.EMAIL_FORGOT_PASSWORD_TOPIC, groupId = "email-service")
     public void consumeForgotPassword(PasswordRequest email) throws MessagingException, UnsupportedEncodingException {
-        logger.info(STR."Consumed message: \{email}");
+        logger.info("Consumed message:",email);
         emailService.sendOtpForgotPassword(email);
-        System.out.println(STR."Consumed message: \{email}");
+        System.out.println(email);
     }
 }

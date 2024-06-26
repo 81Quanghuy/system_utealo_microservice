@@ -299,4 +299,10 @@ public class UserController {
     public List<String> getAllUserId() {
         return userService.getAllUserId();
     }
+
+    //xac thuc tai khoan
+    @PostMapping("/verify/{email}")
+    ResponseEntity<GenericResponse> verifyUser(@PathVariable String email) {
+        return userService.verifyUser(email);
+    }
 }

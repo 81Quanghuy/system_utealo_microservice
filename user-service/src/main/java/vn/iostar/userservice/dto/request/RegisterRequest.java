@@ -30,4 +30,6 @@ public class RegisterRequest {
     private String confirmPassword;
 
     private String groupName;
+
+    private String emailStudent;
 }

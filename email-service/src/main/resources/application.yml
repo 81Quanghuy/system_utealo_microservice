@@ -4,8 +4,6 @@ eureka:
   client:
     service-url:
       defaultZone: http://localhost:8761/eureka/
-    register-with-eureka: false
-    fetch-registry: false
 server:
   port: 8100
 spring:
@@ -18,17 +16,13 @@ spring:
         spring:
           json:
             trusted:
-              packages: '*'
+              packages: '*' # Allow all packages to be deserialized
   application:
     name: email-service
   data:
     mongodb:
       uri: mongodb+srv://huy:huyvff111@cluster0.wteenm1.mongodb.net/testmongo?retryWrites=true&w=majority
       database: email-service
-  servlet:
-    multipart:
-      max-file-size: 20MB
-      max-request-size: 20MB
   mail:
     host: smtp.gmail.com
     port: 587
@@ -40,3 +34,8 @@ spring:
           auth: true
           starttls:
             enable: true
+
+springdoc:
+  packages-to-scan: vn.iostar.emailservice
+  api-docs:
+    path: /v3/api-docs/email-service

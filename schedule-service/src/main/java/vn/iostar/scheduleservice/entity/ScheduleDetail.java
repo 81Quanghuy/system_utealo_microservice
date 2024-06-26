@@ -32,13 +32,13 @@ public class ScheduleDetail implements Serializable {
     private String roomName;
 
     @Field(name = "day_of_week")
-    private Date dayOfWeek;
+    private String dayOfWeek;
 
     @Field(name = "start_time")
-    private Date startTime;
+    private String startTime;
 
     @Field(name = "end_time")
-    private Date endTime;
+    private String endTime;
 
     @Field(name = "start_period")
     private String startPeriod;

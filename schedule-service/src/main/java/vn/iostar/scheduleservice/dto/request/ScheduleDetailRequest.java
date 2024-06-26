@@ -9,11 +9,12 @@ public class ScheduleDetailRequest {
     private String courseName;
     private String instructorName;
     private String roomName;
-    private Date dayOfWeek;
-    private Date startTime;
-    private Date endTime;
+    private String dayOfWeek;
+    private String startTime;
+    private String endTime;
     private String startPeriod;
     private String endPeriod;
     private String note;
     private String template;
+    private String scheduleDetailId;
 }

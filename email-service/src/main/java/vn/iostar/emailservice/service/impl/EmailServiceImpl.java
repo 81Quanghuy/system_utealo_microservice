@@ -20,6 +20,7 @@ import vn.iostar.emailservice.entity.Email;
 import vn.iostar.emailservice.repository.EmailRepository;
 import vn.iostar.emailservice.service.EmailService;
 import vn.iostar.emailservice.service.client.UserClientService;
+import vn.iostar.model.PasswordReset;
 
 import java.io.UnsupportedEncodingException;
 import java.time.LocalDateTime;
@@ -77,7 +78,8 @@ public class EmailServiceImpl implements EmailService {
     }
 
     @Override
-    public void sendOtpForgotPassword(PasswordRequest email) throws MessagingException, UnsupportedEncodingException {
+    public void sendOtpForgotPassword(PasswordReset email) throws MessagingException, UnsupportedEncodingException {
+        log.info("Sending OTP for forgot password to email: {}", email.getEmail());
         String otp = email.getOtp();
         String url = "http://localhost:9000/reset-password?token=" + otp;
         String subject = "Thay đổi mật khẩu tài khoản UteAlo";

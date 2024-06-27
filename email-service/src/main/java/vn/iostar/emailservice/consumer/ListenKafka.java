@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import vn.iostar.emailservice.constant.KafkaTopicName;
 import vn.iostar.emailservice.dto.request.PasswordRequest;
 import vn.iostar.emailservice.service.EmailService;
+import vn.iostar.model.PasswordReset;
 
 import java.io.UnsupportedEncodingException;
 
@@ -26,8 +27,7 @@ public class ListenKafka {
     }
 
     @KafkaListener(topics = KafkaTopicName.EMAIL_FORGOT_PASSWORD_TOPIC, groupId = "email-service")
-    public void consumeForgotPassword(PasswordRequest email) throws MessagingException, UnsupportedEncodingException {
-        logger.info("Consumed message:",email);
+    public void consumeForgotPassword(PasswordReset email) throws MessagingException, UnsupportedEncodingException {
         emailService.sendOtpForgotPassword(email);
         System.out.println(email);
     }

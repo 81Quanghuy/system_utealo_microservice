@@ -20,9 +20,6 @@ public interface AccountService {
     // Đăng ký tài khoản
     ResponseEntity<GenericResponse> userRegister(@Valid RegisterRequest registerRequest);
 
-    // Xác thực tài khoản
-    String validateVerificationAccount(String token);
-
     // Tìm kiếm tài khoản theo số điện thoại
     Optional<Account> findByPhone(String phone);
 
@@ -33,7 +30,7 @@ public interface AccountService {
     <S extends Account> S save(S entity);
 
     // Lưu tất cả tài khoản
-    <S extends Account> List<S> saveAll(Iterable<S> entities);
+    <S extends Account> void saveAll(Iterable<S> entities);
 
     ResponseEntity<GenericResponse> login(LoginDTO loginDTO);
     ResponseEntity<GenericResponse> sendOTP(String email);

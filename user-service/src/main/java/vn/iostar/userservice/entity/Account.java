@@ -63,20 +63,7 @@ public class Account extends AbstractMappedEntity implements Serializable {
     @Column(name = "last_login_at")
     private Date lastLoginAt;
 
-//    @Builder.Default
-//    @Column(name = "last_login_at")
-//    private Date lastLoginAt = null;
-//
-//    @Builder.Default
-//    @Column(name = "locked_at")
-//    private Date lockedAt = null;
-//
-//    @Builder.Default
-//    @Column(name = "locked_reason")
-//    private String lockedReason = "";
-//
-//    @OneToMany(mappedBy = "account", fetch = FetchType.LAZY)
-//    @JsonIgnore
-//    private List<Token> tokens;
-
+    @Builder.Default
+    @Column(name = "is_account_verified_by_student")
+    private Boolean isVerifiedByStudent = true;
 }

@@ -6,7 +6,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import vn.iostar.userservice.constant.KafkaTopicName;
 import vn.iostar.userservice.constant.RoleName;
 import vn.iostar.userservice.dto.LoginDTO;
@@ -46,8 +45,8 @@ public class AccountServiceImpl implements AccountService {
     private  User userRegister;
 
     @Override
-    public <S extends Account> List<S> saveAll(Iterable<S> entities) {
-        return accountRepository.saveAll(entities);
+    public <S extends Account> void saveAll(Iterable<S> entities) {
+        accountRepository.saveAll(entities);
     }
 
     @Override
@@ -62,6 +61,16 @@ public class AccountServiceImpl implements AccountService {
         if (!optionalUser.get().getIsVerified()) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(GenericResponse.builder().success(false).message("Tài khoản chưa được kích họat!!!").result(null)
+                            .statusCode(HttpStatus.INTERNAL_SERVER_ERROR.value()).build());
+        }
+        if (!optionalUser.get().getIsActive()){
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(GenericResponse.builder().success(false).message("Tài khoản đã bị khóa!!!").result(null)
+                            .statusCode(HttpStatus.INTERNAL_SERVER_ERROR.value()).build());
+        }
+        if(!optionalUser.get().getIsVerifiedByStudent()){
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(GenericResponse.builder().success(false).message("Tài khoản chưa được xác thực bởi con của bạn!!!").result(null)
                             .statusCode(HttpStatus.INTERNAL_SERVER_ERROR.value()).build());
         }
 
@@ -147,19 +156,6 @@ public class AccountServiceImpl implements AccountService {
         return accountRepository.findByPhone(phone);
     }
 
-    @Override
-    public String validateVerificationAccount(String token) {
-//        Token verificationToken = tokenService.findByToken(token);
-//        if (verificationToken == null) {
-//            return "Invalid token, please check the token again!";
-//        }
-//        User user = verificationToken.getUser();
-//        user.setVerified(true);
-//        userRepository.save(user);
-//        return "Account verification successful, please login!";
-        return null;
-    }
-
     public void saveUserAndAccount(RegisterRequest registerRequest, Role role) {
 
         User user = new User();
@@ -174,6 +170,10 @@ public class AccountServiceImpl implements AccountService {
         account.setPassword(passwordEncoder.encode(registerRequest.getPassword()));
         account.setPhone(registerRequest.getPhone());
         account.setEmail(registerRequest.getEmail());
+        if(registerRequest.getRoleName().equals(RoleName.PhuHuynh.toString())){
+            account.setIsVerifiedByStudent(false);
+            kafkaTemplate.send(KafkaTopicName.EMAIL_VERIFY_TOPIC, registerRequest.getEmailStudent());
+        }
 
         Date createDate = new Date();
         account.setCreatedAt(createDate);

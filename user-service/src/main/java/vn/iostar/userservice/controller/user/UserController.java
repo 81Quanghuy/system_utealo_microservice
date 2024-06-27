@@ -125,8 +125,7 @@ public class UserController {
             throws MessagingException, UnsupportedEncodingException {
         Optional<User> user = userService.findByAccountEmail(email);
         if (user.isEmpty()) {
-            return ResponseEntity.ok(GenericResponse.builder().success(true).message("Không tìm thấy người dùng").result(null)
-                    .statusCode(404).build());
+            throw new RuntimeException("Người dùng không tồn tại!");
         }
         return userService.forgotPassword(user.get());
     }
@@ -298,5 +297,11 @@ public class UserController {
     @GetMapping("/getAllUserId")
     public List<String> getAllUserId() {
         return userService.getAllUserId();
+    }
+
+    //xac thuc tai khoan
+    @PostMapping("/verify")
+    ResponseEntity<GenericResponse> verifyUser(@RequestBody String email) {
+        return userService.verifyUser(email);
     }
 }

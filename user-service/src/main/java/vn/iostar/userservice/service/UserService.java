@@ -145,4 +145,5 @@ public interface UserService {
 
 	List<String> getAllUserId();
 
+	ResponseEntity<GenericResponse> verifyUser(String userId);
 }

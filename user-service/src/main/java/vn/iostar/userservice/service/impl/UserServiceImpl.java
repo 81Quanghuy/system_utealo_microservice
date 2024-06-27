@@ -7,6 +7,7 @@ import org.apache.poi.ss.usermodel.CellType;
 import org.apache.poi.ss.usermodel.DateUtil;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Example;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -19,6 +20,7 @@ import org.springframework.stereotype.Service;
 
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
+import vn.iostar.model.PasswordReset;
 import vn.iostar.userservice.constant.Gender;
 import vn.iostar.userservice.constant.KafkaTopicName;
 import vn.iostar.userservice.constant.RoleName;
@@ -68,8 +70,7 @@ public class UserServiceImpl implements UserService {
 
     private final RoleService roleService;
 
-    private final KafkaTemplate<String, PasswordRequest> kafkaTemplate;
-
+    private final KafkaTemplate<String, PasswordReset> kafkaTemplate;
     final String indexCell = "Tại dòng ";
 
     @Override
@@ -1035,7 +1036,7 @@ public class UserServiceImpl implements UserService {
 
         String otp = UUID.randomUUID().toString();
         createPasswordResetOtpForUser(user, otp);
-        PasswordRequest passwordRequest = new PasswordRequest(user.getAccount().getEmail(), otp);
+        PasswordReset passwordRequest = new PasswordReset(user.getAccount().getEmail(), otp);
         kafkaTemplate.send(KafkaTopicName.EMAIL_FORGOT_PASSWORD_TOPIC, passwordRequest);
         return ResponseEntity.ok().body(new GenericResponse(true, "Đã gửi email xác " +
                 "nhận đổi mật khẩu!", null, HttpStatus.OK.value()));
@@ -1065,4 +1066,21 @@ public class UserServiceImpl implements UserService {
         return userRepository.findAllUserId();
     }
 
+    @Override
+    public ResponseEntity<GenericResponse> verifyUser(String email) {
+        Optional<Account> account =accountService.findByEmail(email);
+        if (account.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(
+                    new GenericResponse(false,
+                            "Người dùng không tồn tại",
+                            null,
+                            HttpStatus.NOT_FOUND.value()));
+        }
+        account.get().setIsVerified(true);
+        accountService.save(account.get());
+        return ResponseEntity.ok().body(new GenericResponse(true,
+                "Xác thực người dùng thành công!",
+                new UserResponse(account.get().getUser()),
+                HttpStatus.OK.value()));
+    }
 }

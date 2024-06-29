@@ -21,6 +21,7 @@ import vn.iostar.emailservice.repository.EmailRepository;
 import vn.iostar.emailservice.service.EmailService;
 import vn.iostar.emailservice.service.client.UserClientService;
 import vn.iostar.model.PasswordReset;
+import vn.iostar.model.VerifyParent;
 
 import java.io.UnsupportedEncodingException;
 import java.time.LocalDateTime;
@@ -28,6 +29,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Random;
 
+import static vn.iostar.emailservice.constant.AppConstant.ADMIN_EMAIL;
 import static vn.iostar.emailservice.constant.AppConstant.OTP_LENGTH;
 
 @Service
@@ -58,6 +60,7 @@ public class EmailServiceImpl implements EmailService {
 
             helper.setText(mailContent, true);
             helper.setSubject("The verification token for UTEALO");
+            helper.setFrom(Objects.requireNonNull(env.getProperty("spring.mail.username")), ADMIN_EMAIL);
             mailSender.send(message);
 
             LocalDateTime expirationTime = LocalDateTime.now().plusMinutes(5);
@@ -92,7 +95,7 @@ public class EmailServiceImpl implements EmailService {
         helper.setSubject(subject);
         helper.setText(content, true);
         helper.setTo(email.getEmail());
-        helper.setFrom(Objects.requireNonNull(env.getProperty("spring.mail.username")), "Admin UteAlo");
+        helper.setFrom(Objects.requireNonNull(env.getProperty("spring.mail.username")), ADMIN_EMAIL);
         mailSender.send(message);
     }
 
@@ -113,6 +116,26 @@ public class EmailServiceImpl implements EmailService {
         }
 
         return userClientService.verifyUser(emailVerificationRequest.getEmail());
+    }
+
+    @Override
+    public void sendVerify(VerifyParent email) throws MessagingException, UnsupportedEncodingException {
+        log.info("Sending OTP for verify parent to email: {}", email.getEmailStudent());
+        String url = "http://localhost:3000/verify-parent?token=" + email.getToken();
+        String subject = "Xác thực thông tin phụ huynh";
+        Context context = new Context();
+        context.setVariable("url", url);
+        context.setVariable("username", email.getUsername());
+        context.setVariable("emailParent", email.getEmailParent());
+        String content = templateEngine.process("verify-account-parent", context);
+
+        MimeMessage message = mailSender.createMimeMessage();
+        MimeMessageHelper helper = new MimeMessageHelper(message, true);
+        helper.setSubject(subject);
+        helper.setText(content, true);
+        helper.setTo(email.getEmailStudent());
+        helper.setFrom(Objects.requireNonNull(env.getProperty("spring.mail.username")), ADMIN_EMAIL);
+        mailSender.send(message);
     }
 
     private String generateOtp() {

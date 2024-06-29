@@ -15,6 +15,7 @@ public class AppConstant {
     public static final String LOCAL_DATE_FORMAT = "dd-MM-yyyy";
     public static final String LOCAL_DATE_TIME_FORMAT = "dd-MM-yyyy HH:mm:ss:SSSSSS";
 
+    public static final String ADMIN_EMAIL = "ADMIN UTEALO";
     public static final int OTP_LENGTH = 6;
     @SneakyThrows
     public static SecretKey getSecretKey() {

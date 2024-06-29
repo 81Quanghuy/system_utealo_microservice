@@ -1,10 +1,9 @@
 package vn.iostar.emailservice.dto;
 
 import lombok.*;
-import vn.iostar.emailservice.constant.Gender;
+import vn.iostar.constant.Gender;
 
 import java.util.Date;
-import java.util.List;
 
 @Builder
 @Getter

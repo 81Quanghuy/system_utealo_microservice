@@ -1,12 +1,10 @@
 package vn.iostar.userservice.dto.response;
 
-import java.util.ArrayList;
 import java.util.Date;
-import java.util.List;
 
 import lombok.Data;
+import vn.iostar.constant.Gender;
 import vn.iostar.userservice.entity.User;
-import vn.iostar.userservice.constant.Gender;
 import vn.iostar.userservice.constant.RoleName;
 
 @Data

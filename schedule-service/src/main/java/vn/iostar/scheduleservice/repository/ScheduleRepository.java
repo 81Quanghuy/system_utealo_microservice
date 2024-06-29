@@ -4,6 +4,7 @@ import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.stereotype.Repository;
 import vn.iostar.scheduleservice.dto.response.ScheduleResponse;
 import vn.iostar.scheduleservice.entity.Schedule;
+import vn.iostar.scheduleservice.entity.ScheduleDetail;
 
 import java.util.List;
 
@@ -11,5 +12,6 @@ import java.util.List;
 public interface ScheduleRepository extends MongoRepository<Schedule, String> {
 
     List<Schedule> findByUserId(String userId);
+    List<Schedule> findByScheduleDetails(ScheduleDetail scheduleDetail);
 }
 

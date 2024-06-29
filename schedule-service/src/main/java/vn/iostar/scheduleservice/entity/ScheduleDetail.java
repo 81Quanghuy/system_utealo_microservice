@@ -49,6 +49,9 @@ public class ScheduleDetail implements Serializable {
     @Field(name = "note")
     private String note;
 
-    @Field(name = "template")
-    private String template;
+    @Field(name = "basis")
+    private String basis;
+
+    @Field(name = "number")
+    private String number;
 }

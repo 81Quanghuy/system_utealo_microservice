@@ -4,6 +4,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import vn.iostar.scheduleservice.dto.GenericResponse;
 import vn.iostar.scheduleservice.dto.request.AddScheduleDetailRequest;
+import vn.iostar.scheduleservice.dto.request.ScheduleDetailRequest;
 import vn.iostar.scheduleservice.dto.request.ScheduleRequest;
 import vn.iostar.scheduleservice.dto.response.ScheduleResponse;
 import vn.iostar.scheduleservice.entity.Schedule;
@@ -17,6 +18,8 @@ public interface ScheduleService extends RedisService{
     ResponseEntity<GenericResponse> getSchedule(String currentUserId, Pageable pageable);
     // Cập nhật thời khóa biểu
     ResponseEntity<Object> updateSchedule(String scheduleId, ScheduleRequest request, String currentUserId);
+    // Cập nhật thời khóa biểu chi tiết
+    ResponseEntity<Object> updateScheduleDetail(String scheduleDetailId, ScheduleDetailRequest request, String currentUserId);
     // Tạo thời khóa biểu
     ResponseEntity<Object> createSchedule(String token, ScheduleRequest requestDTO);
     // Tạo thời khóa biểu

@@ -15,6 +15,7 @@ public class ScheduleDetailRequest {
     private String startPeriod;
     private String endPeriod;
     private String note;
-    private String template;
+    private String basis;
+    private String number;
     private String scheduleDetailId;
 }

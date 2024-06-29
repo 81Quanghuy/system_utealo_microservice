@@ -5,7 +5,6 @@ import vn.iostar.scheduleservice.entity.Schedule;
 import vn.iostar.scheduleservice.entity.ScheduleDetail;
 
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 
 @Data

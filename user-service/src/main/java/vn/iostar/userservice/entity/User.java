@@ -1,12 +1,9 @@
 package vn.iostar.userservice.entity;
 
-import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 
 import lombok.*;
-import org.hibernate.annotations.Nationalized;
-import vn.iostar.userservice.constant.Gender;
-import vn.iostar.userservice.constant.RoleName;
+import vn.iostar.constant.Gender;
 
 import java.io.Serial;
 import java.io.Serializable;
@@ -70,7 +67,5 @@ public class User extends AbstractMappedEntity implements Serializable {
 
     @OneToMany(mappedBy = "user")
     private List<Token> tokens;
-
-
 
 }

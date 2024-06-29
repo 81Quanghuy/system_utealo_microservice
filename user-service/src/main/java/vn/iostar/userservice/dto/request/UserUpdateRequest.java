@@ -5,7 +5,7 @@ import java.util.Date;
 import org.hibernate.annotations.Nationalized;
 
 import lombok.Data;
-import vn.iostar.userservice.constant.Gender;
+import vn.iostar.constant.Gender;
 
 
 @Data

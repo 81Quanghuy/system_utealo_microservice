@@ -1,9 +1,14 @@
 package vn.iostar.userservice.repository;
 
 import io.swagger.v3.oas.annotations.Hidden;
+import jakarta.transaction.Transactional;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import vn.iostar.userservice.entity.Token;
+import vn.iostar.userservice.entity.User;
 
 import java.util.Date;
 import java.util.List;
@@ -22,5 +27,11 @@ public interface TokenRepository extends JpaRepository<Token,String> {
 
     // lấy token đã hết hạn và chưa bị thu hồi
     List<Token> findAllByExpiredAtBefore(Date expiredAt);
+
+    // xóa tất cả token của user chưa xác thực
+    @Modifying
+    @Transactional
+    @Query("delete from Token p where p.user in :users")
+    void deleteAllByUserIn(@Param("users") List<User> users);
 }
 

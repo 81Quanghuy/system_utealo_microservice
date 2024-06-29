@@ -3,7 +3,7 @@ package vn.iostar.userservice.dto.request;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotEmpty;
 import lombok.Data;
-import vn.iostar.userservice.constant.Gender;
+import vn.iostar.constant.Gender;
 
 @Data
 public class RegisterRequest {

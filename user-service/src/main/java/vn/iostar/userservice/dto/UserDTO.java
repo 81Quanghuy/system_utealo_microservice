@@ -1,10 +1,7 @@
 package vn.iostar.userservice.dto;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
 import lombok.*;
-import vn.iostar.userservice.constant.Gender;
+import vn.iostar.constant.Gender;
 
 import java.util.Date;
 

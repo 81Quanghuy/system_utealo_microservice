@@ -1,7 +1,7 @@
 package vn.iostar.userservice.dto.response;
 
 import lombok.Data;
-import vn.iostar.userservice.constant.Gender;
+import vn.iostar.constant.Gender;
 import vn.iostar.userservice.constant.RoleName;
 import vn.iostar.userservice.dto.UserFileDTO;
 import vn.iostar.userservice.entity.User;

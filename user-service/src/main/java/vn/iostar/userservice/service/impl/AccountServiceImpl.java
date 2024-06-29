@@ -6,7 +6,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import vn.iostar.userservice.constant.KafkaTopicName;
+import vn.iostar.constant.KafkaTopicName;
+import vn.iostar.model.VerifyParent;
 import vn.iostar.userservice.constant.RoleName;
 import vn.iostar.userservice.dto.LoginDTO;
 import vn.iostar.userservice.dto.request.RegisterRequest;
@@ -42,6 +43,7 @@ public class AccountServiceImpl implements AccountService {
     private final TokenService tokenService;
 
     private final KafkaTemplate<String, String> kafkaTemplate;
+    private final KafkaTemplate<String, VerifyParent> kafkaTemplateVerify;
     private  User userRegister;
 
     @Override
@@ -135,6 +137,12 @@ public class AccountServiceImpl implements AccountService {
                     .message("Email này đã được sử dụng!!").result(null).statusCode(HttpStatus.CONFLICT.value()).build());
 
         Optional<Role> role = roleRepository.findByRoleName(RoleName.valueOf(registerRequest.getRoleName()));
+        if(registerRequest.getRoleName().equals(RoleName.PhuHuynh.toString())){
+            Optional<Account> accountOptionalStudent = findByEmail(registerRequest.getEmailStudent());
+            if (accountOptionalStudent.isEmpty())
+                return ResponseEntity.status(409).body(GenericResponse.builder().success(false)
+                        .message("Email của học sinh không tồn tại!").result(null).statusCode(HttpStatus.CONFLICT.value()).build());
+        }
         if (role.isEmpty()) {
             return ResponseEntity.status(404).body(GenericResponse.builder().success(false)
                     .message("Role name not found").result(null).statusCode(HttpStatus.CONFLICT.value()).build());
@@ -171,8 +179,17 @@ public class AccountServiceImpl implements AccountService {
         account.setPhone(registerRequest.getPhone());
         account.setEmail(registerRequest.getEmail());
         if(registerRequest.getRoleName().equals(RoleName.PhuHuynh.toString())){
+            Token token = new Token();
+            token.setUser(user);
+            token.setToken(UUID.randomUUID().toString());
+            token.setIsExpired(false);
+            token.setIsRevoked(false);
+            token.setType(TokenType.VERIFICATION_TOKEN);
+            token.setExpiredAt(new Date(System.currentTimeMillis() + 24 * 60 * 60 * 1000));
+            tokenService.save(token);
+            VerifyParent verifyParent = new VerifyParent(registerRequest.getEmailStudent(),registerRequest.getEmail(), registerRequest.getFullName(), token.getToken());
             account.setIsVerifiedByStudent(false);
-            kafkaTemplate.send(KafkaTopicName.EMAIL_VERIFY_TOPIC, registerRequest.getEmailStudent());
+            kafkaTemplateVerify.send(KafkaTopicName.EMAIL_VERIFY_TOPIC, verifyParent);
         }
 
         Date createDate = new Date();

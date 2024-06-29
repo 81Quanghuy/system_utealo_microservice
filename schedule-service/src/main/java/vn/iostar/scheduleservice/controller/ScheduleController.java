@@ -9,6 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import vn.iostar.scheduleservice.dto.GenericResponse;
 import vn.iostar.scheduleservice.dto.request.AddScheduleDetailRequest;
+import vn.iostar.scheduleservice.dto.request.ScheduleDetailRequest;
 import vn.iostar.scheduleservice.dto.request.ScheduleRequest;
 import vn.iostar.scheduleservice.dto.response.UserProfileResponse;
 import vn.iostar.scheduleservice.jwt.service.JwtService;
@@ -76,5 +77,13 @@ public class ScheduleController {
         String token = authorizationHeader.substring(7);
         String currentUserId = jwtService.extractUserId(token);
         return scheduleService.updateSchedule(scheduleId, requestDTO, currentUserId);
+    }
+
+    // Cập nhật thời khóa biểu chi tiết
+    @PutMapping("/updateScheduleDetail/{scheduleDetailId}")
+    public ResponseEntity<Object> updateScheduleDetail(@PathVariable String scheduleDetailId, @RequestBody ScheduleDetailRequest requestDTO, @RequestHeader("Authorization") String authorizationHeader) throws Exception {
+        String token = authorizationHeader.substring(7);
+        String currentUserId = jwtService.extractUserId(token);
+        return scheduleService.updateScheduleDetail(scheduleDetailId, requestDTO, currentUserId);
     }
 }

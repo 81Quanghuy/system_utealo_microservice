@@ -80,7 +80,8 @@ public class ScheduleServiceImpl extends RedisServiceImpl implements ScheduleSer
             scheduleDetail.setStartPeriod(detailRequest.getStartPeriod());
             scheduleDetail.setEndPeriod(detailRequest.getEndPeriod());
             scheduleDetail.setNote(detailRequest.getNote());
-            scheduleDetail.setTemplate(detailRequest.getTemplate());
+            scheduleDetail.setBasis(detailRequest.getBasis());
+            scheduleDetail.setNumber(detailRequest.getNumber());
             scheduleDetailRepository.save(scheduleDetail);
             scheduleDetails.add(scheduleDetail);
         }
@@ -110,10 +111,18 @@ public class ScheduleServiceImpl extends RedisServiceImpl implements ScheduleSer
         }
 
         Schedule schedule = optionalSchedule.get();
-        schedule.setUserId(requestDTO.getUserId());
-        schedule.setSemester(requestDTO.getSemester());
-        schedule.setYear(requestDTO.getYear());
-        schedule.setWeekOfSemester(requestDTO.getWeekOfSemester());
+        if (!requestDTO.getUserId().isEmpty()) {
+            schedule.setUserId(requestDTO.getUserId());
+        }
+        if (checkNull(requestDTO.getSemester())) {
+            schedule.setSemester(requestDTO.getSemester());
+        }
+        if (checkNull(requestDTO.getYear())) {
+            schedule.setYear(requestDTO.getYear());
+        }
+        if (!requestDTO.getWeekOfSemester().isEmpty()) {
+            schedule.setWeekOfSemester(requestDTO.getWeekOfSemester());
+        }
 
         List<ScheduleDetail> scheduleDetails = new ArrayList<>();
         for (ScheduleDetailRequest detailRequest : requestDTO.getScheduleDetails()) {
@@ -125,17 +134,39 @@ public class ScheduleServiceImpl extends RedisServiceImpl implements ScheduleSer
                 scheduleDetail = new ScheduleDetail();
                 scheduleDetail.setId(UUID.randomUUID().toString());
             }
-
-            scheduleDetail.setCourseName(detailRequest.getCourseName());
-            scheduleDetail.setInstructorName(detailRequest.getInstructorName());
-            scheduleDetail.setRoomName(detailRequest.getRoomName());
-            scheduleDetail.setDayOfWeek(detailRequest.getDayOfWeek());
-            scheduleDetail.setStartTime(detailRequest.getStartTime());
-            scheduleDetail.setEndTime(detailRequest.getEndTime());
-            scheduleDetail.setStartPeriod(detailRequest.getStartPeriod());
-            scheduleDetail.setEndPeriod(detailRequest.getEndPeriod());
-            scheduleDetail.setNote(detailRequest.getNote());
-            scheduleDetail.setTemplate(detailRequest.getTemplate());
+            if (checkNull(detailRequest.getCourseName())) {
+                scheduleDetail.setCourseName(detailRequest.getCourseName());
+            }
+            if (checkNull(detailRequest.getInstructorName())) {
+                scheduleDetail.setInstructorName(detailRequest.getInstructorName());
+            }
+            if (checkNull(detailRequest.getRoomName())) {
+                scheduleDetail.setRoomName(detailRequest.getRoomName());
+            }
+            if (checkNull(detailRequest.getDayOfWeek())) {
+                scheduleDetail.setDayOfWeek(detailRequest.getDayOfWeek());
+            }
+            if (checkNull(detailRequest.getStartTime())) {
+                scheduleDetail.setStartTime(detailRequest.getStartTime());
+            }
+            if (checkNull(detailRequest.getEndTime())) {
+                scheduleDetail.setEndTime(detailRequest.getEndTime());
+            }
+            if (checkNull(detailRequest.getStartPeriod())) {
+                scheduleDetail.setStartPeriod(detailRequest.getStartPeriod());
+            }
+            if (checkNull(detailRequest.getEndPeriod())) {
+                scheduleDetail.setEndPeriod(detailRequest.getEndPeriod());
+            }
+            if (checkNull(detailRequest.getNote())) {
+                scheduleDetail.setNote(detailRequest.getNote());
+            }
+            if (checkNull(detailRequest.getBasis())) {
+                scheduleDetail.setBasis(detailRequest.getBasis());
+            }
+            if (checkNull(detailRequest.getNumber())) {
+                scheduleDetail.setNumber(detailRequest.getNumber());
+            }
 
             scheduleDetailRepository.save(scheduleDetail);
             scheduleDetails.add(scheduleDetail);
@@ -155,6 +186,76 @@ public class ScheduleServiceImpl extends RedisServiceImpl implements ScheduleSer
     }
 
     @Override
+    public ResponseEntity<Object> updateScheduleDetail(String scheduleDetailId, ScheduleDetailRequest request, String currentUserId) {
+        Optional<ScheduleDetail> optionalScheduleDetail = scheduleDetailRepository.findById(scheduleDetailId);
+        if (optionalScheduleDetail.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(GenericResponse.builder()
+                            .success(false)
+                            .message("Schedule detail not found")
+                            .statusCode(HttpStatus.NOT_FOUND.value())
+                            .build());
+        }
+
+        ScheduleDetail scheduleDetail = optionalScheduleDetail.get();
+        if (checkNull(request.getCourseName())) {
+            scheduleDetail.setCourseName(request.getCourseName());
+        }
+        if (checkNull(request.getInstructorName())) {
+            scheduleDetail.setInstructorName(request.getInstructorName());
+        }
+        if (checkNull(request.getRoomName())) {
+            scheduleDetail.setRoomName(request.getRoomName());
+        }
+        if (checkNull(request.getDayOfWeek())) {
+            scheduleDetail.setDayOfWeek(request.getDayOfWeek());
+        }
+        if (checkNull(request.getStartTime())) {
+            scheduleDetail.setStartTime(request.getStartTime());
+        }
+        if (checkNull(request.getEndTime())) {
+            scheduleDetail.setEndTime(request.getEndTime());
+        }
+        if (checkNull(request.getStartPeriod())) {
+            scheduleDetail.setStartPeriod(request.getStartPeriod());
+        }
+        if (checkNull(request.getEndPeriod())) {
+            scheduleDetail.setEndPeriod(request.getEndPeriod());
+        }
+        if (checkNull(request.getNote())) {
+            scheduleDetail.setNote(request.getNote());
+        }
+        if (checkNull(request.getBasis())) {
+            scheduleDetail.setBasis(request.getBasis());
+        }
+        if (checkNull(request.getNumber())) {
+            scheduleDetail.setNumber(request.getNumber());
+        }
+        scheduleDetailRepository.save(scheduleDetail);
+
+        // Kiểm tra scheduleDetail có trong schedule nào không và cập nhật lại
+        List<Schedule> schedules = scheduleRepository.findByScheduleDetails(optionalScheduleDetail.get());
+        for (Schedule schedule : schedules) {
+            schedule.getScheduleDetails().remove(scheduleDetail);
+            schedule.getScheduleDetails().add(scheduleDetail);
+            scheduleRepository.save(schedule);
+        }
+
+        return ResponseEntity.ok(GenericResponse.builder()
+                .success(true)
+                .message("Updated schedule detail successfully")
+                .result(scheduleDetail)
+                .statusCode(HttpStatus.OK.value())
+                .build());
+    }
+
+    // Tạo 1 hàm để kiểm tra null truyền 1 tham số string
+    private Boolean checkNull(String value) {
+        return value != null && !value.isEmpty() && !value.isBlank() && !value.equals("null");
+    }
+
+
+    @Override
     public ResponseEntity<Object> createScheduleDetail(String userId, ScheduleRequest requestDTO) {
 
         List<ScheduleDetail> scheduleDetails = new ArrayList<>();
@@ -171,7 +272,8 @@ public class ScheduleServiceImpl extends RedisServiceImpl implements ScheduleSer
             scheduleDetail.setStartPeriod(detailRequest.getStartPeriod());
             scheduleDetail.setEndPeriod(detailRequest.getEndPeriod());
             scheduleDetail.setNote(detailRequest.getNote());
-            scheduleDetail.setTemplate(detailRequest.getTemplate());
+            scheduleDetail.setBasis(detailRequest.getBasis());
+            scheduleDetail.setNumber(detailRequest.getNumber());
             scheduleDetailRepository.save(scheduleDetail);
             scheduleDetails.add(scheduleDetail);
         }

@@ -2,7 +2,6 @@ package vn.iostar.postservice.service.impl;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.RequiredArgsConstructor;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.springframework.data.domain.*;
@@ -23,16 +22,13 @@ import vn.iostar.postservice.dto.request.CreatePostRequestDTO;
 import vn.iostar.postservice.dto.request.PostUpdateRequest;
 import vn.iostar.postservice.dto.response.*;
 import vn.iostar.postservice.entity.Post;
-import vn.iostar.friendservice.entity.Friend;
-import vn.iostar.postservice.entity.Share;
 import vn.iostar.postservice.jwt.service.JwtService;
 import vn.iostar.postservice.repository.CommentRepository;
 import vn.iostar.postservice.repository.LikeRepository;
 import vn.iostar.postservice.repository.PostRepository;
 import vn.iostar.postservice.repository.ShareRepository;
-import vn.iostar.postservice.service.CloudinaryService;
 import vn.iostar.postservice.service.PostService;
-import vn.iostar.postservice.service.RedisService;
+import vn.iostar.postservice.service.client.FileClientService;
 import vn.iostar.postservice.service.client.FriendClientService;
 import vn.iostar.postservice.service.client.GroupClientService;
 import vn.iostar.postservice.service.client.UserClientService;
@@ -46,7 +42,6 @@ import java.time.Month;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
-import java.util.stream.Collectors;
 
 @Service
 public class PostServiceImpl extends RedisServiceImpl implements PostService {
@@ -55,25 +50,25 @@ public class PostServiceImpl extends RedisServiceImpl implements PostService {
     private final JwtService jwtService;
     private final UserClientService userClientService;
     private final GroupClientService groupClientService;
-    private final CloudinaryService cloudinaryService;
     private final CommentRepository commentRepository;
     private final LikeRepository likeRepository;
     private final FriendClientService friendClientService;
     private final ShareRepository shareRepository;
+    private final FileClientService fileClientService;
 
     ObjectMapper objectMapper;
 
-    public PostServiceImpl(RedisTemplate<String, Object> redisTemplate, PostRepository postRepository, JwtService jwtService, UserClientService userClientService, GroupClientService groupClientService, CloudinaryService cloudinaryService, CommentRepository commentRepository, LikeRepository likeRepository, FriendClientService friendClientService, ShareRepository shareRepository) {
+    public PostServiceImpl(RedisTemplate<String, Object> redisTemplate, PostRepository postRepository, JwtService jwtService, UserClientService userClientService, GroupClientService groupClientService, CommentRepository commentRepository, LikeRepository likeRepository, FriendClientService friendClientService, ShareRepository shareRepository, FileClientService fileClientService) {
         super(redisTemplate);
         this.postRepository = postRepository;
         this.jwtService = jwtService;
         this.userClientService = userClientService;
         this.groupClientService = groupClientService;
-        this.cloudinaryService = cloudinaryService;
         this.commentRepository = commentRepository;
         this.likeRepository = likeRepository;
         this.friendClientService = friendClientService;
         this.shareRepository = shareRepository;
+        this.fileClientService = fileClientService;
     }
 
     @Override
@@ -110,19 +105,19 @@ public class PostServiceImpl extends RedisServiceImpl implements PostService {
             if (requestDTO.getPhotos() == null || requestDTO.getPhotos().getContentType() == null) {
                 post.setPhotos("");
             } else {
-                post.setPhotos(cloudinaryService.uploadImage(requestDTO.getPhotos()));
+                post.setPhotos(fileClientService.uploadImage(requestDTO.getPhotos()));
             }
             if (requestDTO.getVideo() == null || requestDTO.getVideo().getContentType() == null) {
                 post.setVideo("");
             } else {
-                post.setVideo(cloudinaryService.uploadVideo(requestDTO.getVideo()));
+                post.setVideo(fileClientService.uploadVideo(requestDTO.getVideo()));
             }
             if (requestDTO.getFiles() == null || requestDTO.getFiles().getContentType() == null) {
                 post.setFiles("");
             } else {
                 String fileExtension = StringUtils.getFilenameExtension(requestDTO.getFiles().getOriginalFilename());
                 if (fileExtension != null && allowedFileExtensions.contains(fileExtension.toLowerCase())) {
-                    post.setFiles(cloudinaryService.uploadFile(requestDTO.getFiles()));
+                    post.setFiles(fileClientService.uploadFile(requestDTO.getFiles()));
                 } else {
                     throw new IllegalArgumentException("Not support for this file.");
                 }
@@ -253,15 +248,19 @@ public class PostServiceImpl extends RedisServiceImpl implements PostService {
             if (request.getPhotos() == null || request.getPhotos().getContentType() == null) {
                 post.setPhotos(request.getPhotoUrl());
             } else {
-                post.setPhotos(cloudinaryService.uploadImage(request.getPhotos()));
+                post.setPhotos(fileClientService.uploadImage(request.getPhotos()));
             }
-
+            if (request.getVideo() == null || request.getVideo().getContentType() == null) {
+                post.setVideo(request.getVideoUrl());
+            } else {
+                post.setVideo(fileClientService.uploadVideo(request.getVideo()));
+            }
             if (request.getFiles() == null || request.getFiles().getContentType() == null) {
                 post.setFiles(request.getFileUrl());
             } else {
                 String fileExtension = StringUtils.getFilenameExtension(request.getFiles().getOriginalFilename());
                 if (fileExtension != null && allowedFileExtensions.contains(fileExtension.toLowerCase())) {
-                    post.setFiles(cloudinaryService.uploadFile(request.getFiles()));
+                    post.setFiles(fileClientService.uploadFile(request.getFiles()));
                 } else {
                     throw new IllegalArgumentException("Not support for this file.");
                 }
@@ -283,14 +282,6 @@ public class PostServiceImpl extends RedisServiceImpl implements PostService {
     @Override
     public ResponseEntity<GenericResponse> getPost(String currentId, String postId) throws JsonProcessingException {
 
-//        objectMapper = new ObjectMapper();
-//        if (this.hashExists("posts",postId)) {
-//            Object jobs = this.hashGet("posts" ,postId);
-//            HashMap<String, Object> data = objectMapper.readValue(jobs.toString(), HashMap.class);
-//            return ResponseEntity.ok(GenericResponse.builder().success(true).message("Retrieving user profile successfully from redis")
-//                    .result(data).statusCode(HttpStatus.OK.value()).build());
-//        }
-
         Optional<Post> post = postRepository.findById(postId);
         UserProfileResponse userOfPostResponse = userClientService.getUser(currentId);
         GroupProfileResponse groupProfileResponse = null;
@@ -304,8 +295,6 @@ public class PostServiceImpl extends RedisServiceImpl implements PostService {
 
 
         PostsResponse postsResponse = new PostsResponse(post.get(), userOfPostResponse, groupProfileResponse);
-
-//        this.hashSet("posts",postId, objectMapper.writeValueAsString(postsResponse));
 
         return ResponseEntity.ok(GenericResponse.builder().success(true).message("Retrieving user profile successfully")
                 .result(postsResponse).statusCode(HttpStatus.OK.value()).build());
@@ -755,6 +744,9 @@ public class PostServiceImpl extends RedisServiceImpl implements PostService {
         }
         PageRequest pageable = PageRequest.of(page, size);
         List<String> userIds = friendClientService.getFriendIdsByUserId(userId);
+        if (userIds == null) {
+            userIds = new ArrayList<>();
+        }
         userIds.add(userId);
         List<String> groupIds = groupClientService.getGroupIdsByUserId(userId);
         List<Post> userPosts = postRepository.findPostsInTimeLine(userIds, groupIds, pageable);

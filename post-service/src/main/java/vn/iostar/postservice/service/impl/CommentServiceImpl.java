@@ -2,7 +2,6 @@ package vn.iostar.postservice.service.impl;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -28,10 +27,10 @@ import vn.iostar.postservice.jwt.service.JwtService;
 import vn.iostar.postservice.repository.CommentRepository;
 import vn.iostar.postservice.repository.PostRepository;
 import vn.iostar.postservice.repository.ShareRepository;
-import vn.iostar.postservice.service.CloudinaryService;
 import vn.iostar.postservice.service.CommentService;
 import vn.iostar.postservice.service.PostService;
 import vn.iostar.postservice.service.ShareService;
+import vn.iostar.postservice.service.client.FileClientService;
 import vn.iostar.postservice.service.client.UserClientService;
 
 import java.io.IOException;
@@ -46,23 +45,23 @@ public class CommentServiceImpl extends RedisServiceImpl implements CommentServi
     private final CommentRepository commentRepository;
     private final PostRepository postRepository;
     private final ShareRepository shareRepository;
-    private final CloudinaryService cloudinaryService;
     private final UserClientService userClientService;
     private final JwtService jwtService;
     private final PostService postService;
     private final ShareService shareService;
+    private final FileClientService fileClientService;
     ObjectMapper objectMapper;
 
-    public CommentServiceImpl(RedisTemplate<String, Object> redisTemplate, CommentRepository commentRepository, PostRepository postRepository, ShareRepository shareRepository, CloudinaryService cloudinaryService, UserClientService userClientService, JwtService jwtService, PostService postService, ShareService shareService) {
+    public CommentServiceImpl(RedisTemplate<String, Object> redisTemplate, CommentRepository commentRepository, PostRepository postRepository, ShareRepository shareRepository, UserClientService userClientService, JwtService jwtService, PostService postService, ShareService shareService, FileClientService fileClientService) {
         super(redisTemplate);
         this.commentRepository = commentRepository;
         this.postRepository = postRepository;
         this.shareRepository = shareRepository;
-        this.cloudinaryService = cloudinaryService;
         this.userClientService = userClientService;
         this.jwtService = jwtService;
         this.postService = postService;
         this.shareService = shareService;
+        this.fileClientService = fileClientService;
     }
 
     @Override
@@ -142,7 +141,7 @@ public class CommentServiceImpl extends RedisServiceImpl implements CommentServi
                 comment.setPhotos("");
             } else {
 
-                comment.setPhotos(cloudinaryService.uploadImage(requestDTO.getPhotos()));
+                comment.setPhotos(fileClientService.uploadImage(requestDTO.getPhotos()));
             }
         } catch (IOException e) {
             // Xử lý ngoại lệ nếu có
@@ -201,7 +200,7 @@ public class CommentServiceImpl extends RedisServiceImpl implements CommentServi
                 comment.setPhotos("");
             } else {
 
-                comment.setPhotos(cloudinaryService.uploadImage(requestDTO.getPhotos()));
+                comment.setPhotos(fileClientService.uploadImage(requestDTO.getPhotos()));
             }
         } catch (IOException e) {
             // Xử lý ngoại lệ nếu có
@@ -249,7 +248,7 @@ public class CommentServiceImpl extends RedisServiceImpl implements CommentServi
             } else if (request.getPhotos().equals(commentOp.get().getPhotos())) {
                 comment.setPhotos(commentOp.get().getPhotos());
             } else {
-                comment.setPhotos(cloudinaryService.uploadImage(request.getPhotos()));
+                comment.setPhotos(fileClientService.uploadImage(request.getPhotos()));
             }
         } catch (IOException e) {
             // Xử lý ngoại lệ nếu có
@@ -516,7 +515,7 @@ public class CommentServiceImpl extends RedisServiceImpl implements CommentServi
             return ResponseEntity.badRequest().body("User not found");
         }
         Optional<Share> share = shareService.findById(requestDTO.getShareId());
-        if (!share.isPresent()) {
+        if (share.isEmpty()) {
             return ResponseEntity.badRequest().body("Share not found");
         }
 
@@ -532,7 +531,7 @@ public class CommentServiceImpl extends RedisServiceImpl implements CommentServi
                 comment.setPhotos("");
             } else {
 
-                comment.setPhotos(cloudinaryService.uploadImage(requestDTO.getPhotos()));
+                comment.setPhotos(fileClientService.uploadImage(requestDTO.getPhotos()));
             }
         } catch (IOException e) {
             // Xử lý ngoại lệ nếu có
@@ -590,7 +589,7 @@ public class CommentServiceImpl extends RedisServiceImpl implements CommentServi
                 comment.setPhotos("");
             } else {
 
-                comment.setPhotos(cloudinaryService.uploadImage(requestDTO.getPhotos()));
+                comment.setPhotos(fileClientService.uploadImage(requestDTO.getPhotos()));
             }
         } catch (IOException e) {
             // Xử lý ngoại lệ nếu có

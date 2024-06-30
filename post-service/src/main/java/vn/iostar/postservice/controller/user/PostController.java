@@ -83,7 +83,6 @@ public class PostController {
     // Tạo bài viết
     @PostMapping("/create")
     public ResponseEntity<Object> createUserPost(@ModelAttribute CreatePostRequestDTO requestDTO, @RequestHeader(HttpHeaders.AUTHORIZATION) String token) throws JsonProcessingException {
-        String videoUrl = String.valueOf((requestDTO.getVideo()));
         return postService.createUserPost(token, requestDTO);
     }
 

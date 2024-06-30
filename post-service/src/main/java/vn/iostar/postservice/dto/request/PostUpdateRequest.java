@@ -17,8 +17,10 @@ public class PostUpdateRequest {
 
     private String photoUrl;
     private String fileUrl;
+    private String videoUrl;
     private MultipartFile photos;
     private MultipartFile files;
+    private MultipartFile video;
     private PrivacyLevel privacyLevel;
     
 }

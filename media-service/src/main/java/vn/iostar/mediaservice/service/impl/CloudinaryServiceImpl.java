@@ -123,4 +123,30 @@ public class CloudinaryServiceImpl implements CloudinaryService {
         Map uploadResult = cloudinary.uploader().upload(file.getBytes(), params);
         return (String) uploadResult.get("secure_url");
     }
+
+    @Override
+    public void deleteImage(String imageUrl) throws IOException {
+        Map<String, String> params = ObjectUtils.asMap("folder", "Social Media/User", "resource_type", "image");
+        Map result = cloudinary.uploader().destroy(getPublicIdImage(imageUrl), params);
+        System.out.println(result.get("result").toString());
+    }
+
+    public String getPublicIdImage(String imageUrl)  {
+        String imageName = imageUrl.substring(imageUrl.lastIndexOf("/") + 1, imageUrl.lastIndexOf("."));
+        String publicId = "Social Media/User/" + imageName;
+        return publicId;
+    }
+
+    @Override
+    public void deleteFile(String fileUrl) throws IOException {
+        Map<String, String> params = ObjectUtils.asMap("folder", "Social Media/User", "resource_type", "auto");
+        Map result = cloudinary.uploader().destroy(getPublicIdFile(fileUrl), params);
+        System.out.println(result.get("result").toString());
+    }
+
+    public String getPublicIdFile(String fileUrl) {
+        String fileName = fileUrl.substring(fileUrl.lastIndexOf("/") + 1);
+        String publicId = "Social Media/User/" + fileName;
+        return publicId;
+    }
 }

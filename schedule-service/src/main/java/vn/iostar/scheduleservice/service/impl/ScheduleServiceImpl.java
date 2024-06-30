@@ -1,21 +1,26 @@
 package vn.iostar.scheduleservice.service.impl;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.catalina.User;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import vn.iostar.model.RelationshipResponse;
+import vn.iostar.scheduleservice.constant.RoleName;
 import vn.iostar.scheduleservice.dto.GenericResponse;
 import vn.iostar.scheduleservice.dto.request.AddScheduleDetailRequest;
 import vn.iostar.scheduleservice.dto.request.ScheduleDetailRequest;
 import vn.iostar.scheduleservice.dto.request.ScheduleRequest;
 import vn.iostar.scheduleservice.dto.response.ScheduleResponse;
+import vn.iostar.scheduleservice.dto.response.UserProfileResponse;
 import vn.iostar.scheduleservice.entity.Schedule;
 import vn.iostar.scheduleservice.entity.ScheduleDetail;
 import vn.iostar.scheduleservice.repository.ScheduleDetailRepository;
 import vn.iostar.scheduleservice.repository.ScheduleRepository;
 import vn.iostar.scheduleservice.service.ScheduleService;
+import vn.iostar.scheduleservice.service.client.UserClientService;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -27,13 +32,15 @@ public class ScheduleServiceImpl extends RedisServiceImpl implements ScheduleSer
 
     private final ScheduleRepository scheduleRepository;
     private final ScheduleDetailRepository scheduleDetailRepository;
+    private final UserClientService userClientService;
 
     ObjectMapper objectMapper;
 
-    public ScheduleServiceImpl(RedisTemplate<String, Object> redisTemplate, ScheduleRepository scheduleRepository, ScheduleDetailRepository scheduleDetailRepository) {
+    public ScheduleServiceImpl(RedisTemplate<String, Object> redisTemplate, ScheduleRepository scheduleRepository, ScheduleDetailRepository scheduleDetailRepository, UserClientService userClientService) {
         super(redisTemplate);
         this.scheduleRepository = scheduleRepository;
         this.scheduleDetailRepository = scheduleDetailRepository;
+        this.userClientService = userClientService;
     }
 
 
@@ -318,6 +325,39 @@ public class ScheduleServiceImpl extends RedisServiceImpl implements ScheduleSer
                 .result(schedule)
                 .statusCode(HttpStatus.OK.value())
                 .build());
+    }
+
+    @Override
+    public ResponseEntity<GenericResponse> getScheduleofOtherUser(String currentUserId,String userId, Pageable pageable) {
+        UserProfileResponse currentUser = userClientService.getUser(currentUserId);
+        if (currentUser.getRoleName().equals(RoleName.Admin)) {
+            List<Schedule> schedules = scheduleRepository.findByUserId(userId);
+            return ResponseEntity.ok(GenericResponse.builder().success(true).message("Retrieved schedules successfully")
+                    .result(schedules).statusCode(HttpStatus.OK.value()).build());
+        }
+        else if(currentUser.getRoleName().equals(RoleName.PhuHuynh)){
+            RelationshipResponse relationship = userClientService.getRelationship(currentUser.getUserId(), userId);
+            if (relationship != null && relationship.getIsAccepted()) {
+                List<Schedule> schedules = scheduleRepository.findByUserId(userId);
+                return ResponseEntity.ok(GenericResponse.builder().success(true).message("Retrieved schedules successfully")
+                        .result(schedules).statusCode(HttpStatus.OK.value()).build());
+            } else {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                        .body(GenericResponse.builder()
+                                .success(false)
+                                .message("You are not allowed to access this resource")
+                                .statusCode(HttpStatus.FORBIDDEN.value())
+                                .build());
+            }
+
+        } else {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(GenericResponse.builder()
+                            .success(false)
+                            .message("You are not allowed to access this resource")
+                            .statusCode(HttpStatus.FORBIDDEN.value())
+                            .build());
+        }
     }
 }
 

@@ -7,6 +7,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import vn.iostar.scheduleservice.constant.RoleName;
 import vn.iostar.scheduleservice.dto.GenericResponse;
 import vn.iostar.scheduleservice.dto.request.AddScheduleDetailRequest;
 import vn.iostar.scheduleservice.dto.request.ScheduleDetailRequest;
@@ -38,13 +39,8 @@ public class ScheduleController {
     public ResponseEntity<GenericResponse> getScheduleOfUser(@RequestHeader("Authorization") String authorizationHeader, @RequestParam String userId, @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "20") int size) throws JsonProcessingException {
         String token = authorizationHeader.substring(7);
         String currentUserId = jwtService.extractUserId(token);
-        UserProfileResponse userProfileResponse = userClientService.getUser(currentUserId);
-        if (!userProfileResponse.getRoleName().equals("ADMIN")) {
-            return ResponseEntity.status(403).body(GenericResponse.builder().success(false).message("You are not allowed to access this resource").statusCode(403).build());
-        } else {
-            Pageable pageable = PageRequest.of(page, size);
-            return scheduleService.getSchedule(userId, pageable);
-        }
+        Pageable pageable = PageRequest.of(page, size);
+        return scheduleService.getScheduleofOtherUser(currentUserId,userId, pageable);
     }
 
     // Tạo thời khóa biểu

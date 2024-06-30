@@ -22,6 +22,7 @@ import org.springframework.web.multipart.MultipartFile;
 import vn.iostar.constant.Gender;
 import vn.iostar.constant.KafkaTopicName;
 import vn.iostar.model.PasswordReset;
+import vn.iostar.model.RelationshipResponse;
 import vn.iostar.userservice.constant.RoleName;
 import vn.iostar.userservice.constant.RoleUserGroup;
 import vn.iostar.userservice.dto.*;
@@ -31,6 +32,7 @@ import vn.iostar.userservice.dto.response.GenericResponse;
 import vn.iostar.userservice.dto.response.UserResponse;
 import vn.iostar.userservice.entity.*;
 import vn.iostar.userservice.exception.wrapper.BadRequestException;
+import vn.iostar.userservice.exception.wrapper.NotFoundException;
 import vn.iostar.userservice.jwt.service.JwtService;
 import vn.iostar.userservice.repository.*;
 import vn.iostar.userservice.dto.response.UserProfileResponse;
@@ -68,6 +70,7 @@ public class UserServiceImpl implements UserService {
     private final JwtService jwtService;
 
     private final RoleService roleService;
+    private final  RelationshipRepository relationshipRepository;
 
     private final KafkaTemplate<String, PasswordReset> kafkaTemplate;
     final String indexCell = "Tại dòng ";
@@ -689,6 +692,8 @@ public class UserServiceImpl implements UserService {
         int countMember = 0;
         try (// Tạo đối tượng XSSFWorkbook để đọc file Excel
              XSSFWorkbook workbook = new XSSFWorkbook(inputStream)) {
+            // vòng lặp qua từng sheet
+
             // Lấy sheet đầu tiên
             XSSFSheet sheet = workbook.getSheetAt(0);
             List<User> listUsers = new ArrayList<>();
@@ -701,7 +706,7 @@ public class UserServiceImpl implements UserService {
             for (int i = 1; i <= sheet.getLastRowNum(); i++) {
                 User user = new User();
                 UserFileDTO userDTO = mapRowToUserDTO(sheet, i, inputStream);
-
+                System.out.println(userDTO);
                 // Nếu người dùng chưa tồn tại trong hệ thống
                 if (userDTO.getAccount() == null) {
                     countMember += 1;
@@ -736,7 +741,7 @@ public class UserServiceImpl implements UserService {
                     Account account = new Account();
                     account.setIsVerified(false);
                     if (userDTO.getPhone() != null) {
-                        account.setPhone(String.format("%011.0f", userDTO.getPhone()));
+                        account.setPhone(String.format("%01.0f", userDTO.getPhone()));
                     }
                     account.setEmail(userDTO.getEmail());
                     account.setIsActive(true);
@@ -1081,5 +1086,40 @@ public class UserServiceImpl implements UserService {
                 "Xác thực người dùng thành công!",
                 new UserResponse(account.get().getUser()),
                 HttpStatus.OK.value()));
+    }
+
+    @Override
+    public ResponseEntity<GenericResponse> getChildren(String userId) {
+        Optional<User> user = findById(userId);
+        if (user.isEmpty()) {
+            throw new NotFoundException("Người dùng không tồn tại");
+        }
+        List<Relationship> children = relationshipRepository.findByParent(user.get());
+        List<UserResponse> childrenResponse = new ArrayList<>();
+        for (Relationship child : children) {
+            childrenResponse.add(new UserResponse(child.getChild()));
+        }
+        return ResponseEntity.ok().body(new GenericResponse(true,
+                "Lấy danh sách con thành công!",
+                childrenResponse,
+                HttpStatus.OK.value()));
+    }
+
+    @Override
+    public RelationshipResponse getRelationship(String currentId, String userId) {
+        Optional<User> currentUser = findById(currentId);
+        Optional<User> user = findById(userId);
+        if (currentUser.isEmpty() || user.isEmpty()) {
+            throw new NotFoundException("Người dùng không tồn tại");
+        }
+        Optional<Relationship> relationship = relationshipRepository.findByParentUserIdAndChildUserId(currentUser.get().getUserId(), user.get().getUserId());
+        if (relationship.isEmpty()) {
+            return new RelationshipResponse();
+        }
+        RelationshipResponse relationshipResponse = new RelationshipResponse();
+        relationshipResponse.setId(relationship.get().getId());
+        relationshipResponse.setChildUserId(userId);
+        relationshipResponse.setParentUserId(currentId);
+        return relationshipResponse;
     }
 }

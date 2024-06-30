@@ -1,7 +1,6 @@
 package vn.iostar.userservice.service.impl;
 
 import lombok.RequiredArgsConstructor;
-import org.jetbrains.annotations.NotNull;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.kafka.core.KafkaTemplate;
@@ -74,10 +73,10 @@ public class AccountServiceImpl implements AccountService {
                             .statusCode(HttpStatus.INTERNAL_SERVER_ERROR.value()).build());
         }
         if(optionalUser.get().getUser().getRole().getRoleName().equals(RoleName.PhuHuynh)){
-            if(!optionalUser.get().getUser().getChild().isEmpty()){
+            if(!optionalUser.get().getUser().getParent().isEmpty()){
                 // kiểm tra bảng relationship xem có dòng nào được chấp nhận không
                 boolean isAccepted = false;
-                for(Relationship relationship: optionalUser.get().getUser().getChild()){
+                for(Relationship relationship: optionalUser.get().getUser().getParent()){
                     if(relationship.getIsAccepted()){
                         isAccepted = true;
                         break;
@@ -145,11 +144,11 @@ public class AccountServiceImpl implements AccountService {
         tokenOptional.get().setIsRevoked(true);
         tokenService.save(tokenOptional.get());
         Account account = tokenOptional.get().getUser().getAccount();
-//        Optional<Relationship> relationship = relationshipService.findByParent(account.getUser().getUserId());
-//        if(relationship.isPresent()){
-//            relationship.get().setIsAccepted(true);
-//            relationshipService.save(relationship.get());
-//        }
+        Optional<Relationship> relationship = relationshipService.findByParent(account.getUser().getUserId());
+        if(relationship.isPresent()){
+            relationship.get().setIsAccepted(true);
+            relationshipService.save(relationship.get());
+        }
         save(account);
         return ResponseEntity.ok().body(GenericResponse.builder().success(true).message("Xác thực thành công!")
                 .result(null).statusCode(HttpStatus.OK.value()).build());
@@ -207,13 +206,14 @@ public class AccountServiceImpl implements AccountService {
     public Optional<Account> findByPhone(String phone) {
         return accountRepository.findByPhone(phone);
     }
-    public void saveUserAndAccount(@NotNull RegisterRequest registerRequest, Role role, Optional<Account> accountOptionalStudent) {
+    public void saveUserAndAccount( RegisterRequest registerRequest, Role role, Optional<Account> accountOptionalStudent) {
 
         User user = new User();
         user.setPhone(registerRequest.getPhone());
         user.setUserName(registerRequest.getFullName());
         user.setRole(role);
         user.setGender(registerRequest.getGender());
+        user.setIsActive(true);
         userRepository.save(user);
 
         if(registerRequest.getRoleName().equals(RoleName.PhuHuynh.toString())){

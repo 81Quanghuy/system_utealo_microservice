@@ -755,6 +755,9 @@ public class PostServiceImpl extends RedisServiceImpl implements PostService {
         }
         PageRequest pageable = PageRequest.of(page, size);
         List<String> userIds = friendClientService.getFriendIdsByUserId(userId);
+        if (userIds == null) {
+            userIds = new ArrayList<>();
+        }
         userIds.add(userId);
         List<String> groupIds = groupClientService.getGroupIdsByUserId(userId);
         List<Post> userPosts = postRepository.findPostsInTimeLine(userIds, groupIds, pageable);

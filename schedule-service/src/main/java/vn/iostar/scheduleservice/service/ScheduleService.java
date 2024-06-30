@@ -26,4 +26,6 @@ public interface ScheduleService extends RedisService{
     ResponseEntity<Object> createScheduleDetail(String token, ScheduleRequest requestDTO);
     // Thêm ScheduleDetial vào Schedule
     ResponseEntity<Object> addScheduleDetailtoSchdule(String currentUserId, AddScheduleDetailRequest requestDTO);
+
+    ResponseEntity<GenericResponse> getScheduleofOtherUser(String currentUserId,String userId, Pageable pageable);
 }

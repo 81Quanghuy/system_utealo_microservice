@@ -4,6 +4,7 @@ import org.springframework.data.domain.Example;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
+import vn.iostar.model.RelationshipResponse;
 import vn.iostar.userservice.constant.RoleName;
 import vn.iostar.userservice.dto.*;
 import vn.iostar.userservice.dto.request.AccountManager;
@@ -146,4 +147,8 @@ public interface UserService {
 	List<String> getAllUserId();
 
 	ResponseEntity<GenericResponse> verifyUser(String userId);
+
+	ResponseEntity<GenericResponse> getChildren(String userId);
+
+	RelationshipResponse getRelationship(String currentId, String userId);
 }

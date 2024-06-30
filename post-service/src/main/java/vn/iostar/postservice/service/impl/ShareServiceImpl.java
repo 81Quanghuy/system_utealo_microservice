@@ -586,6 +586,9 @@ public class ShareServiceImpl extends RedisServiceImpl implements ShareService {
         }
         PageRequest pageable = PageRequest.of(page, size);
         List<String> userIds = friendClientService.getFriendIdsByUserId(userId);
+        if (userIds == null) {
+            userIds = new ArrayList<>();
+        }
         userIds.add(userId);
         List<String> groupIds = groupClientService.getGroupIdsByUserId(userId);
         List<Share> userSharePosts = shareRepository.findSharePostsInTimeLine(userIds, groupIds, pageable);

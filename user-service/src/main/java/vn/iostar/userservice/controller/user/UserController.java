@@ -18,6 +18,7 @@ import org.springframework.validation.BindingResult;
 import org.springframework.web.multipart.MultipartFile;
 import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
+import vn.iostar.model.RelationshipResponse;
 import vn.iostar.userservice.dto.SearchUser;
 import vn.iostar.userservice.dto.UserIds;
 import vn.iostar.userservice.dto.request.ChangePasswordRequest;
@@ -302,5 +303,17 @@ public class UserController {
     @PostMapping("/verify")
     ResponseEntity<GenericResponse> verifyUser(@RequestBody String email) {
         return userService.verifyUser(email);
+    }
+    // lay thong tin user la con cua user cha
+    @GetMapping("/getChildren")
+    public ResponseEntity<GenericResponse> getChildren(@RequestHeader("Authorization") String authorizationHeader) {
+        String token = authorizationHeader.substring(7);
+        String userId = jwtService.extractUserId(token);
+        return userService.getChildren(userId);
+    }
+    // lay thong tin children cua user
+    @GetMapping("/getRelationShip")
+    RelationshipResponse getRelationship(@RequestParam String currentId, @RequestParam String userId){
+        return userService.getRelationship(currentId,userId);
     }
 }

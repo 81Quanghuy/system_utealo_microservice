@@ -18,6 +18,7 @@ public class PostsResponse {
 	private String content;
 	private String photos;
 	private String files;
+	private String video;
 	private String location;
 	private String userId;
 	private String userName;
@@ -38,6 +39,7 @@ public class PostsResponse {
 		this.content = post.getContent();
 		this.photos = post.getPhotos();
 		this.files = post.getFiles();
+		this.video = post.getVideo();
 		this.location = post.getLocation();
 		this.userId = post.getUserId();
 		if (user != null) {

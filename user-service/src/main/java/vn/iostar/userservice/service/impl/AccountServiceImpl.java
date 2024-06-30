@@ -1,11 +1,13 @@
 package vn.iostar.userservice.service.impl;
 
 import lombok.RequiredArgsConstructor;
+import org.jetbrains.annotations.NotNull;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import vn.iostar.constant.KafkaTopicName;
 import vn.iostar.model.VerifyParent;
 import vn.iostar.userservice.constant.RoleName;
@@ -20,6 +22,7 @@ import vn.iostar.userservice.repository.ProfileRepository;
 import vn.iostar.userservice.repository.RoleRepository;
 import vn.iostar.userservice.repository.UserRepository;
 import vn.iostar.userservice.service.AccountService;
+import vn.iostar.userservice.service.RelationshipService;
 import vn.iostar.userservice.service.TokenService;
 import vn.iostar.userservice.constant.TokenType;
 
@@ -33,6 +36,7 @@ public class AccountServiceImpl implements AccountService {
 
     private final JwtService jwtService;
     private final RoleRepository roleRepository;
+    private final RelationshipService relationshipService;
 
     private final UserRepository userRepository;
 
@@ -44,7 +48,6 @@ public class AccountServiceImpl implements AccountService {
 
     private final KafkaTemplate<String, String> kafkaTemplate;
     private final KafkaTemplate<String, VerifyParent> kafkaTemplateVerify;
-    private  User userRegister;
 
     @Override
     public <S extends Account> void saveAll(Iterable<S> entities) {
@@ -70,10 +73,22 @@ public class AccountServiceImpl implements AccountService {
                     .body(GenericResponse.builder().success(false).message("Tài khoản đã bị khóa!!!").result(null)
                             .statusCode(HttpStatus.INTERNAL_SERVER_ERROR.value()).build());
         }
-        if(!optionalUser.get().getIsVerifiedByStudent()){
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(GenericResponse.builder().success(false).message("Tài khoản chưa được xác thực bởi con của bạn!!!").result(null)
-                            .statusCode(HttpStatus.INTERNAL_SERVER_ERROR.value()).build());
+        if(optionalUser.get().getUser().getRole().getRoleName().equals(RoleName.PhuHuynh)){
+            if(!optionalUser.get().getUser().getChild().isEmpty()){
+                // kiểm tra bảng relationship xem có dòng nào được chấp nhận không
+                boolean isAccepted = false;
+                for(Relationship relationship: optionalUser.get().getUser().getChild()){
+                    if(relationship.getIsAccepted()){
+                        isAccepted = true;
+                        break;
+                    }
+                }
+                if(!isAccepted){
+                    return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                            .body(GenericResponse.builder().success(false).message("Tài khoản chưa được xác thực bởi sinh viên !!!").result(null)
+                                    .statusCode(HttpStatus.INTERNAL_SERVER_ERROR.value()).build());
+                }
+            }
         }
 
         String accessToken = jwtService.generateAccessToken(optionalUser.get());
@@ -112,6 +127,35 @@ public class AccountServiceImpl implements AccountService {
     }
 
     @Override
+    public ResponseEntity<GenericResponse> verifyParent(String token) {
+        System.out.println("token: "+token);
+        Optional<Token> tokenOptional = tokenService.findByToken(token);
+        if (tokenOptional.isEmpty())
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(GenericResponse.builder().success(false).message("Token không tồn tại!!!").result(null)
+                            .statusCode(HttpStatus.INTERNAL_SERVER_ERROR.value()).build());
+        if (tokenOptional.get().getIsExpired())
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(GenericResponse.builder().success(false).message("Token đã hết hạn!!!").result(null)
+                            .statusCode(HttpStatus.INTERNAL_SERVER_ERROR.value()).build());
+        if (tokenOptional.get().getIsRevoked())
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(GenericResponse.builder().success(false).message("Token đã bị thu hồi!!!").result(null)
+                            .statusCode(HttpStatus.INTERNAL_SERVER_ERROR.value()).build());
+        tokenOptional.get().setIsRevoked(true);
+        tokenService.save(tokenOptional.get());
+        Account account = tokenOptional.get().getUser().getAccount();
+//        Optional<Relationship> relationship = relationshipService.findByParent(account.getUser().getUserId());
+//        if(relationship.isPresent()){
+//            relationship.get().setIsAccepted(true);
+//            relationshipService.save(relationship.get());
+//        }
+        save(account);
+        return ResponseEntity.ok().body(GenericResponse.builder().success(true).message("Xác thực thành công!")
+                .result(null).statusCode(HttpStatus.OK.value()).build());
+    }
+
+    @Override
     public List<Account> findAll() {
         return accountRepository.findAll();
     }
@@ -137,8 +181,8 @@ public class AccountServiceImpl implements AccountService {
                     .message("Email này đã được sử dụng!!").result(null).statusCode(HttpStatus.CONFLICT.value()).build());
 
         Optional<Role> role = roleRepository.findByRoleName(RoleName.valueOf(registerRequest.getRoleName()));
+        Optional<Account> accountOptionalStudent = findByEmail(registerRequest.getEmailStudent());
         if(registerRequest.getRoleName().equals(RoleName.PhuHuynh.toString())){
-            Optional<Account> accountOptionalStudent = findByEmail(registerRequest.getEmailStudent());
             if (accountOptionalStudent.isEmpty())
                 return ResponseEntity.status(409).body(GenericResponse.builder().success(false)
                         .message("Email của học sinh không tồn tại!").result(null).statusCode(HttpStatus.CONFLICT.value()).build());
@@ -147,7 +191,7 @@ public class AccountServiceImpl implements AccountService {
             return ResponseEntity.status(404).body(GenericResponse.builder().success(false)
                     .message("Role name not found").result(null).statusCode(HttpStatus.CONFLICT.value()).build());
         }
-        saveUserAndAccount(registerRequest, role.get());
+        saveUserAndAccount(registerRequest, role.get(),accountOptionalStudent);
         kafkaTemplate.send(KafkaTopicName.EMAIL_REGISTER_TOPIC, registerRequest.getEmail());
         return ResponseEntity.ok(GenericResponse.builder().success(true).message("Đăng ký thành công!").result(registerRequest)
                 .statusCode(200).build());
@@ -163,17 +207,27 @@ public class AccountServiceImpl implements AccountService {
     public Optional<Account> findByPhone(String phone) {
         return accountRepository.findByPhone(phone);
     }
-
-    public void saveUserAndAccount(RegisterRequest registerRequest, Role role) {
+    public void saveUserAndAccount(@NotNull RegisterRequest registerRequest, Role role, Optional<Account> accountOptionalStudent) {
 
         User user = new User();
         user.setPhone(registerRequest.getPhone());
         user.setUserName(registerRequest.getFullName());
         user.setRole(role);
         user.setGender(registerRequest.getGender());
-        userRegister = user;
         userRepository.save(user);
 
+        if(registerRequest.getRoleName().equals(RoleName.PhuHuynh.toString())){
+            if(accountOptionalStudent.isPresent()){
+                Relationship relationship = new Relationship();
+                relationship.setChild(accountOptionalStudent.get().getUser());
+                relationship.setParent(user);
+                relationshipService.save(relationship);
+                List<Relationship> relationships = new ArrayList<>();
+                relationships.add(relationship);
+                user.setChild(relationships);
+                userRepository.save(user);
+            }
+        }
         Account account = new Account();
         account.setPassword(passwordEncoder.encode(registerRequest.getPassword()));
         account.setPhone(registerRequest.getPhone());
@@ -188,20 +242,17 @@ public class AccountServiceImpl implements AccountService {
             token.setExpiredAt(new Date(System.currentTimeMillis() + 24 * 60 * 60 * 1000));
             tokenService.save(token);
             VerifyParent verifyParent = new VerifyParent(registerRequest.getEmailStudent(),registerRequest.getEmail(), registerRequest.getFullName(), token.getToken());
-            account.setIsVerifiedByStudent(false);
             kafkaTemplateVerify.send(KafkaTopicName.EMAIL_VERIFY_TOPIC, verifyParent);
         }
 
         Date createDate = new Date();
         account.setCreatedAt(createDate);
         account.setUpdatedAt(createDate);
-
         account.setUser(user);
         accountRepository.save(account);
 
         Profile profile = new Profile();
         profile.setUser(user);
         profileRepository.save(profile);
-
     }
 }

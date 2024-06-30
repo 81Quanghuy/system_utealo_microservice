@@ -34,4 +34,6 @@ public interface AccountService {
 
     ResponseEntity<GenericResponse> login(LoginDTO loginDTO);
     ResponseEntity<GenericResponse> sendOTP(String email);
+
+    ResponseEntity<GenericResponse> verifyParent(String token);
 }

@@ -115,6 +115,11 @@ public class TokenServiceImpl implements TokenService {
         }
     }
 
+    @Override
+    public Optional<Token> findByToken(String token) {
+        return refreshTokenRepository.findByToken(token);
+    }
+
     private GenericResponse buildSuccessResponse(String message) {
         return GenericResponse.builder().success(true).message(message).result("").statusCode(HttpStatus.OK.value())
                 .build();

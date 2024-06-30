@@ -13,4 +13,7 @@ public interface CloudinaryService {
     String uploadMediaFile(MultipartFile mediaFile, String name, String folder) throws IOException;
 
     void deleteImage(String url, String folder) throws IOException;
+    String uploadVideo(MultipartFile imageFile) throws IOException;
+    String uploadFile(MultipartFile fileUrl) throws IOException;
+    String uploadImage(MultipartFile imageFile) throws IOException;
 }

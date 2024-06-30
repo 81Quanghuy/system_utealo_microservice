@@ -16,6 +16,7 @@ public class CreatePostRequestDTO {
     private Date postTime;
     private MultipartFile photos;
     private MultipartFile files;
+    private MultipartFile video;
     private PrivacyLevel privacyLevel;
     private String userId;
     private String postGroupId;

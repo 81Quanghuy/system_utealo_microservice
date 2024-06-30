@@ -17,6 +17,7 @@ import vn.iostar.mediaservice.dto.response.GenericResponse;
 import vn.iostar.mediaservice.dto.response.ListMediaResponse;
 import vn.iostar.mediaservice.entity.File;
 import vn.iostar.mediaservice.jwt.service.JwtService;
+import vn.iostar.mediaservice.service.CloudinaryService;
 import vn.iostar.mediaservice.service.FileService;
 
 import java.io.IOException;
@@ -32,6 +33,7 @@ import java.util.Map;
 public class FileController {
 
     private final FileService fileService;
+    private final CloudinaryService cloudinaryService;
     private final JwtService jwtService;
 
     @PostMapping(value = "/posts", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
@@ -181,5 +183,23 @@ public class FileController {
                                    @RequestParam(value = "size", defaultValue = "4") Integer size){
         Pageable pageable = PageRequest.of(page, size);
         return fileService.getMediaList(fileRequest,pageable);
+    }
+
+    // Upload file
+    @PostMapping(value = "/uploadFile", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public String uploadFile(@RequestPart("mediaFile") MultipartFile file) throws IOException {
+        return cloudinaryService.uploadFile(file);
+    }
+
+    // Upload image
+    @PostMapping(value = "/uploadImage", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public String uploadImage(@RequestPart("mediaFile") MultipartFile file) throws IOException {
+        return cloudinaryService.uploadImage(file);
+    }
+
+    // Upload video
+    @PostMapping(value = "/uploadVideo", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public String uploadVideo(@RequestPart("mediaFile") MultipartFile file) throws IOException {
+        return cloudinaryService.uploadVideo(file);
     }
 }

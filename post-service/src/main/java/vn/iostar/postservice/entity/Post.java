@@ -32,6 +32,9 @@ public class Post implements Serializable {
     @Field(name = "files")
     private String files;
 
+    @Field(name = "video")
+    private String video;
+
     @Field(name = "location")
     private String location;
 

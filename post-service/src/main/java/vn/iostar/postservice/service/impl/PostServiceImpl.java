@@ -112,6 +112,11 @@ public class PostServiceImpl extends RedisServiceImpl implements PostService {
             } else {
                 post.setPhotos(cloudinaryService.uploadImage(requestDTO.getPhotos()));
             }
+            if (requestDTO.getVideo() == null || requestDTO.getVideo().getContentType() == null) {
+                post.setVideo("");
+            } else {
+                post.setVideo(cloudinaryService.uploadVideo(requestDTO.getVideo()));
+            }
             if (requestDTO.getFiles() == null || requestDTO.getFiles().getContentType() == null) {
                 post.setFiles("");
             } else {

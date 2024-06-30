@@ -7,11 +7,13 @@ import com.cloudinary.utils.ObjectUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 import vn.iostar.mediaservice.exception.wrapper.UnsupportedMediaTypeException;
 import vn.iostar.mediaservice.service.CloudinaryService;
 
 import java.io.IOException;
+import java.util.Map;
 import java.util.Objects;
 
 @Service
@@ -77,5 +79,48 @@ public class CloudinaryServiceImpl implements CloudinaryService {
     public String getPublicIdFromUrl(String imageUrl, String folder) {
         String publicId = imageUrl.substring(imageUrl.lastIndexOf("/") + 1, imageUrl.lastIndexOf("."));
         return ROOT_FOLDER + folder + "/" + publicId;
+    }
+
+    @Override
+    public String uploadVideo(MultipartFile imageFile) throws IOException {
+        if (imageFile == null) {
+            throw new IllegalArgumentException("File is null. Please upload a valid file.");
+        }
+        if (!Objects.requireNonNull(imageFile.getContentType()).startsWith("video/")) {
+            throw new IllegalArgumentException("Only video files are allowed.");
+        }
+
+        Map params = ObjectUtils.asMap("folder", "Social Media/User", "resource_type", "video");
+        Map uploadResult = cloudinary.uploader().upload(imageFile.getBytes(), params);
+        return (String) uploadResult.get("secure_url");
+    }
+
+    @Override
+    public String uploadImage(MultipartFile imageFile) throws IOException {
+
+        if (imageFile == null) {
+            throw new IllegalArgumentException("File is null. Please upload a valid file.");
+        }
+        if (!Objects.requireNonNull(imageFile.getContentType()).startsWith("image/")) {
+            throw new IllegalArgumentException("Only image files are allowed.");
+        }
+
+        Map params = ObjectUtils.asMap("folder", "Social Media/User", "resource_type", "image");
+        Map uploadResult = cloudinary.uploader().upload(imageFile.getBytes(), params);
+        return (String) uploadResult.get("secure_url");
+    }
+
+    @Override
+    public String uploadFile(MultipartFile file) throws IOException {
+        if (file == null) {
+            throw new IllegalArgumentException("File is null. Please upload a valid file.");
+        }
+
+        String originalFileName = file.getOriginalFilename();
+        String publicId = "Social Media/User/" + originalFileName;
+
+        Map params = ObjectUtils.asMap("public_id", publicId, "resource_type", "auto");
+        Map uploadResult = cloudinary.uploader().upload(file.getBytes(), params);
+        return (String) uploadResult.get("secure_url");
     }
 }

@@ -62,8 +62,4 @@ public class Account extends AbstractMappedEntity implements Serializable {
 
     @Column(name = "last_login_at")
     private Date lastLoginAt;
-
-    @Builder.Default
-    @Column(name = "is_account_verified_by_student")
-    private Boolean isVerifiedByStudent = true;
 }

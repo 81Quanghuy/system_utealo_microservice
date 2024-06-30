@@ -4,6 +4,8 @@ import org.springframework.http.ResponseEntity;
 import vn.iostar.userservice.dto.response.GenericResponse;
 import vn.iostar.userservice.entity.Token;
 
+import java.util.Optional;
+
 
 public interface TokenService {
 
@@ -18,4 +20,6 @@ public interface TokenService {
 
     // Đăng xuất
     ResponseEntity<?> logout(String refreshToken);
+
+    Optional<Token> findByToken(String token);
 }

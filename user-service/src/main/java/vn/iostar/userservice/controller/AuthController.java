@@ -86,4 +86,9 @@ public class AuthController {
     public ResponseEntity<GenericResponse> sendOTP(@RequestBody EmailRequest email) {
         return accountService.sendOTP(email.getEmail());
     }
+
+    @PostMapping("/verifyParent")
+    public ResponseEntity<GenericResponse> verifyParent(@RequestParam String token) {
+        return accountService.verifyParent(token);
+    }
 }

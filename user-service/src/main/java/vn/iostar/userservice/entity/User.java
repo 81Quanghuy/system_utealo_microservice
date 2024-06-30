@@ -1,5 +1,6 @@
 package vn.iostar.userservice.entity;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 
 import lombok.*;
@@ -55,7 +56,7 @@ public class User extends AbstractMappedEntity implements Serializable {
     @Builder.Default
     private Boolean isVerified = false;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne
     @JoinColumn(name = "role_id")
     private Role role;
 
@@ -68,4 +69,11 @@ public class User extends AbstractMappedEntity implements Serializable {
     @OneToMany(mappedBy = "user")
     private List<Token> tokens;
 
+    @OneToMany(mappedBy = "child", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JsonBackReference
+    private List<Relationship> child ;
+
+    @OneToMany(mappedBy = "parent", cascade = CascadeType.ALL)
+    @JsonBackReference
+    private List<Relationship> parent ;
 }

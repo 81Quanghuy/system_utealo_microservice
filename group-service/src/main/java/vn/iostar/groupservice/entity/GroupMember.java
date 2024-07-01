@@ -11,7 +11,7 @@ import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.DocumentReference;
 import org.springframework.data.mongodb.core.mapping.Field;
-import vn.iostar.groupservice.constant.GroupMemberRoleType;
+import vn.iostar.constant.GroupMemberRoleType;
 
 import java.io.Serializable;
 import java.util.Date;

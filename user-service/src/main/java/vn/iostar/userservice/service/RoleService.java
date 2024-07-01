@@ -1,6 +1,6 @@
 package vn.iostar.userservice.service;
 
-import vn.iostar.userservice.constant.RoleName;
+import vn.iostar.constant.RoleName;
 import vn.iostar.userservice.entity.Role;
 
 import java.util.Optional;

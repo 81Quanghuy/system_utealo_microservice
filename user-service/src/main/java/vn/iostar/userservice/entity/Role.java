@@ -2,7 +2,7 @@ package vn.iostar.userservice.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
-import vn.iostar.userservice.constant.RoleName;
+import vn.iostar.constant.RoleName;
 
 import java.io.Serial;
 import java.io.Serializable;

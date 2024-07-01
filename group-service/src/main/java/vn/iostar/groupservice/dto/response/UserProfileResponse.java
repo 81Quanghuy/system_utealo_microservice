@@ -4,8 +4,8 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import vn.iostar.constant.RoleName;
 import vn.iostar.groupservice.constant.Gender;
-import vn.iostar.groupservice.constant.RoleName;
 
 import java.util.Date;
 

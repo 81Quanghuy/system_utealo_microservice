@@ -1,7 +1,7 @@
 package vn.iostar.userservice.dto.request;
 
 import lombok.Data;
-import vn.iostar.userservice.constant.RoleName;
+import vn.iostar.constant.RoleName;
 
 
 @Data

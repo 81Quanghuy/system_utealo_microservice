@@ -1,4 +1,4 @@
-package vn.iostar.groupservice.constant;
+package vn.iostar.constant;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;

@@ -5,6 +5,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.multipart.MultipartFile;
+import vn.iostar.constant.AdminInGroup;
 import vn.iostar.groupservice.dto.*;
 import vn.iostar.groupservice.dto.request.GroupConfigRequest;
 import vn.iostar.groupservice.dto.request.GroupCreateRequest;
@@ -12,6 +13,7 @@ import vn.iostar.groupservice.dto.request.UpdateDetailRequest;
 import vn.iostar.groupservice.dto.response.GenericResponse;
 import vn.iostar.groupservice.dto.response.GenericResponseAdmin;
 import vn.iostar.groupservice.entity.Group;
+import vn.iostar.model.GroupResponse;
 
 import java.io.IOException;
 import java.util.List;
@@ -94,4 +96,12 @@ public interface GroupService {
     ResponseEntity<GenericResponse> searchGroupAndUserContainingIgnoreCase(String search, String userIdToken);
 
     ResponseEntity<GenericResponse> getSystemGroups();
+
+    ResponseEntity<GenericResponse> updateGroupFromExcel(List<GroupResponse> groupResponse);
+
+    AdminInGroup checkAdminInGroup(String groupName);
+
+    void deleteMemberInGroup(List<String> userIds);
+
+    ResponseEntity<GenericResponse> addMemberToSystemGroup(GroupResponse groupResponse);
 }

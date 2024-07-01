@@ -6,10 +6,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import vn.iostar.constant.KafkaTopicName;
+import vn.iostar.constant.RoleName;
+import vn.iostar.model.GroupResponse;
 import vn.iostar.model.VerifyParent;
-import vn.iostar.userservice.constant.RoleName;
 import vn.iostar.userservice.dto.LoginDTO;
 import vn.iostar.userservice.dto.request.RegisterRequest;
 import vn.iostar.userservice.dto.response.GenericResponse;
@@ -24,6 +24,7 @@ import vn.iostar.userservice.service.AccountService;
 import vn.iostar.userservice.service.RelationshipService;
 import vn.iostar.userservice.service.TokenService;
 import vn.iostar.userservice.constant.TokenType;
+import vn.iostar.userservice.service.client.GroupClient;
 
 import java.util.*;
 
@@ -47,6 +48,7 @@ public class AccountServiceImpl implements AccountService {
 
     private final KafkaTemplate<String, String> kafkaTemplate;
     private final KafkaTemplate<String, VerifyParent> kafkaTemplateVerify;
+    private final GroupClient groupClient;
 
     @Override
     public <S extends Account> void saveAll(Iterable<S> entities) {
@@ -254,5 +256,10 @@ public class AccountServiceImpl implements AccountService {
         Profile profile = new Profile();
         profile.setUser(user);
         profileRepository.save(profile);
+        GroupResponse groupResponse = new GroupResponse();
+        groupResponse.setUserId(user.getUserId());
+        groupResponse.setUsername(user.getUserName());
+        groupResponse.setRoleUser(user.getRole().getRoleName());
+        groupClient.addMemberToGroup(groupResponse);
     }
 }

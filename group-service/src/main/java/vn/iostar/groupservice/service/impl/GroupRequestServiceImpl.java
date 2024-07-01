@@ -5,7 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
-import vn.iostar.groupservice.constant.GroupMemberRoleType;
+import vn.iostar.constant.GroupMemberRoleType;
 import vn.iostar.groupservice.dto.PostGroupDTO;
 import vn.iostar.groupservice.dto.UserInviteGroup;
 import vn.iostar.groupservice.dto.response.GenericResponse;

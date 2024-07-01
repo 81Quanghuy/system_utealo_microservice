@@ -1,6 +1,8 @@
 package vn.iostar.userservice.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import vn.iostar.userservice.entity.Relationship;
 import vn.iostar.userservice.entity.User;
@@ -16,4 +18,8 @@ public interface RelationshipRepository extends JpaRepository<Relationship,Strin
     List<Relationship> findByParent(User id);
 
     Optional<Relationship> findByParentUserIdAndChildUserId(String parentUserId, String childUserId);
+
+
+    @Query("SELECT r FROM Relationship r WHERE r.parent IN :users")
+    void deleteAllByParentIn(@Param("users") List<User> users);
 }

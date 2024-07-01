@@ -3,7 +3,7 @@ package vn.iostar.userservice.dto;
 import java.util.Date;
 
 import lombok.Data;
-import vn.iostar.userservice.constant.RoleName;
+import vn.iostar.constant.RoleName;
 import vn.iostar.userservice.constant.RoleUserGroup;
 import vn.iostar.userservice.entity.Account;
 

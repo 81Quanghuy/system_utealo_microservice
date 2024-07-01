@@ -12,8 +12,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import org.springframework.web.multipart.MultipartFile;
-import vn.iostar.groupservice.constant.GroupMemberRoleType;
-import vn.iostar.groupservice.constant.RoleName;
+import vn.iostar.constant.AdminInGroup;
+import vn.iostar.constant.GroupMemberRoleType;
+import vn.iostar.constant.RoleName;
+import vn.iostar.groupservice.constant.AppConstant;
 import vn.iostar.groupservice.dto.*;
 import vn.iostar.groupservice.dto.request.GroupCreateRequest;
 import vn.iostar.groupservice.dto.response.*;
@@ -32,6 +34,7 @@ import vn.iostar.groupservice.service.client.FileClientService;
 import vn.iostar.groupservice.service.client.FriendClientService;
 import vn.iostar.groupservice.service.client.PostClientService;
 import vn.iostar.groupservice.service.client.UserClientService;
+import vn.iostar.model.GroupResponse;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
@@ -666,4 +669,122 @@ public class GroupServiceImpl implements GroupService {
                 .result(groups).statusCode(HttpStatus.OK.value()).build());
     }
 
+    @Override
+    public ResponseEntity<GenericResponse> updateGroupFromExcel(List<GroupResponse> groupResponses) {
+        log.info("GroupServiceImpl, updateGroupFromExcel");
+        for (GroupResponse groupResponse : groupResponses) {
+            Group group = groupRepository.findByPostGroupName(groupResponse.getName()).orElse(null);
+            if (group == null) {
+                group = new Group();
+                group.setId(UUID.randomUUID().toString());
+                group.setPostGroupName(groupResponse.getName());
+                if (groupResponse.getDescription() != null) {
+                    group.setBio(groupResponse.getDescription());
+                }
+                group.setIsSystem(false);
+                group.setIsPublic(true);
+                group.setIsApprovalRequired(false);
+                group.setIsActive(true);
+                group.setCreatedAt(new Date());
+                group.setUpdatedAt(new Date());
+                group.setAuthorId(groupResponse.getUserId());
+                groupRepository.save(group);
+                GroupMember groupMember = GroupMember.builder()
+                        .id(UUID.randomUUID().toString())
+                        .userId(groupResponse.getUserId())
+                        .group(group)
+                        .isLocked(false)
+                        .memberRequestId(groupResponse.getUserId())
+                        .createdAt(new Date())
+                        .updatedAt(new Date())
+                        .role(groupResponse.getRole() != null ? groupResponse.getRole() : GroupMemberRoleType.Admin)
+                        .build();
+                groupMemberRepository.save(groupMember);
+
+            } else {
+                GroupMember groupMember = GroupMember.builder()
+                        .id(UUID.randomUUID().toString())
+                        .userId(groupResponse.getUserId())
+                        .group(group)
+                        .isLocked(false)
+                        .memberRequestId(groupResponse.getUserId())
+                        .createdAt(new Date())
+                        .updatedAt(new Date())
+                        .role(groupResponse.getRole() != null ? groupResponse.getRole() : GroupMemberRoleType.Member)
+                        .build();
+                groupMemberRepository.save(groupMember);
+            }
+            // Thêm vào các nhóm của hê thống theo role của user
+            if (groupResponse.getRoleUser().equals(RoleName.SinhVien)){
+                addMemberToSystemGroup(groupResponse.getUserId(), AppConstant.GROUP_NAME_STUDENT);
+            } else if (groupResponse.getRoleUser().equals(RoleName.NhanVien)) {
+                addMemberToSystemGroup(groupResponse.getUserId(), AppConstant.GROUP_NAME_STAFF);
+            } else if (groupResponse.getRoleUser().equals(RoleName.PhuHuynh)) {
+                addMemberToSystemGroup(groupResponse.getUserId(), AppConstant.GROUP_NAME_PARENT);
+            } else if (groupResponse.getRoleUser().equals(RoleName.GiangVien)) {
+                addMemberToSystemGroup(groupResponse.getUserId(), AppConstant.GROUP_NAME_TEACHER);
+            }
+        }
+        return ResponseEntity.ok(GenericResponse.builder().success(true)
+                .message("Tạo nhóm thành công!")
+                .result(null).statusCode(HttpStatus.OK.value()).build());
+    }
+
+    public void addMemberToSystemGroup(String userId, String groupName) {
+        Group group = groupRepository.findByPostGroupName(groupName).orElse(null);
+        if (group != null) {
+            GroupMember groupMember = GroupMember.builder()
+                    .id(UUID.randomUUID().toString())
+                    .userId(userId)
+                    .group(group)
+                    .isLocked(false)
+                    .memberRequestId(userId)
+                    .createdAt(new Date())
+                    .updatedAt(new Date())
+                    .role(GroupMemberRoleType.Member)
+                    .build();
+            groupMemberRepository.save(groupMember);
+        }
+    }
+    @Override
+    public AdminInGroup checkAdminInGroup(String groupName) {
+        log.info("GroupServiceImpl, checkAdminInGroup");
+        Optional<Group> group = groupRepository.findByPostGroupName(groupName);
+        if (group.isPresent()) {
+            List<GroupMember> groupMembers = groupMemberRepository.findAllByGroupId(group.get().getId());
+            for (GroupMember groupMember : groupMembers) {
+                if (groupMember.getRole().equals(GroupMemberRoleType.Admin)) {
+                    return AdminInGroup.ADMIN;
+                }
+            }
+            return AdminInGroup.NOT_ADMIN;
+        } else{
+            return AdminInGroup.NOT_FOUND;
+        }
+    }
+    @Override
+    public void deleteMemberInGroup(List<String> userIds) {
+        log.info("GroupServiceImpl, deleteMemberInGroup");
+        for (String userId : userIds) {
+            groupMemberRepository.deleteByUserId(userId);
+        }
+    }
+
+    @Override
+    public ResponseEntity<GenericResponse> addMemberToSystemGroup(GroupResponse groupResponse) {
+        log.info("GroupServiceImpl, addMemberToSystemGroup");
+        if(groupResponse.getRoleUser().equals(RoleName.SinhVien)){
+            addMemberToSystemGroup(groupResponse.getUserId(), AppConstant.GROUP_NAME_STUDENT);
+        } else if(groupResponse.getRoleUser().equals(RoleName.NhanVien)){
+            addMemberToSystemGroup(groupResponse.getUserId(), AppConstant.GROUP_NAME_STAFF);
+        } else if(groupResponse.getRoleUser().equals(RoleName.PhuHuynh)){
+            addMemberToSystemGroup(groupResponse.getUserId(), AppConstant.GROUP_NAME_PARENT);
+        } else if(groupResponse.getRoleUser().equals(RoleName.GiangVien)){
+            addMemberToSystemGroup(groupResponse.getUserId(), AppConstant.GROUP_NAME_TEACHER);
+        }
+        return ResponseEntity.ok(GenericResponse.builder().success(true)
+                .message("Thêm thành viên vào nhóm hệ thống thành công!")
+                .result(null).statusCode(HttpStatus.OK.value()).build());
+    }
 }
+

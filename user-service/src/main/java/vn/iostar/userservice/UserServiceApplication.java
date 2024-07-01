@@ -17,7 +17,7 @@ import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import vn.iostar.constant.Gender;
-import vn.iostar.userservice.constant.RoleName;
+import vn.iostar.constant.RoleName;
 import vn.iostar.userservice.entity.User;
 import vn.iostar.userservice.repository.AccountRepository;
 import vn.iostar.userservice.repository.ProfileRepository;

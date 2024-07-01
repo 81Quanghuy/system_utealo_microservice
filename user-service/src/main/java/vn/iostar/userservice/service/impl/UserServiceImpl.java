@@ -19,11 +19,10 @@ import org.springframework.stereotype.Service;
 
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
-import vn.iostar.constant.Gender;
-import vn.iostar.constant.KafkaTopicName;
+import vn.iostar.constant.*;
+import vn.iostar.model.GroupResponse;
 import vn.iostar.model.PasswordReset;
 import vn.iostar.model.RelationshipResponse;
-import vn.iostar.userservice.constant.RoleName;
 import vn.iostar.userservice.constant.RoleUserGroup;
 import vn.iostar.userservice.dto.*;
 import vn.iostar.userservice.dto.request.*;
@@ -40,6 +39,7 @@ import vn.iostar.userservice.repository.UserRepository;
 import vn.iostar.userservice.service.AccountService;
 import vn.iostar.userservice.service.RoleService;
 import vn.iostar.userservice.service.UserService;
+import vn.iostar.userservice.service.client.GroupClient;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -70,6 +70,8 @@ public class UserServiceImpl implements UserService {
     private final JwtService jwtService;
 
     private final RoleService roleService;
+
+    private final GroupClient groupClient;
     private final  RelationshipRepository relationshipRepository;
 
     private final KafkaTemplate<String, PasswordReset> kafkaTemplate;
@@ -692,141 +694,97 @@ public class UserServiceImpl implements UserService {
         int countMember = 0;
         try (// Tạo đối tượng XSSFWorkbook để đọc file Excel
              XSSFWorkbook workbook = new XSSFWorkbook(inputStream)) {
-            // vòng lặp qua từng sheet
-
-            // Lấy sheet đầu tiên
-            XSSFSheet sheet = workbook.getSheetAt(0);
             List<User> listUsers = new ArrayList<>();
             List<Account> listAccounts = new ArrayList<>();
-//			List<PostGroup> listGroups = new ArrayList<>();
+            List<GroupResponse> listGroups = new ArrayList<>();
             List<Profile> listProfiles = new ArrayList<>();
-//			List<PostGroupMember> listMember = new ArrayList<>();
+            // vòng lặp qua từng sheet
+            for (int j = 0; j < workbook.getNumberOfSheets(); j++) {
+                // Lấy sheet đầu tiên
+                XSSFSheet sheet = workbook.getSheetAt(j);
+                // Duyệt qua các hàng trong sheet
+                for (int i = 1; i <= sheet.getLastRowNum(); i++) {
+                    User user = new User();
+                    UserFileDTO userDTO = mapRowToUserDTO(sheet, i, inputStream,j);
+                    System.out.println(userDTO);
+                    // Nếu người dùng chưa tồn tại trong hệ thống
+                    if (userDTO.getAccount() == null) {
+                        countMember += 1;
+                        user.setIsActive(true);
+                        if (userDTO.getAddress() != null) {
+                            user.setAddress(userDTO.getAddress());
+                        }
+                        if (userDTO.getDateOfBirth() != null) {
+                            user.setDayOfBirth(userDTO.getDateOfBirth());
+                        }
 
-            // Duyệt qua các hàng trong sheet
-            for (int i = 1; i <= sheet.getLastRowNum(); i++) {
-                User user = new User();
-                UserFileDTO userDTO = mapRowToUserDTO(sheet, i, inputStream);
-                System.out.println(userDTO);
-                // Nếu người dùng chưa tồn tại trong hệ thống
-                if (userDTO.getAccount() == null) {
-                    countMember += 1;
-                    user.setIsActive(true);
-                    if (userDTO.getAddress() != null) {
-                        user.setAddress(userDTO.getAddress());
-                    }
-                    if (userDTO.getDateOfBirth() != null) {
-                        user.setDayOfBirth(userDTO.getDateOfBirth());
-                    }
+                        if (userDTO.getPhone() != null) {
+                            user.setPhone(String.format("%011.0f", userDTO.getPhone()));
+                        }
 
-                    if (userDTO.getPhone() != null) {
-                        user.setPhone(String.format("%011.0f", userDTO.getPhone()));
-                    }
+                        user.setIsVerified(false);
+                        user.setUserName(userDTO.getUserName());
+                        Optional<Role> role = roleService.findByRoleName(userDTO.getRoleGroup());
+                        role.ifPresent(user::setRole);
 
-                    user.setIsVerified(false);
-                    user.setUserName(userDTO.getUserName());
-                    Optional<Role> role = roleService.findByRoleName(userDTO.getRoleGroup());
-                    role.ifPresent(user::setRole);
+                        if (userDTO.getGender() != null) {
+                            if (userDTO.getGender().equals("Nam")) {
+                                user.setGender(Gender.MALE);
+                            } else if (userDTO.getGender().equals("Nữ")) {
+                                user.setGender(Gender.FEMALE);
+                            } else {
+                                user.setGender(Gender.OTHER);
+                            }
+                        }
 
-                    if (userDTO.getGender() != null) {
-                        if (userDTO.getGender().equals("Nam")) {
-                            user.setGender(Gender.MALE);
-                        } else if (userDTO.getGender().equals("Nữ")) {
-                            user.setGender(Gender.FEMALE);
-                        } else {
-                            user.setGender(Gender.OTHER);
+                        // Hàm thêm tài khoản
+                        Account account = new Account();
+                        account.setIsVerified(false);
+                        if (userDTO.getPhone() != null) {
+                            account.setPhone(String.format("%01.0f", userDTO.getPhone()));
+                        }
+                        account.setEmail(userDTO.getEmail());
+                        account.setIsActive(true);
+                        account.setUser(user);
+                        account.setCreatedAt(new Date());
+
+                        // Hàm thêm profile
+                        Profile profile = new Profile();
+                        profile.setUser(user);
+                        if (userDTO.getGender() != null) {
+                            if (userDTO.getGender().equals("Nữ")) {
+                                profile.setAvatar("https://i.pinimg.com/736x/01/48/0f/01480f29ce376005edcbec0b30cf367d.jpg");
+
+                            } else {
+                                profile.setAvatar("https://www.prettywoman.vn/wp-content/uploads/2023/06/hinh-anh-avatar-nam-1-600x600.jpg");
+                            }
+                        }
+                        listProfiles.add(profile);
+                        listAccounts.add(account);
+                        listUsers.add(user);
+
+                        if (userDTO.getClassUser() != null) {
+                            AdminInGroup check = groupClient.checkAdminInGroup(userDTO.getClassUser());
+                            if (check.equals(AdminInGroup.ADMIN) && userDTO.getRoleUserGroup().equals(RoleUserGroup.Admin)) {
+                                throw new BadRequestException("Nhóm của người dùng tại dòng " + i + " đã có nhóm trưởng");
+                            } else {
+                                GroupResponse groupResponse = new GroupResponse();
+                                groupResponse.setName(userDTO.getClassUser());
+                                groupResponse.setUsername(userDTO.getUserName());
+                                groupResponse.setRoleUser(userDTO.getRoleGroup());
+                                groupResponse.setRole(GroupMemberRoleType.valueOf(String.valueOf(userDTO.getRoleUserGroup())));
+                                listGroups.add(groupResponse);
+                            }
                         }
                     }
-
-                    // Hàm thêm tài khoản
-                    Account account = new Account();
-                    account.setIsVerified(false);
-                    if (userDTO.getPhone() != null) {
-                        account.setPhone(String.format("%01.0f", userDTO.getPhone()));
-                    }
-                    account.setEmail(userDTO.getEmail());
-                    account.setIsActive(true);
-                    account.setUser(user);
-                    account.setCreatedAt(new Date());
-
-                    // Hàm thêm profile
-                    Profile profile = new Profile();
-                    profile.setUser(user);
-                    if (userDTO.getGender() != null) {
-                        if (userDTO.getGender().equals("Nữ")) {
-                            profile.setAvatar("https://i.pinimg.com/736x/01/48/0f/01480f29ce376005edcbec0b30cf367d.jpg");
-
-                        } else {
-                            profile.setAvatar("https://www.prettywoman.vn/wp-content/uploads/2023/06/hinh-anh-avatar-nam-1-600x600.jpg");
-                        }
-                    }
-                    listProfiles.add(profile);
-                    listAccounts.add(account);
-                    listUsers.add(user);
-
-                    // Hàm thêm nhóm và thành viên nhóm
-//					List<PostGroup> listPostGroups = new ArrayList<>();
-//					Boolean checkGroup = true;
-//					PostGroup group = new PostGroup();
-//
-//					// Kiểm tra đã thêm postGroup vào mảng cần tạo chưa
-//					for (PostGroup postGroup : listGroups) {
-//						if (postGroup.getPostGroupName().equals(userDTO.getClassUser())) {
-//							group = postGroup;
-//							listPostGroups.add(group);
-//							checkGroup = false;
-//							break;
-//						}
-//					}
-
-                    // Chưa thêm postGroup vào mảng cần tạo
-//					if (Boolean.TRUE.equals(checkGroup)) {
-//
-//						Optional<PostGroup> postGroupOptional = postGroupRepository
-//								.findByPostGroupName(userDTO.getClassUser());
-//						if (postGroupOptional.isPresent()) {
-//							Set<PostGroupMember> listMembers = postGroupOptional.get().getPostGroupMembers();
-//							for (PostGroupMember postGroupMember : listMembers) {
-//								if (postGroupMember.getRoleUserGroup().equals(RoleUserGroup.Admin)) {
-//									throw new BadRequestException(
-//											"Nhóm của người dùng tại dòng " + i + " đã có nhóm trưởng");
-//								}
-//							}
-//							group = postGroupOptional.get();
-//							listPostGroups.add(group);
-//						} else {
-//							group.setPostGroupName(userDTO.getClassUser());
-//							group.setCreateDate(new Date());
-//							listPostGroups.add(group);
-//						}
-//					}
-//
-//					// Thêm thành viên trong nhóm
-//					if (!group.getPostGroupMembers().isEmpty()
-//							&& userDTO.getRoleUserGroup().equals(RoleUserGroup.Admin)) {
-//						for (PostGroupMember member : group.getPostGroupMembers()) {
-//							if (member.getRoleUserGroup().equals(RoleUserGroup.Admin)) {
-//								throw new BadRequestException(indexCell + i
-//										+ " có trên một Admin trong nhóm của người dùng này trong file!!!");
-//							}
-//						}
-//					}
-//					PostGroupMember groupMember = new PostGroupMember();
-//					groupMember.setUser(user);
-//					groupMember.setRoleUserGroup(userDTO.getRoleUserGroup());
-//					groupMember.setPostGroup(listPostGroups);
-//					group.getPostGroupMembers().add(groupMember);
-//					listGroups.add(group);
-//					listMember.add(groupMember);
                 }
             }
-            // Đóng file Excel
             saveAll(listUsers);
             accountService.saveAll(listAccounts);
             profileRepository.saveAll(listProfiles);
-//			postGroupRepository.saveAll(listGroups);
-//			groupMemberRepository.saveAll(listMember);
+            groupClient.updateGroupFromExcel(listGroups);
         }
-
+        // Đóng file Excel
         inputStream.close();
         return ResponseEntity.status(HttpStatus.OK).body(GenericResponseAdmin.builder().success(true).message("Có " + countMember + " dòng đã được thêm vào hệ thống!!!").statusCode(HttpStatus.OK.value()).build());
     }
@@ -842,8 +800,8 @@ public class UserServiceImpl implements UserService {
         }
     }
 
-    private String notFormat(int i) {
-        return " cột thứ " + i + " không đúng định dạng !!!";
+    private String notFormat(int j , int i) {
+        return " sheet "+ j +1+" cột thứ " + i +1 + " không đúng định dạng !!!";
     }
 
     public static boolean isCellEmpty(final Cell cell) {
@@ -856,32 +814,37 @@ public class UserServiceImpl implements UserService {
         } else return false;
     }
 
-    private UserFileDTO mapRowToUserDTO(XSSFSheet sheet, int i, InputStream inputStream) throws IOException {
+    private UserFileDTO mapRowToUserDTO(XSSFSheet sheet, int i, InputStream inputStream, int j) throws IOException {
         UserFileDTO userFileDTO = new UserFileDTO();
-        String cell8 = " cột thứ 8 : Chức vụ hệ thống không đúng !!!";
         Cell cell = sheet.getRow(i).getCell(0);
 
         if (cell != null && cell.getCellType() == CellType.STRING) {
-            if (cell.getStringCellValue().contains("@student.hcmute.edu.vn")) {
-                if (!sheet.getRow(i).getCell(8).getStringCellValue().contains("Sinh viên")) {
+            if (cell.getStringCellValue().trim().contains("@student.hcmute.edu.vn")) {
+                if ( sheet.getRow(i).getCell(8) != null) {
+                    if (!sheet.getRow(i).getCell(8).getStringCellValue().trim().contains("Sinh viên")) {
+                        inputStream.close();
+                        throw new BadRequestException(indexCell + i + notFormat(j,8));
+                    }
+                } else {
                     inputStream.close();
-                    throw new BadRequestException(indexCell + i + cell8);
+                    throw new BadRequestException(indexCell + i + notFormat(j,8));
                 }
             } else {
-                if (cell.getStringCellValue().contains("@hcmute.edu.vn")) {
-                    if (!sheet.getRow(i).getCell(8).getStringCellValue().contains("Giảng viên") && !sheet.getRow(i).getCell(8).getStringCellValue().contains("Nhân viên")) {
+                if (cell.getStringCellValue().trim().contains("@hcmute.edu.vn")) {
+                    if (!sheet.getRow(i).getCell(8).getStringCellValue().trim().contains("Giảng viên")
+                            && !sheet.getRow(i).getCell(8).getStringCellValue().trim().contains("Nhân viên")) {
                         inputStream.close();
-                        throw new BadRequestException(indexCell + i + cell8);
+                        throw new BadRequestException(indexCell + i + notFormat(j,8));
                     }
 
                 } else {
                     inputStream.close();
-                    throw new BadRequestException(indexCell + i + " cột thứ 7 không đúng định dạng !!!");
+                    throw new BadRequestException(indexCell + i + notFormat(j,8));
                 }
             }
         } else {
             inputStream.close();
-            throw new BadRequestException(indexCell + i + notFormat(0));
+            throw new BadRequestException(indexCell + i + notFormat(j,0));
         }
         userFileDTO.setEmail(cell.getStringCellValue());
         Optional<Account> acOptional = accountService.findByEmail(userFileDTO.getEmail());
@@ -894,7 +857,7 @@ public class UserServiceImpl implements UserService {
                 userFileDTO.setUserName(cell.getStringCellValue());
             } else {
                 inputStream.close();
-                throw new BadRequestException(indexCell + i + notFormat(1));
+                throw new BadRequestException(indexCell + i + notFormat(j,1));
             }
 
             cell = sheet.getRow(i).getCell(2);
@@ -904,7 +867,7 @@ public class UserServiceImpl implements UserService {
                 userFileDTO.setAddress(cell.getStringCellValue());
             } else {
                 inputStream.close();
-                throw new BadRequestException(indexCell + i + notFormat(2));
+                throw new BadRequestException(indexCell + i + notFormat(j,2));
             }
 
             cell = sheet.getRow(i).getCell(3);
@@ -914,7 +877,7 @@ public class UserServiceImpl implements UserService {
                 userFileDTO.setDateOfBirth(cell.getDateCellValue());
             } else {
                 inputStream.close();
-                throw new BadRequestException(indexCell + i + notFormat(3));
+                throw new BadRequestException(indexCell + i + notFormat(j,3));
             }
 
             cell = sheet.getRow(i).getCell(4);
@@ -924,7 +887,7 @@ public class UserServiceImpl implements UserService {
                 userFileDTO.setGender(cell.getStringCellValue());
             } else {
                 inputStream.close();
-                throw new BadRequestException(indexCell + i + notFormat(4));
+                throw new BadRequestException(indexCell + i + notFormat(j,4));
             }
 
             cell = sheet.getRow(i).getCell(5);
@@ -934,49 +897,52 @@ public class UserServiceImpl implements UserService {
                 userFileDTO.setPhone(cell.getNumericCellValue());
             } else {
                 inputStream.close();
-                throw new BadRequestException(indexCell + i + notFormat(5));
+                throw new BadRequestException(indexCell + i + notFormat(j,5));
             }
+
             cell = sheet.getRow(i).getCell(6);
 
-            if (cell != null && cell.getCellType() == CellType.STRING) {
+            if (isCellEmpty(cell)) {
+                userFileDTO.setClassUser(null);
+            } else if (cell.getCellType() == CellType.STRING) {
                 userFileDTO.setClassUser(cell.getStringCellValue());
             } else {
                 inputStream.close();
-                throw new BadRequestException(indexCell + i + notFormat(6));
+                throw new BadRequestException(indexCell + i + notFormat(j,6));
             }
+
             cell = sheet.getRow(i).getCell(7);
             if (cell != null && cell.getCellType() == CellType.STRING) {
-                if (cell.getStringCellValue().equals("Thành viên")) {
+                if (cell.getStringCellValue().trim().equals("Thành viên")) {
                     userFileDTO.setRoleUserGroup(RoleUserGroup.Member);
-                } else if (cell.getStringCellValue().equals("Quản trị viên")) {
+                } else if (cell.getStringCellValue().trim().equals("Quản trị viên")) {
                     userFileDTO.setRoleUserGroup(RoleUserGroup.Admin);
-                } else if (cell.getStringCellValue().equals("Phó quản trị viên")) {
+                } else if (cell.getStringCellValue().trim().equals("Phó quản trị viên")) {
                     userFileDTO.setRoleUserGroup(RoleUserGroup.Deputy);
                 } else {
                     inputStream.close();
-                    throw new BadRequestException(indexCell + i + notFormat(7));
+                    throw new BadRequestException(indexCell + i + notFormat(j,7));
                 }
+            }
 
                 cell = sheet.getRow(i).getCell(8);
                 if (cell != null && cell.getCellType() == CellType.STRING) {
-                    if (cell.getStringCellValue().equals("Sinh viên")) {
+                    if (cell.getStringCellValue().trim().equals("Sinh viên")) {
                         userFileDTO.setRoleGroup(RoleName.SinhVien);
-                    } else if (cell.getStringCellValue().equals("Giảng viên")) {
+                    } else if (cell.getStringCellValue().trim().equals("Giảng viên")) {
                         userFileDTO.setRoleGroup(RoleName.GiangVien);
-                    } else if (cell.getStringCellValue().equals("Nhân viên")) {
+                    } else if (cell.getStringCellValue().trim().equals("Nhân viên")) {
                         userFileDTO.setRoleGroup(RoleName.NhanVien);
                     } else {
                         inputStream.close();
-                        throw new BadRequestException(indexCell + i + notFormat(8));
+                        throw new BadRequestException(indexCell + i + notFormat(j,8));
                     }
                 } else {
                     inputStream.close();
-                    throw new BadRequestException(indexCell + i + notFormat(8));
+                    throw new BadRequestException(indexCell + i + notFormat(j,8));
                 }
             }
             return userFileDTO;
-
-        }
     }
 
     public UserStatisticsDTO getUserStatistics(String userId) {

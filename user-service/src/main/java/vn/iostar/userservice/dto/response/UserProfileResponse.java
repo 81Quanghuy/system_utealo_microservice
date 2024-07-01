@@ -4,8 +4,8 @@ import java.util.Date;
 
 import lombok.Data;
 import vn.iostar.constant.Gender;
+import vn.iostar.constant.RoleName;
 import vn.iostar.userservice.entity.User;
-import vn.iostar.userservice.constant.RoleName;
 
 @Data
 public class UserProfileResponse {

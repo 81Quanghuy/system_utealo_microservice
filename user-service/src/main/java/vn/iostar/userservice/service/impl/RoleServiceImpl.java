@@ -2,7 +2,7 @@ package vn.iostar.userservice.service.impl;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import vn.iostar.userservice.constant.RoleName;
+import vn.iostar.constant.RoleName;
 import vn.iostar.userservice.entity.Role;
 import vn.iostar.userservice.repository.RoleRepository;
 import vn.iostar.userservice.service.RoleService;

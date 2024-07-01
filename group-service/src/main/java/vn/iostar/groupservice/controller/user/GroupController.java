@@ -10,6 +10,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import vn.iostar.constant.AdminInGroup;
 import vn.iostar.groupservice.dto.FilesOfGroupDTO;
 import vn.iostar.groupservice.dto.PhotosOfGroupDTO;
 import vn.iostar.groupservice.dto.PostGroupDTO;
@@ -23,6 +24,7 @@ import vn.iostar.groupservice.repository.GroupMemberRepository;
 import vn.iostar.groupservice.service.GroupRequestService;
 import vn.iostar.groupservice.service.GroupService;
 import vn.iostar.groupservice.service.MapperService;
+import vn.iostar.model.GroupResponse;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -249,4 +251,27 @@ public class GroupController {
     public ResponseEntity<GenericResponse> getSystemGroups() {
         return groupService.getSystemGroups();
     }
+
+    // tạo thông tin nhóm từ file excel
+    @PostMapping("/update/group-from-excel")
+    public ResponseEntity<GenericResponse> updateGroupFromExcel(@RequestBody List<GroupResponse> groupResponse) {
+        return groupService.updateGroupFromExcel(groupResponse);
+    }
+    // check admin in group
+    @GetMapping("/check-admin-in-group")
+    public AdminInGroup checkAdminInGroup(@RequestParam("name")  String groupName){
+        return groupService.checkAdminInGroup(groupName);
+    }
+
+    // add member to group system
+    @PostMapping("/add-member-to-group")
+    public ResponseEntity<GenericResponse> addMemberToGroup(@RequestBody GroupResponse groupResponse){
+        return groupService.addMemberToSystemGroup(groupResponse);
+    }
+
+    @DeleteMapping("/delete-member-in-group")
+    void deleteMemberInGroup(@RequestBody List<String> userIds){
+        groupService.deleteMemberInGroup(userIds);
+    }
+
 }

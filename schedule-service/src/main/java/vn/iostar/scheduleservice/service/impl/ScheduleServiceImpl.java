@@ -1,19 +1,26 @@
 package vn.iostar.scheduleservice.service.impl;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.apache.catalina.User;
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.CellType;
+import org.apache.poi.ss.usermodel.DataFormatter;
+import org.apache.poi.xssf.usermodel.XSSFRow;
+import org.apache.poi.xssf.usermodel.XSSFSheet;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 import vn.iostar.model.RelationshipResponse;
 import vn.iostar.scheduleservice.constant.RoleName;
 import vn.iostar.scheduleservice.dto.GenericResponse;
 import vn.iostar.scheduleservice.dto.request.AddScheduleDetailRequest;
+import vn.iostar.scheduleservice.dto.request.FileRequest;
 import vn.iostar.scheduleservice.dto.request.ScheduleDetailRequest;
 import vn.iostar.scheduleservice.dto.request.ScheduleRequest;
-import vn.iostar.scheduleservice.dto.response.ScheduleResponse;
+import vn.iostar.scheduleservice.dto.response.BadRequestException;
 import vn.iostar.scheduleservice.dto.response.UserProfileResponse;
 import vn.iostar.scheduleservice.entity.Schedule;
 import vn.iostar.scheduleservice.entity.ScheduleDetail;
@@ -22,10 +29,11 @@ import vn.iostar.scheduleservice.repository.ScheduleRepository;
 import vn.iostar.scheduleservice.service.ScheduleService;
 import vn.iostar.scheduleservice.service.client.UserClientService;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.text.ParseException;
+import java.util.*;
 
 @Service
 public class ScheduleServiceImpl extends RedisServiceImpl implements ScheduleService {
@@ -33,6 +41,7 @@ public class ScheduleServiceImpl extends RedisServiceImpl implements ScheduleSer
     private final ScheduleRepository scheduleRepository;
     private final ScheduleDetailRepository scheduleDetailRepository;
     private final UserClientService userClientService;
+    final String indexCell = "Tại dòng ";
 
     ObjectMapper objectMapper;
 
@@ -328,14 +337,13 @@ public class ScheduleServiceImpl extends RedisServiceImpl implements ScheduleSer
     }
 
     @Override
-    public ResponseEntity<GenericResponse> getScheduleofOtherUser(String currentUserId,String userId, Pageable pageable) {
+    public ResponseEntity<GenericResponse> getScheduleofOtherUser(String currentUserId, String userId, Pageable pageable) {
         UserProfileResponse currentUser = userClientService.getUser(currentUserId);
         if (currentUser.getRoleName().equals(RoleName.Admin)) {
             List<Schedule> schedules = scheduleRepository.findByUserId(userId);
             return ResponseEntity.ok(GenericResponse.builder().success(true).message("Retrieved schedules successfully")
                     .result(schedules).statusCode(HttpStatus.OK.value()).build());
-        }
-        else if(currentUser.getRoleName().equals(RoleName.PhuHuynh)){
+        } else if (currentUser.getRoleName().equals(RoleName.PhuHuynh)) {
             RelationshipResponse relationship = userClientService.getRelationship(currentUser.getUserId(), userId);
             if (relationship != null && relationship.getIsAccepted()) {
                 List<Schedule> schedules = scheduleRepository.findByUserId(userId);
@@ -359,6 +367,213 @@ public class ScheduleServiceImpl extends RedisServiceImpl implements ScheduleSer
                             .build());
         }
     }
+
+    @Override
+    public ResponseEntity<Object> importScheduleDetails(FileRequest fileRequest) throws IOException, ParseException {
+        MultipartFile multipartFile = fileRequest.getFile();
+        InputStream inputStream = multipartFile.getInputStream();
+        int countMember = 0;
+
+        try (XSSFWorkbook workbook = new XSSFWorkbook(inputStream)) {
+            XSSFSheet sheet = workbook.getSheetAt(0); // Lấy sheet đầu tiên
+            List<ScheduleDetail> scheduleDetails = new ArrayList<>();
+
+            for (int i = 1; i <= sheet.getLastRowNum(); i++) {
+                // Kiểm tra nếu hàng không tồn tại
+                XSSFRow row = sheet.getRow(i);
+                if (row == null) {
+                    break; // Dừng vòng lặp nếu gặp hàng không tồn tại
+                }
+
+                ScheduleDetailRequest scheduleDetailRequest = mapRowToScheduleDetail(sheet, i, inputStream);
+                if (scheduleDetailRequest == null) {
+                    continue; // Bỏ qua hàng này nếu row là null
+                }
+
+                ScheduleDetail scheduleDetail = new ScheduleDetail();
+                String scheduleDetailId = UUID.randomUUID().toString();
+                scheduleDetail.setId(scheduleDetailId);
+                if (scheduleDetailRequest.getCourseName() != null) {
+                    scheduleDetail.setCourseName(scheduleDetailRequest.getCourseName());
+                }
+                if (scheduleDetailRequest.getInstructorName() != null) {
+                    scheduleDetail.setInstructorName(scheduleDetailRequest.getInstructorName());
+                }
+                if (scheduleDetailRequest.getRoomName() != null) {
+                    scheduleDetail.setRoomName(scheduleDetailRequest.getRoomName());
+                }
+                if (scheduleDetailRequest.getDayOfWeek() != null) {
+                    scheduleDetail.setDayOfWeek(scheduleDetailRequest.getDayOfWeek());
+                }
+                if (scheduleDetailRequest.getStartTime() != null) {
+                    scheduleDetail.setStartTime(scheduleDetailRequest.getStartTime());
+                }
+                if (scheduleDetailRequest.getEndTime() != null) {
+                    scheduleDetail.setEndTime(scheduleDetailRequest.getEndTime());
+                }
+                if (scheduleDetailRequest.getStartPeriod() != null) {
+                    scheduleDetail.setStartPeriod(scheduleDetailRequest.getStartPeriod());
+                }
+                if (scheduleDetailRequest.getEndPeriod() != null) {
+                    scheduleDetail.setEndPeriod(scheduleDetailRequest.getEndPeriod());
+                }
+                if (scheduleDetailRequest.getNote() != null) {
+                    scheduleDetail.setNote(scheduleDetailRequest.getNote());
+                }
+                if (scheduleDetailRequest.getBasis() != null) {
+                    scheduleDetail.setBasis(scheduleDetailRequest.getBasis());
+                }
+                if (scheduleDetailRequest.getNumber() != null) {
+                    scheduleDetail.setNumber(scheduleDetailRequest.getNumber());
+                }
+                scheduleDetails.add(scheduleDetail);
+                countMember++;
+            }
+
+            // Đóng file Excel
+            workbook.close();
+
+            // Lưu danh sách scheduleDetails vào database
+            scheduleDetailRepository.saveAll(scheduleDetails);
+        }
+
+        inputStream.close();
+        return ResponseEntity.status(HttpStatus.OK).body(
+                GenericResponse.builder().success(true).message("Có " + countMember + " dòng đã được thêm vào hệ thống!!!").statusCode(HttpStatus.OK.value()).build()
+        );
+    }
+
+
+    private ScheduleDetailRequest mapRowToScheduleDetail(XSSFSheet sheet, int i, InputStream inputStream) throws IOException {
+
+        XSSFRow row = sheet.getRow(i);
+        if (row == null) {
+            inputStream.close();
+            throw new BadRequestException("Dòng " + i + " không tồn tại.");
+        }
+
+        ScheduleDetailRequest scheduleDetailRequest = new ScheduleDetailRequest();
+        DataFormatter dataFormatter = new DataFormatter();
+        Cell cell = sheet.getRow(i).getCell(0);
+        if (cell != null && cell.getCellType() == CellType.STRING) {
+            scheduleDetailRequest.setCourseName(cell.getStringCellValue());
+        } else {
+            inputStream.close();
+            throw new BadRequestException(indexCell + i + notFormat(0));
+        }
+        cell = sheet.getRow(i).getCell(1);
+        if (isCellEmpty(cell)) {
+            scheduleDetailRequest.setInstructorName(null);
+        } else if (cell.getCellType() == CellType.STRING) {
+            scheduleDetailRequest.setInstructorName(cell.getStringCellValue());
+        } else {
+            inputStream.close();
+            throw new BadRequestException(indexCell + i + notFormat(1));
+        }
+        cell = sheet.getRow(i).getCell(2);
+        if (isCellEmpty(cell)) {
+            scheduleDetailRequest.setRoomName(null);
+        } else if (cell.getCellType() == CellType.STRING) {
+            scheduleDetailRequest.setRoomName(cell.getStringCellValue());
+        } else {
+            inputStream.close();
+            throw new BadRequestException(indexCell + i + notFormat(2));
+
+        }
+        cell = sheet.getRow(i).getCell(3);
+        if (isCellEmpty(cell)) {
+            scheduleDetailRequest.setDayOfWeek(null);
+        } else if (cell.getCellType() == CellType.STRING) {
+            scheduleDetailRequest.setDayOfWeek(cell.getStringCellValue());
+        } else {
+            inputStream.close();
+            throw new BadRequestException(indexCell + i + notFormat(3));
+        }
+        cell = sheet.getRow(i).getCell(4);
+        if (isCellEmpty(cell)) {
+            scheduleDetailRequest.setStartTime(null);
+        } else if (cell.getCellType() == CellType.STRING) {
+            scheduleDetailRequest.setStartTime(cell.getStringCellValue());
+        } else {
+            inputStream.close();
+            throw new BadRequestException(indexCell + i + notFormat(4));
+        }
+        cell = sheet.getRow(i).getCell(5);
+        if (isCellEmpty(cell)) {
+            scheduleDetailRequest.setEndTime(null);
+        } else if (cell.getCellType() == CellType.STRING) {
+            scheduleDetailRequest.setEndTime(cell.getStringCellValue());
+        } else {
+            inputStream.close();
+            throw new BadRequestException(indexCell + i + notFormat(5));
+        }
+        cell = sheet.getRow(i).getCell(6);
+        if (isCellEmpty(cell)) {
+            scheduleDetailRequest.setStartPeriod(null);
+        } else if (cell.getCellType() == CellType.STRING || cell.getCellType() == CellType.NUMERIC) {
+            String cellValue = dataFormatter.formatCellValue(cell);
+            scheduleDetailRequest.setStartPeriod(cellValue);
+        } else {
+            inputStream.close();
+            throw new BadRequestException(indexCell + i + notFormat(6));
+        }
+        cell = sheet.getRow(i).getCell(7);
+        if (isCellEmpty(cell)) {
+            scheduleDetailRequest.setStartPeriod(null);
+        } else if (cell.getCellType() == CellType.STRING || cell.getCellType() == CellType.NUMERIC) {
+            String cellValue = dataFormatter.formatCellValue(cell);
+            scheduleDetailRequest.setEndPeriod(cellValue);
+        } else {
+            inputStream.close();
+            throw new BadRequestException(indexCell + i + notFormat(7));
+        }
+
+        cell = sheet.getRow(i).getCell(8);
+        if (isCellEmpty(cell)) {
+            scheduleDetailRequest.setNote(null);
+        } else if (cell.getCellType() == CellType.STRING) {
+            scheduleDetailRequest.setNote(cell.getStringCellValue());
+        } else {
+            inputStream.close();
+            throw new BadRequestException(indexCell + i + notFormat(8));
+        }
+        cell = sheet.getRow(i).getCell(9);
+        if (isCellEmpty(cell)) {
+            scheduleDetailRequest.setBasis(null);
+        } else if (cell.getCellType() == CellType.STRING) {
+            scheduleDetailRequest.setBasis(cell.getStringCellValue());
+        } else {
+            inputStream.close();
+            throw new BadRequestException(indexCell + i + notFormat(9));
+        }
+        cell = sheet.getRow(i).getCell(10);
+        if (isCellEmpty(cell)) {
+            scheduleDetailRequest.setStartPeriod(null);
+        } else if (cell.getCellType() == CellType.STRING || cell.getCellType() == CellType.NUMERIC) {
+            String cellValue = dataFormatter.formatCellValue(cell);
+            scheduleDetailRequest.setNumber(cellValue);
+        } else {
+            inputStream.close();
+            throw new BadRequestException(indexCell + i + notFormat(10));
+        }
+
+        return scheduleDetailRequest;
+    }
+
+    private String notFormat(int i) {
+        return " cột thứ " + i + " không đúng định dạng !!!";
+    }
+
+    public static boolean isCellEmpty(final Cell cell) {
+        if (cell == null) {
+            return true;
+        } else if (cell.getCellType() == CellType.BLANK) {
+            return true;
+        } else if (cell.getCellType() == CellType.STRING && cell.getStringCellValue().trim().isEmpty()) {
+            return true;
+        } else return false;
+    }
+
 }
 
 

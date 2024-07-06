@@ -1,7 +1,6 @@
 package     vn.iostar.userservice.controller;
 
 import jakarta.validation.Valid;
-import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -10,27 +9,19 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
-import vn.iostar.userservice.constant.TokenType;
 import vn.iostar.userservice.dto.LoginDTO;
 import vn.iostar.userservice.dto.request.EmailRequest;
 import vn.iostar.userservice.dto.request.RegisterRequest;
 import vn.iostar.userservice.dto.request.TokenRequest;
 import vn.iostar.userservice.dto.response.GenericResponse;
-import vn.iostar.userservice.dto.response.UserResponse;
-import vn.iostar.userservice.entity.Account;
-import vn.iostar.userservice.entity.Profile;
-import vn.iostar.userservice.entity.Token;
-import vn.iostar.userservice.entity.User;
-import vn.iostar.userservice.exception.wrapper.BadRequestException;
 import vn.iostar.userservice.jwt.service.JwtService;
-import vn.iostar.userservice.repository.AccountRepository;
-import vn.iostar.userservice.repository.ProfileRepository;
-import vn.iostar.userservice.repository.TokenRepository;
-import vn.iostar.userservice.repository.UserRepository;
+import vn.iostar.userservice.repository.jpa.AccountRepository;
+import vn.iostar.userservice.repository.jpa.ProfileRepository;
+import vn.iostar.userservice.repository.jpa.UserRepository;
 import vn.iostar.userservice.service.AccountService;
 import vn.iostar.userservice.service.TokenService;
 
-import java.util.*;
+import java.util.Objects;
 
 @RestController
 @RequestMapping("/api/v1/auth")

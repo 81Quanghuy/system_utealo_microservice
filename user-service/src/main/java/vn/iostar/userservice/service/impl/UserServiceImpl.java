@@ -16,8 +16,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 import vn.iostar.constant.*;
 import vn.iostar.model.GroupResponse;
@@ -25,17 +23,21 @@ import vn.iostar.model.PasswordReset;
 import vn.iostar.model.RelationshipResponse;
 import vn.iostar.userservice.constant.RoleUserGroup;
 import vn.iostar.userservice.dto.*;
-import vn.iostar.userservice.dto.request.*;
+import vn.iostar.userservice.dto.request.AccountManager;
+import vn.iostar.userservice.dto.request.ChangePasswordRequest;
+import vn.iostar.userservice.dto.request.UserManagerRequest;
+import vn.iostar.userservice.dto.request.UserUpdateRequest;
 import vn.iostar.userservice.dto.response.FriendResponse;
 import vn.iostar.userservice.dto.response.GenericResponse;
+import vn.iostar.userservice.dto.response.UserProfileResponse;
 import vn.iostar.userservice.dto.response.UserResponse;
 import vn.iostar.userservice.entity.*;
 import vn.iostar.userservice.exception.wrapper.BadRequestException;
 import vn.iostar.userservice.exception.wrapper.NotFoundException;
 import vn.iostar.userservice.jwt.service.JwtService;
-import vn.iostar.userservice.repository.*;
-import vn.iostar.userservice.dto.response.UserProfileResponse;
-import vn.iostar.userservice.repository.UserRepository;
+import vn.iostar.userservice.mapper.UserMapper;
+import vn.iostar.userservice.repository.elasticsearch.UsersElasticSearchRepository;
+import vn.iostar.userservice.repository.jpa.*;
 import vn.iostar.userservice.service.AccountService;
 import vn.iostar.userservice.service.RoleService;
 import vn.iostar.userservice.service.UserService;
@@ -72,13 +74,15 @@ public class UserServiceImpl implements UserService {
     private final RoleService roleService;
 
     private final GroupClient groupClient;
-    private final  RelationshipRepository relationshipRepository;
+    private final RelationshipRepository relationshipRepository;
 
     private final KafkaTemplate<String, PasswordReset> kafkaTemplate;
+    private final UsersElasticSearchRepository usersElasticSearchRepository;
     final String indexCell = "Tại dòng ";
 
     @Override
     public <S extends User> S save(S entity) {
+        usersElasticSearchRepository.save(UserMapper.toUserDocument(entity));
         return userRepository.save(entity);
     }
 
@@ -102,22 +106,29 @@ public class UserServiceImpl implements UserService {
         return userRepository.count();
     }
 
+
     public <S extends User> void saveAll(Iterable<S> entities) {
+       for (User user : entities) {
+           usersElasticSearchRepository.save(UserMapper.toUserDocument(user));
+       }
         userRepository.saveAll(entities);
     }
 
     @Override
     public void deleteById(String id) {
+        usersElasticSearchRepository.deleteById(id);
         userRepository.deleteById(id);
     }
 
     @Override
     public void delete(User entity) {
+        usersElasticSearchRepository.delete(UserMapper.toUserDocument(entity));
         userRepository.delete(entity);
     }
 
     @Override
     public void deleteAll() {
+        usersElasticSearchRepository.deleteAll();
         userRepository.deleteAll();
     }
 
@@ -685,8 +696,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    @Transactional
-    public ResponseEntity<Object> createAccount(String authorizationHeader, AccountManager request) throws IOException, ParseException {
+    public ResponseEntity<Object> createAccount(String authorizationHeader, AccountManager request) throws IOException {
         // Tạo đối tượng MultipartFile
         MultipartFile multipartFile = request.getFile();
         // Lấy input stream của file
@@ -1012,7 +1022,6 @@ public class UserServiceImpl implements UserService {
                 "nhận đổi mật khẩu!", null, HttpStatus.OK.value()));
     }
 
-    @Transactional
     @Override
     public ResponseEntity<GenericResponse> updateOnline(String userId, Boolean isOnline) {
         Optional<User> user = findById(userId);

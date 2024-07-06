@@ -2,13 +2,14 @@ package vn.iostar.userservice.entity;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
-
 import lombok.*;
 import vn.iostar.constant.Gender;
+import vn.iostar.userservice.config.entityListener.UserEntityListener;
 
 import java.io.Serial;
 import java.io.Serializable;
-import java.util.*;
+import java.util.Date;
+import java.util.List;
 
 @AllArgsConstructor
 @NoArgsConstructor
@@ -17,6 +18,7 @@ import java.util.*;
 @Builder
 @Entity
 @Table(name = "users")
+//@EntityListeners(UserEntityListener.class)
 public class User extends AbstractMappedEntity implements Serializable {
 
     @Serial
@@ -27,10 +29,10 @@ public class User extends AbstractMappedEntity implements Serializable {
     @Column(name = "user_id")
     private String userId;
 
-    @Column( name = "user_name",columnDefinition = "nvarchar(255)")
+    @Column(name = "user_name", columnDefinition = "nvarchar(255)")
     private String userName;
 
-    @Column( name = "address",columnDefinition = "nvarchar(255)")
+    @Column(name = "address", columnDefinition = "nvarchar(255)")
     private String address;
 
     @Builder.Default
@@ -71,9 +73,9 @@ public class User extends AbstractMappedEntity implements Serializable {
 
     @OneToMany(mappedBy = "child", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JsonBackReference
-    private List<Relationship> child ;
+    private List<Relationship> child;
 
     @OneToMany(mappedBy = "parent", cascade = CascadeType.ALL)
     @JsonBackReference
-    private List<Relationship> parent ;
+    private List<Relationship> parent;
 }

@@ -1,4 +1,4 @@
-package vn.iostar.userservice.repository;
+package vn.iostar.userservice.repository.jpa;
 
 import java.util.List;
 import java.util.Optional;

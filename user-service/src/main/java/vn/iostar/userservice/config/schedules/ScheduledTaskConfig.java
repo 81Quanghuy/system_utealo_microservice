@@ -1,16 +1,14 @@
 package vn.iostar.userservice.config.schedules;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import vn.iostar.userservice.entity.Token;
 import vn.iostar.userservice.entity.User;
-import vn.iostar.userservice.repository.*;
+import vn.iostar.userservice.repository.jpa.*;
 import vn.iostar.userservice.service.client.GroupClient;
 
-import java.time.LocalDateTime;
 import java.util.Date;
 import java.util.List;
 
@@ -30,15 +28,19 @@ public class ScheduledTaskConfig {
     public void deleteUnverifiedUsers() {
         Date oneDayAgo = new Date(System.currentTimeMillis() - 86400000);
         List<User> unverifiedUsers = userRepository.findByIsVerifiedFalseAndCreatedAtBefore(oneDayAgo);
+        // lấy chuỗi id của user chưa xác thực
+        List<String> userIds = unverifiedUsers.stream().map(User::getUserId).toList();
+        if(userIds.isEmpty()){
+            return;
+        }
+        groupClient.deleteMemberInGroup(userIds);
         relationshipRepository.deleteAllByParentIn(unverifiedUsers);
         tokenRepository.deleteAllByUserIn(unverifiedUsers);
         passwordResetOtpRepository.deleteAllByUserIn(unverifiedUsers);
         profileRepository.deleteAllByUserIn(unverifiedUsers);
         accountRepository.deleteAllByUserIn(unverifiedUsers);
+
         userRepository.deleteAll(unverifiedUsers);
-        // lấy chuỗi id của user chưa xác thực
-        List<String> userIds = unverifiedUsers.stream().map(User::getUserId).toList();
-        groupClient.deleteMemberInGroup(userIds);
     }
     @Scheduled(fixedRate = 60) // 86400000 milliseconds = 1 day
     public void deleteExpired(){
@@ -46,9 +48,5 @@ public class ScheduledTaskConfig {
         List<Token> tokens = tokenRepository.findAllByExpiredAtBefore(now);
         tokenRepository.deleteAll(tokens);
     }
-    //thêm user vào group
-    @Scheduled(fixedRate = 60) // 86400000 milliseconds = 1 day
-    public void addUserToGroup(){
 
-    }
 }

@@ -1,23 +1,16 @@
 package vn.iostar.userservice.controller.user;
 
-import com.google.common.util.concurrent.ListenableFuture;
-import lombok.RequiredArgsConstructor;
 import jakarta.mail.MessagingException;
-import jakarta.mail.internet.MimeMessage;
 import jakarta.validation.Valid;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.core.env.Environment;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
 import org.springframework.mail.javamail.JavaMailSender;
-import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.validation.BindingResult;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.thymeleaf.TemplateEngine;
-import org.thymeleaf.context.Context;
 import vn.iostar.model.RelationshipResponse;
 import vn.iostar.userservice.dto.SearchUser;
 import vn.iostar.userservice.dto.UserIds;
@@ -31,19 +24,19 @@ import vn.iostar.userservice.dto.response.UserProfileResponse;
 import vn.iostar.userservice.entity.PasswordResetOtp;
 import vn.iostar.userservice.entity.User;
 import vn.iostar.userservice.jwt.service.JwtService;
-import vn.iostar.userservice.repository.UserRepository;
+import vn.iostar.userservice.model.UserDocument;
+import vn.iostar.userservice.repository.elasticsearch.UsersElasticSearchRepository;
+import vn.iostar.userservice.repository.jpa.UserRepository;
 import vn.iostar.userservice.service.AccountService;
 import vn.iostar.userservice.service.CloudinaryService;
 import vn.iostar.userservice.service.UserService;
-
+import vn.iostar.userservice.service.synchronization.UserSynchronizationService;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
 
 @RestController
 @RequiredArgsConstructor
@@ -66,6 +59,8 @@ public class UserController {
     private final Environment env;
 
     private final UserRepository userRepository;
+    private final UserSynchronizationService userSynchronizationService;
+    private final UsersElasticSearchRepository usersElasticSearchRepository;
 
     @GetMapping("/profile")
     public ResponseEntity<GenericResponse> getInformation(@RequestHeader("Authorization") String authorizationHeader) {
@@ -316,4 +311,17 @@ public class UserController {
     RelationshipResponse getRelationship(@RequestParam String currentId, @RequestParam String userId){
         return userService.getRelationship(currentId,userId);
     }
+
+    // Test elastic search
+    @GetMapping("/search")
+    public List<UserDocument> searchUser(@RequestParam String name) throws IOException {
+        return userSynchronizationService.autoSuggestUserSearch(name);
+    }
+
+    //find all
+    @GetMapping("/findAll")
+    public Iterable<UserDocument> findAll() {
+        return usersElasticSearchRepository.findAll();
+    }
+
 }

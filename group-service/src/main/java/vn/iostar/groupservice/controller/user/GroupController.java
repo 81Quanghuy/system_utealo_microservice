@@ -1,5 +1,6 @@
 package vn.iostar.groupservice.controller.user;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -65,7 +66,7 @@ public class GroupController {
      */
     @GetMapping("/list/all")
     public ResponseEntity<GenericResponse> getPostGroupByUserId(
-            @RequestHeader("Authorization") String authorizationHeader) {
+            @RequestHeader("Authorization") String authorizationHeader) throws JsonProcessingException {
         return groupService.getPostGroupByUserId(authorizationHeader);
     }
 
@@ -76,7 +77,7 @@ public class GroupController {
      */
     @GetMapping("/list/join")
     public ResponseEntity<GenericResponse> getPostGroupJoinByUserId(
-            @RequestHeader("Authorization") String authorizationHeader) {
+            @RequestHeader("Authorization") String authorizationHeader) throws JsonProcessingException {
         String token = authorizationHeader.substring(7);
         String currentUserId = jwtService.extractUserId(token);
         return groupService.getPostGroupJoinByUserId(currentUserId);
@@ -89,7 +90,7 @@ public class GroupController {
      */
     @GetMapping("/list/owner")
     public ResponseEntity<GenericResponse> getPostGroupOwnerByUserId(
-            @RequestHeader("Authorization") String authorizationHeader) {
+            @RequestHeader("Authorization") String authorizationHeader) throws JsonProcessingException {
         String token = authorizationHeader.substring(7);
         String currentUserId = jwtService.extractUserId(token);
         return groupService.getPostGroupOwnerByUserId(currentUserId);

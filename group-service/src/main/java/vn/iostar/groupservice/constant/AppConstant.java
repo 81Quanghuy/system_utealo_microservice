@@ -27,6 +27,9 @@ public class AppConstant {
             "A?rs=1&pid=ImgDetMain";
     public static final String AVATAR_GROUP_PARENT_LINK = "https://th.bing.com/th/id/OIP.YoEMFPl" +
             "8JEaLx548REBaXAHaEN?rs=1&pid=ImgDetMain";
+    public static final String REDIS_KEY_GROUP_OWNER = "group_owner";
+    public static String POST_GROUP_BY_ID = "post_group_by_id";
+    public static String POST_GROUP_JOIN_BY_USER_ID = "post_group_join_by_user_id";
 
     @SneakyThrows
     public static SecretKey getSecretKey() {

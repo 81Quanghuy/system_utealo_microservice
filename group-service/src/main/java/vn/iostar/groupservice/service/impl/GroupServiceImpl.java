@@ -1,5 +1,7 @@
 package vn.iostar.groupservice.service.impl;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -7,6 +9,7 @@ import org.jetbrains.annotations.NotNull;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -45,8 +48,7 @@ import java.util.*;
 
 @Service
 @Slf4j
-@RequiredArgsConstructor
-public class GroupServiceImpl implements GroupService {
+public class GroupServiceImpl extends RedisServiceImpl implements GroupService {
 
     private final GroupRepository groupRepository;
     private final GroupMemberRepository groupMemberRepository;
@@ -57,14 +59,36 @@ public class GroupServiceImpl implements GroupService {
     private final UserClientService userClientService;
     private final FriendClientService friendClientService;
     private final PostClientService postClientService;
+    ObjectMapper objectMapper = new ObjectMapper();
+
+    public GroupServiceImpl(RedisTemplate<String, Object> redisTemplate, GroupRepository groupRepository, GroupMemberRepository groupMemberRepository, MapperService mapperService, GroupRequestRepository groupRequestRepository, JwtService jwtService, FileClientService fileClientService, UserClientService userClientService, FriendClientService friendClientService, PostClientService postClientService) {
+        super(redisTemplate);
+        this.groupRepository = groupRepository;
+        this.groupMemberRepository = groupMemberRepository;
+        this.mapperService = mapperService;
+        this.groupRequestRepository = groupRequestRepository;
+        this.jwtService = jwtService;
+        this.fileClientService = fileClientService;
+        this.userClientService = userClientService;
+        this.friendClientService = friendClientService;
+        this.postClientService = postClientService;
+    }
 
     @Override
-    public ResponseEntity<GenericResponse> getPostGroupByUserId(String authorizationHeader) {
+    public ResponseEntity<GenericResponse> getPostGroupByUserId(String authorizationHeader) throws JsonProcessingException {
         log.info("GroupServiceImpl, getPostGroupByUserId");
+        if (this.hashExists(AppConstant.POST_GROUP_BY_ID, authorizationHeader)) {
+            return ResponseEntity.ok(GenericResponse.builder()
+                    .success(true)
+                    .message("Lấy danh sách nhóm thành công! Redis cache")
+                    .result(this.hashGet(AppConstant.POST_GROUP_BY_ID, authorizationHeader))
+                    .statusCode(HttpStatus.OK.value()).build());
+        }
         String token = authorizationHeader.substring(7);
         String userId = jwtService.extractUserId(token);
         List<GroupMember> groupMembers = groupMemberRepository.findByUserIdAndIsLocked(userId, false);
-        return getGenericResponseResponseEntity(groupMembers);
+
+        return getGenericResponseResponseEntity(userId,AppConstant.POST_GROUP_BY_ID,groupMembers);
     }
 
     @Override
@@ -240,6 +264,7 @@ public class GroupServiceImpl implements GroupService {
     @Override
     public ResponseEntity<GenericResponse> getPostOfPostGroup(String currentUserId, Pageable pageable) {
         log.info("GroupServiceImpl, getPostOfPostGroup");
+
         return ResponseEntity.ok(GenericResponse.builder().success(true).message("Lấy danh sách bài viết của nhóm thành công!").result(null).statusCode(HttpStatus.OK.value()).build());
     }
 
@@ -325,17 +350,36 @@ public class GroupServiceImpl implements GroupService {
     }
 
     @Override
-    public ResponseEntity<GenericResponse> getPostGroupJoinByUserId(String currentUserId) {
+    public ResponseEntity<GenericResponse> getPostGroupJoinByUserId(String currentUserId) throws JsonProcessingException {
         log.info("GroupServiceImpl, getPostGroupJoinByUserId");
+        if (this.hashExists(AppConstant.POST_GROUP_JOIN_BY_USER_ID, currentUserId)) {
+            return ResponseEntity.ok(GenericResponse.builder()
+                    .success(true)
+                    .message("Lấy danh sách nhóm thành công!Redis cache")
+                    .result(this.hashGet(AppConstant.POST_GROUP_JOIN_BY_USER_ID, currentUserId))
+                    .statusCode(HttpStatus.OK.value()).build());
+        }
         List<GroupMember> groupMembers = groupMemberRepository.findByUserIdAndIsLockedAndRole(currentUserId, false, GroupMemberRoleType.Member);
-        return getGenericResponseResponseEntity(groupMembers);
+
+        return getGenericResponseResponseEntity(currentUserId,AppConstant.POST_GROUP_JOIN_BY_USER_ID,groupMembers);
     }
 
     @Override
-    public ResponseEntity<GenericResponse> getPostGroupOwnerByUserId(String currentUserId) {
+    public ResponseEntity<GenericResponse> getPostGroupOwnerByUserId(String currentUserId) throws JsonProcessingException {
         log.info("GroupServiceImpl, getPostGroupOwnerByUserId");
+        if(this.hashExists(AppConstant.REDIS_KEY_GROUP_OWNER, currentUserId)){
+            Object getPostGroupJoinByUserId = this.hashGet(AppConstant.REDIS_KEY_GROUP_OWNER, currentUserId);
+            HashMap<String, Object> data = objectMapper.readValue((String) getPostGroupJoinByUserId, HashMap.class);
+            Object postsTimelineObj = data.get("postsTimeline");
+            ArrayList<HashMap<String, Object>> groupJoin = (ArrayList<HashMap<String, Object>>) postsTimelineObj;
+            return ResponseEntity.ok(GenericResponse.builder()
+                    .success(true)
+                    .message("Lấy danh sách nhóm thành công! Redis cache")
+                    .result(this.hashGet(AppConstant.REDIS_KEY_GROUP_OWNER, currentUserId))
+                    .statusCode(HttpStatus.OK.value()).build());
+        }
         List<GroupMember> groupMembers = groupMemberRepository.findByUserIdAndIsLockedAndRoleIn(currentUserId, false, List.of(GroupMemberRoleType.Admin, GroupMemberRoleType.Deputy));
-        return getGenericResponseResponseEntity(groupMembers);
+        return getGenericResponseResponseEntity(currentUserId,AppConstant.REDIS_KEY_GROUP_OWNER,groupMembers);
     }
 
     @Override
@@ -347,11 +391,12 @@ public class GroupServiceImpl implements GroupService {
     }
 
     @NotNull
-    private ResponseEntity<GenericResponse> getGenericResponseResponseEntity(List<GroupMember> groupMembers) {
+    private ResponseEntity<GenericResponse> getGenericResponseResponseEntity(String userId,String redis, List<GroupMember> groupMembers) throws JsonProcessingException {
         List<GroupPostResponse> groupPostResponses = new ArrayList<>();
         for (GroupMember member : groupMembers) {
             groupPostResponses.add(mapperService.mapToGroupPostResponse(member));
         }
+           this.hashSet(redis, userId, objectMapper.writeValueAsString(groupPostResponses));
         return ResponseEntity.ok(GenericResponse.builder().success(true).message("Lấy danh sách nhóm thành công!").result(groupPostResponses).statusCode(HttpStatus.OK.value()).build());
     }
 

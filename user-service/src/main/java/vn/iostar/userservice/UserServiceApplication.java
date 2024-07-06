@@ -10,6 +10,8 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cloud.openfeign.EnableFeignClients;
 import org.springframework.context.annotation.Bean;
+import org.springframework.data.elasticsearch.repository.config.EnableElasticsearchRepositories;
+import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.kafka.config.ConcurrentKafkaListenerContainerFactory;
 import org.springframework.kafka.core.ConsumerFactory;
 import org.springframework.kafka.core.DefaultKafkaConsumerFactory;
@@ -19,10 +21,10 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import vn.iostar.constant.Gender;
 import vn.iostar.constant.RoleName;
 import vn.iostar.userservice.entity.User;
-import vn.iostar.userservice.repository.AccountRepository;
-import vn.iostar.userservice.repository.ProfileRepository;
-import vn.iostar.userservice.repository.RoleRepository;
-import vn.iostar.userservice.repository.UserRepository;
+import vn.iostar.userservice.repository.jpa.AccountRepository;
+import vn.iostar.userservice.repository.jpa.ProfileRepository;
+import vn.iostar.userservice.repository.jpa.RoleRepository;
+import vn.iostar.userservice.repository.jpa.UserRepository;
 
 import java.text.SimpleDateFormat;
 import java.util.HashMap;
@@ -36,6 +38,8 @@ import java.util.UUID;
 @Info(title = "User API", version = "1.0", description = "Documentation User API v1.0")
 )
 @EnableScheduling
+@EnableJpaRepositories(basePackages = "vn.iostar.userservice.repository.jpa")
+@EnableElasticsearchRepositories(basePackages = "vn.iostar.userservice.repository.elasticsearch")
 public class UserServiceApplication {
 
 	public static void main(String[] args) {

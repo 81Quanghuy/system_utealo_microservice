@@ -1,6 +1,7 @@
 package vn.iostar.groupservice.service;
 
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
@@ -22,7 +23,7 @@ import java.util.Optional;
 
 public interface GroupService {
 
-    ResponseEntity<GenericResponse> getPostGroupByUserId(String authorizationHeader);
+    ResponseEntity<GenericResponse> getPostGroupByUserId(String authorizationHeader) throws JsonProcessingException;
 
     ResponseEntity<GenericResponse> createGroup(GroupCreateRequest postGroup, String userId);
 
@@ -47,9 +48,9 @@ public interface GroupService {
     Page<PhotosOfGroupDTO> findLatestPhotosByGroupId(String groupId, Pageable pageable);
     Optional<Group> findById(String id);
 
-    ResponseEntity<GenericResponse> getPostGroupJoinByUserId(String currentUserId);
+    ResponseEntity<GenericResponse> getPostGroupJoinByUserId(String currentUserId) throws JsonProcessingException;
 
-    ResponseEntity<GenericResponse> getPostGroupOwnerByUserId(String currentUserId);
+    ResponseEntity<GenericResponse> getPostGroupOwnerByUserId(String currentUserId) throws JsonProcessingException;
 
     ResponseEntity<GenericResponse> findByPostGroupNameContainingIgnoreCase(String search, String currentUserId);
 

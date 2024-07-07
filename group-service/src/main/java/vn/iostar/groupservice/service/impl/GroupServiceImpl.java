@@ -3,7 +3,6 @@ package vn.iostar.groupservice.service.impl;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.transaction.Transactional;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.data.domain.Page;
@@ -28,16 +27,20 @@ import vn.iostar.groupservice.entity.GroupRequest;
 import vn.iostar.groupservice.exception.wrapper.ForbiddenException;
 import vn.iostar.groupservice.exception.wrapper.NotFoundException;
 import vn.iostar.groupservice.jwt.service.JwtService;
-import vn.iostar.groupservice.repository.GroupMemberRepository;
-import vn.iostar.groupservice.repository.GroupRepository;
-import vn.iostar.groupservice.repository.GroupRequestRepository;
+import vn.iostar.groupservice.model.GroupDocument;
+import vn.iostar.groupservice.repository.jpa.GroupMemberRepository;
+import vn.iostar.groupservice.repository.jpa.GroupRepository;
+import vn.iostar.groupservice.repository.jpa.GroupRequestRepository;
 import vn.iostar.groupservice.service.GroupService;
 import vn.iostar.groupservice.service.MapperService;
 import vn.iostar.groupservice.service.client.FileClientService;
 import vn.iostar.groupservice.service.client.FriendClientService;
 import vn.iostar.groupservice.service.client.PostClientService;
 import vn.iostar.groupservice.service.client.UserClientService;
+import vn.iostar.groupservice.service.synchronization.GroupSynchronizationService;
 import vn.iostar.model.GroupResponse;
+import vn.iostar.model.PostElastic;
+import vn.iostar.model.UserElastic;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
@@ -60,8 +63,9 @@ public class GroupServiceImpl extends RedisServiceImpl implements GroupService {
     private final FriendClientService friendClientService;
     private final PostClientService postClientService;
     ObjectMapper objectMapper = new ObjectMapper();
+    private final GroupSynchronizationService groupSynchronizationService;
 
-    public GroupServiceImpl(RedisTemplate<String, Object> redisTemplate, GroupRepository groupRepository, GroupMemberRepository groupMemberRepository, MapperService mapperService, GroupRequestRepository groupRequestRepository, JwtService jwtService, FileClientService fileClientService, UserClientService userClientService, FriendClientService friendClientService, PostClientService postClientService) {
+    public GroupServiceImpl(RedisTemplate<String, Object> redisTemplate, GroupRepository groupRepository, GroupMemberRepository groupMemberRepository, MapperService mapperService, GroupRequestRepository groupRequestRepository, JwtService jwtService, FileClientService fileClientService, UserClientService userClientService, FriendClientService friendClientService, PostClientService postClientService, GroupSynchronizationService groupSynchronizationService) {
         super(redisTemplate);
         this.groupRepository = groupRepository;
         this.groupMemberRepository = groupMemberRepository;
@@ -72,6 +76,7 @@ public class GroupServiceImpl extends RedisServiceImpl implements GroupService {
         this.userClientService = userClientService;
         this.friendClientService = friendClientService;
         this.postClientService = postClientService;
+        this.groupSynchronizationService = groupSynchronizationService;
     }
 
     @Override
@@ -88,7 +93,7 @@ public class GroupServiceImpl extends RedisServiceImpl implements GroupService {
         String userId = jwtService.extractUserId(token);
         List<GroupMember> groupMembers = groupMemberRepository.findByUserIdAndIsLocked(userId, false);
 
-        return getGenericResponseResponseEntity(userId,AppConstant.POST_GROUP_BY_ID,groupMembers);
+        return getGenericResponseResponseEntity(userId, AppConstant.POST_GROUP_BY_ID, groupMembers);
     }
 
     @Override
@@ -228,7 +233,8 @@ public class GroupServiceImpl extends RedisServiceImpl implements GroupService {
         postGroupResponse.setRoleGroup(checkUserInGroup(currentUserId, postGroupId));
         return ResponseEntity.ok(GenericResponse.builder().success(true).message("Lấy thông tin nhóm thành công!").result(postGroupResponse).statusCode(HttpStatus.OK.value()).build());
     }
-    public String checkUserInGroup(String userId,String postGroupId) {
+
+    public String checkUserInGroup(String userId, String postGroupId) {
         GroupMember groupMember = groupMemberRepository.findByUserIdAndGroupId(userId, postGroupId).orElse(null);
         if (groupMember != null) {
             if (groupMember.getRole().equals(GroupMemberRoleType.Admin)) {
@@ -238,7 +244,7 @@ public class GroupServiceImpl extends RedisServiceImpl implements GroupService {
             }
             return "Member";
         }
-        Optional<GroupRequest> groupRequest = groupRequestRepository.findByGroupIdAndInvitedUserAndIsAccept(postGroupId,userId,true);
+        Optional<GroupRequest> groupRequest = groupRequestRepository.findByGroupIdAndInvitedUserAndIsAccept(postGroupId, userId, true);
         if (groupRequest.isPresent()) {
             if (Boolean.TRUE.equals(groupRequest.get().getIsAccept())) {
                 return "Waiting Accept";
@@ -247,6 +253,7 @@ public class GroupServiceImpl extends RedisServiceImpl implements GroupService {
         }
         return "None";
     }
+
     @Override
     public ResponseEntity<GenericResponse> getGroupSharePosts(String currentUserId, String postGroupId, Pageable pageable) {
         log.info("GroupServiceImpl, getGroupSharePosts");
@@ -361,13 +368,13 @@ public class GroupServiceImpl extends RedisServiceImpl implements GroupService {
         }
         List<GroupMember> groupMembers = groupMemberRepository.findByUserIdAndIsLockedAndRole(currentUserId, false, GroupMemberRoleType.Member);
 
-        return getGenericResponseResponseEntity(currentUserId,AppConstant.POST_GROUP_JOIN_BY_USER_ID,groupMembers);
+        return getGenericResponseResponseEntity(currentUserId, AppConstant.POST_GROUP_JOIN_BY_USER_ID, groupMembers);
     }
 
     @Override
     public ResponseEntity<GenericResponse> getPostGroupOwnerByUserId(String currentUserId) throws JsonProcessingException {
         log.info("GroupServiceImpl, getPostGroupOwnerByUserId");
-        if(this.hashExists(AppConstant.REDIS_KEY_GROUP_OWNER, currentUserId)){
+        if (this.hashExists(AppConstant.REDIS_KEY_GROUP_OWNER, currentUserId)) {
             Object getPostGroupJoinByUserId = this.hashGet(AppConstant.REDIS_KEY_GROUP_OWNER, currentUserId);
             HashMap<String, Object> data = objectMapper.readValue((String) getPostGroupJoinByUserId, HashMap.class);
             Object postsTimelineObj = data.get("postsTimeline");
@@ -379,7 +386,7 @@ public class GroupServiceImpl extends RedisServiceImpl implements GroupService {
                     .statusCode(HttpStatus.OK.value()).build());
         }
         List<GroupMember> groupMembers = groupMemberRepository.findByUserIdAndIsLockedAndRoleIn(currentUserId, false, List.of(GroupMemberRoleType.Admin, GroupMemberRoleType.Deputy));
-        return getGenericResponseResponseEntity(currentUserId,AppConstant.REDIS_KEY_GROUP_OWNER,groupMembers);
+        return getGenericResponseResponseEntity(currentUserId, AppConstant.REDIS_KEY_GROUP_OWNER, groupMembers);
     }
 
     @Override
@@ -391,12 +398,12 @@ public class GroupServiceImpl extends RedisServiceImpl implements GroupService {
     }
 
     @NotNull
-    private ResponseEntity<GenericResponse> getGenericResponseResponseEntity(String userId,String redis, List<GroupMember> groupMembers) throws JsonProcessingException {
+    private ResponseEntity<GenericResponse> getGenericResponseResponseEntity(String userId, String redis, List<GroupMember> groupMembers) throws JsonProcessingException {
         List<GroupPostResponse> groupPostResponses = new ArrayList<>();
         for (GroupMember member : groupMembers) {
             groupPostResponses.add(mapperService.mapToGroupPostResponse(member));
         }
-           this.hashSet(redis, userId, objectMapper.writeValueAsString(groupPostResponses));
+        this.hashSet(redis, userId, objectMapper.writeValueAsString(groupPostResponses));
         return ResponseEntity.ok(GenericResponse.builder().success(true).message("Lấy danh sách nhóm thành công!").result(groupPostResponses).statusCode(HttpStatus.OK.value()).build());
     }
 
@@ -760,7 +767,7 @@ public class GroupServiceImpl extends RedisServiceImpl implements GroupService {
                 groupMemberRepository.save(groupMember);
             }
             // Thêm vào các nhóm của hê thống theo role của user
-            if (groupResponse.getRoleUser().equals(RoleName.SinhVien)){
+            if (groupResponse.getRoleUser().equals(RoleName.SinhVien)) {
                 addMemberToSystemGroup(groupResponse.getUserId(), AppConstant.GROUP_NAME_STUDENT);
             } else if (groupResponse.getRoleUser().equals(RoleName.NhanVien)) {
                 addMemberToSystemGroup(groupResponse.getUserId(), AppConstant.GROUP_NAME_STAFF);
@@ -791,6 +798,7 @@ public class GroupServiceImpl extends RedisServiceImpl implements GroupService {
             groupMemberRepository.save(groupMember);
         }
     }
+
     @Override
     public AdminInGroup checkAdminInGroup(String groupName) {
         log.info("GroupServiceImpl, checkAdminInGroup");
@@ -803,10 +811,11 @@ public class GroupServiceImpl extends RedisServiceImpl implements GroupService {
                 }
             }
             return AdminInGroup.NOT_ADMIN;
-        } else{
+        } else {
             return AdminInGroup.NOT_FOUND;
         }
     }
+
     @Override
     public void deleteMemberInGroup(List<String> userIds) {
         log.info("GroupServiceImpl, deleteMemberInGroup");
@@ -818,18 +827,34 @@ public class GroupServiceImpl extends RedisServiceImpl implements GroupService {
     @Override
     public ResponseEntity<GenericResponse> addMemberToSystemGroup(GroupResponse groupResponse) {
         log.info("GroupServiceImpl, addMemberToSystemGroup");
-        if(groupResponse.getRoleUser().equals(RoleName.SinhVien)){
+        if (groupResponse.getRoleUser().equals(RoleName.SinhVien)) {
             addMemberToSystemGroup(groupResponse.getUserId(), AppConstant.GROUP_NAME_STUDENT);
-        } else if(groupResponse.getRoleUser().equals(RoleName.NhanVien)){
+        } else if (groupResponse.getRoleUser().equals(RoleName.NhanVien)) {
             addMemberToSystemGroup(groupResponse.getUserId(), AppConstant.GROUP_NAME_STAFF);
-        } else if(groupResponse.getRoleUser().equals(RoleName.PhuHuynh)){
+        } else if (groupResponse.getRoleUser().equals(RoleName.PhuHuynh)) {
             addMemberToSystemGroup(groupResponse.getUserId(), AppConstant.GROUP_NAME_PARENT);
-        } else if(groupResponse.getRoleUser().equals(RoleName.GiangVien)){
+        } else if (groupResponse.getRoleUser().equals(RoleName.GiangVien)) {
             addMemberToSystemGroup(groupResponse.getUserId(), AppConstant.GROUP_NAME_TEACHER);
         }
         return ResponseEntity.ok(GenericResponse.builder().success(true)
                 .message("Thêm thành viên vào nhóm hệ thống thành công!")
                 .result(null).statusCode(HttpStatus.OK.value()).build());
+    }
+
+    @Override
+    public ResponseEntity<GenericResponse> searchKey(String key ,int page, int size) throws IOException {
+        log.info("GroupServiceImpl, searchKey");
+
+        List<GroupDocument> list =  groupSynchronizationService.autoSuggestUserSearch(key);
+        List<UserElastic> listUser = userClientService.searchUser(key);
+        List<PostElastic> listPost = postClientService.searchPost(key,page,size);
+        List<Object> combinedList = new ArrayList<>();
+        combinedList.addAll(list);
+        combinedList.addAll(listUser);
+        combinedList.addAll(listPost);
+        return ResponseEntity.ok(GenericResponse.builder().success(true)
+                .message("Tìm kiếm thành công!")
+                .result(combinedList).statusCode(HttpStatus.OK.value()).build());
     }
 }
 

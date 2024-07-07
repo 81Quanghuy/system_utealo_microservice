@@ -31,7 +31,10 @@ public class ScheduleController {
     private final JwtService jwtService;
     // Lấy thời khóa biểu của chính mình
     @GetMapping("/getMySchedule")
-    public ResponseEntity<GenericResponse> getMySchedule(@RequestHeader("Authorization") String authorizationHeader, @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "20") int size) throws JsonProcessingException {
+    public ResponseEntity<GenericResponse> getMySchedule(@RequestHeader("Authorization") String authorizationHeader,
+                                                         @RequestParam(defaultValue = "0") int page,
+                                                         @RequestParam(defaultValue = "20") int size)
+            throws JsonProcessingException {
         String token = authorizationHeader.substring(7);
         String currentUserId = jwtService.extractUserId(token);
         Pageable pageable = PageRequest.of(page, size);
@@ -40,7 +43,11 @@ public class ScheduleController {
 
     // Lấy thời khóa biểu của người khác (Admin)
     @GetMapping("/getScheduleOfUser/{userId}")
-    public ResponseEntity<GenericResponse> getScheduleOfUser(@RequestHeader("Authorization") String authorizationHeader, @RequestParam String userId, @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "20") int size) throws JsonProcessingException {
+    public ResponseEntity<GenericResponse> getScheduleOfUser(@RequestHeader("Authorization") String authorizationHeader,
+                                                             @RequestParam(defaultValue = "0") int page,
+                                                             @RequestParam(defaultValue = "20") int size,
+                                                             @PathVariable String userId)
+            throws JsonProcessingException {
         String token = authorizationHeader.substring(7);
         String currentUserId = jwtService.extractUserId(token);
         Pageable pageable = PageRequest.of(page, size);

@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.thymeleaf.TemplateEngine;
 import vn.iostar.model.RelationshipResponse;
+import vn.iostar.model.UserElastic;
 import vn.iostar.userservice.dto.SearchUser;
 import vn.iostar.userservice.dto.UserIds;
 import vn.iostar.userservice.dto.request.ChangePasswordRequest;
@@ -24,6 +25,7 @@ import vn.iostar.userservice.dto.response.UserProfileResponse;
 import vn.iostar.userservice.entity.PasswordResetOtp;
 import vn.iostar.userservice.entity.User;
 import vn.iostar.userservice.jwt.service.JwtService;
+import vn.iostar.userservice.mapper.UserMapper;
 import vn.iostar.userservice.model.UserDocument;
 import vn.iostar.userservice.repository.elasticsearch.UsersElasticSearchRepository;
 import vn.iostar.userservice.repository.jpa.UserRepository;
@@ -306,16 +308,39 @@ public class UserController {
         String userId = jwtService.extractUserId(token);
         return userService.getChildren(userId);
     }
+    // getParent
+    @GetMapping("/getParent")
+    public ResponseEntity<GenericResponse> getParent(@RequestHeader("Authorization") String authorizationHeader) {
+        String token = authorizationHeader.substring(7);
+        String userId = jwtService.extractUserId(token);
+        return userService.getParent(userId);
+    }
+    // get parent chua xac thuc
+    @GetMapping("/getParentNotVerify")
+    public ResponseEntity<GenericResponse> getParentNotVerify(@RequestHeader("Authorization") String authorizationHeader) {
+        String token = authorizationHeader.substring(7);
+        String userId = jwtService.extractUserId(token);
+        return userService.getParentNotVerify(userId);
+    }
+
+    // add relation ship
+    @PostMapping("/addChildren")
+    public ResponseEntity<GenericResponse> addRelationShip(@RequestHeader("Authorization") String authorizationHeader,
+                                                           @RequestParam String email) {
+        String token = authorizationHeader.substring(7);
+        String currentId = jwtService.extractUserId(token);
+        return userService.addRelationShip(currentId, email);
+    }
     // lay thong tin children cua user
     @GetMapping("/getRelationShip")
     RelationshipResponse getRelationship(@RequestParam String currentId, @RequestParam String userId){
         return userService.getRelationship(currentId,userId);
     }
 
-    // Test elastic search
+    // Search user by name, email, phone
     @GetMapping("/search")
-    public List<UserDocument> searchUser(@RequestParam String name) throws IOException {
-        return userSynchronizationService.autoSuggestUserSearch(name);
+    public List<UserElastic> searchUser(@RequestParam String key) throws IOException {
+        return userSynchronizationService.autoSuggestUserSearch(key.trim());
     }
 
     //find all
@@ -324,4 +349,21 @@ public class UserController {
         return usersElasticSearchRepository.findAll();
     }
 
+    //accept Parent
+    @PutMapping("/acceptParent")
+    public ResponseEntity<GenericResponse> acceptParent(@RequestHeader("Authorization") String authorizationHeader,
+                                                        @RequestParam String parentId) {
+        String token = authorizationHeader.substring(7);
+        String currentUserId = jwtService.extractUserId(token);
+        return userService.acceptParent(currentUserId, parentId);
+    }
+
+    // decline parent
+    @DeleteMapping("/declineParent")
+    public ResponseEntity<GenericResponse> declineParent(@RequestHeader("Authorization") String authorizationHeader,
+                                                         @RequestParam String parentId) {
+        String token = authorizationHeader.substring(7);
+        String currentUserId = jwtService.extractUserId(token);
+        return userService.declineParent(currentUserId, parentId);
+    }
 }

@@ -1,4 +1,4 @@
-package vn.iostar.postservice.repository;
+package vn.iostar.postservice.repository.jpa;
 
 import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.data.mongodb.repository.Query;

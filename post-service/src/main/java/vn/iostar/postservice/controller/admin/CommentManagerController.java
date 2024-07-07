@@ -13,7 +13,7 @@ import vn.iostar.postservice.dto.PaginationInfo;
 import vn.iostar.postservice.dto.request.CreateCommentPostRequestDTO;
 import vn.iostar.postservice.dto.response.CommentsResponse;
 import vn.iostar.postservice.dto.response.UserProfileResponse;
-import vn.iostar.postservice.repository.CommentRepository;
+import vn.iostar.postservice.repository.jpa.CommentRepository;
 import vn.iostar.postservice.service.CommentService;
 import vn.iostar.postservice.service.client.UserClientService;
 

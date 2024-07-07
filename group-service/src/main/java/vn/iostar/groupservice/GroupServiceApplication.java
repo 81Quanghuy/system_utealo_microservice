@@ -11,7 +11,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import vn.iostar.groupservice.constant.AppConstant;
-import vn.iostar.groupservice.repository.GroupRepository;
+import vn.iostar.groupservice.repository.jpa.GroupRepository;
 
 import java.util.Date;
 import java.util.UUID;

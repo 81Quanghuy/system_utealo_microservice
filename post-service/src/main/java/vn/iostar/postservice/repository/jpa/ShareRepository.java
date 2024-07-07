@@ -1,4 +1,4 @@
-package vn.iostar.postservice.repository;
+package vn.iostar.postservice.repository.jpa;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;

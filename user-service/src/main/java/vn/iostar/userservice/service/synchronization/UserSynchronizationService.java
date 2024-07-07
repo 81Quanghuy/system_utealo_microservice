@@ -8,6 +8,7 @@ import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.elasticsearch.core.ElasticsearchOperations;
 import org.springframework.stereotype.Service;
+import vn.iostar.model.UserElastic;
 import vn.iostar.userservice.entity.User;
 import vn.iostar.userservice.mapper.UserMapper;
 import vn.iostar.userservice.model.UserDocument;
@@ -42,6 +43,7 @@ public class UserSynchronizationService {
         }
         usersElasticSearchRepository.saveAll(userDocuments);
     }
+
     private SearchResponse<UserDocument> autoSuggestProduct(String partialProductName) throws IOException {
 
         Supplier<Query> supplier = ESUtil.createSupplierAutoSuggest(partialProductName);
@@ -50,12 +52,15 @@ public class UserSynchronizationService {
         System.out.println(" elasticsearch auto suggestion query"+supplier.get().toString());
         return searchResponse;
     }
-    public List<UserDocument> autoSuggestUserSearch (String partialProductName) throws IOException {
+    public List<UserElastic> autoSuggestUserSearch (String partialProductName) throws IOException {
+        if (partialProductName == null || partialProductName.isEmpty()) {
+            return new ArrayList<>();
+        }
         SearchResponse<UserDocument> searchResponse = autoSuggestProduct(partialProductName);
         List<Hit<UserDocument>> hitList = searchResponse.hits().hits();
-        List<UserDocument> userList = new ArrayList<>();
+        List<UserElastic> userList = new ArrayList<>();
         for (Hit<UserDocument> hit : hitList) {
-            userList.add(hit.source());
+            userList.add(UserMapper.toUserElastic(hit.source()));
         }
         return userList;
     }

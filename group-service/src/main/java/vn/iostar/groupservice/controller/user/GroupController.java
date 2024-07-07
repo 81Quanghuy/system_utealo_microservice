@@ -4,16 +4,11 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.boot.json.JsonParser;
-import org.springframework.boot.json.JsonParserFactory;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import vn.iostar.constant.AdminInGroup;
-import vn.iostar.groupservice.dto.FilesOfGroupDTO;
-import vn.iostar.groupservice.dto.PhotosOfGroupDTO;
 import vn.iostar.groupservice.dto.PostGroupDTO;
 import vn.iostar.groupservice.dto.request.GroupCreateRequest;
 import vn.iostar.groupservice.dto.response.GenericResponse;
@@ -21,15 +16,16 @@ import vn.iostar.groupservice.dto.response.GroupProfileResponse;
 import vn.iostar.groupservice.entity.Group;
 import vn.iostar.groupservice.entity.GroupMember;
 import vn.iostar.groupservice.jwt.service.JwtService;
-import vn.iostar.groupservice.repository.GroupMemberRepository;
+import vn.iostar.groupservice.model.GroupDocument;
+import vn.iostar.groupservice.repository.jpa.GroupMemberRepository;
 import vn.iostar.groupservice.service.GroupRequestService;
 import vn.iostar.groupservice.service.GroupService;
 import vn.iostar.groupservice.service.MapperService;
+import vn.iostar.groupservice.service.synchronization.GroupSynchronizationService;
 import vn.iostar.model.GroupResponse;
 
-import java.util.ArrayList;
+import java.io.IOException;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -275,4 +271,12 @@ public class GroupController {
         groupService.deleteMemberInGroup(userIds);
     }
 
+    //search group by name
+    @GetMapping("/search")
+    public ResponseEntity<GenericResponse> searchGroupByName(@RequestParam("key") String key,
+                                                             @RequestParam(defaultValue = "0") int page,
+                                                             @RequestParam(defaultValue = "20") int size)
+            throws IOException {
+        return groupService.searchKey(key,page,size);
+    }
 }

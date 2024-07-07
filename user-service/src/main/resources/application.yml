@@ -23,16 +23,6 @@ spring:
     elasticsearch:
       repositories:
         auto-create-index: true
-#      settings:
-#        analysis:
-#          filter:
-#            my_stopwords:
-#              type: stopword
-#              stopwords: [ "a", "an", "the" ]
-#          analyzer:
-#            my_analyzer:
-
-
   kafka:
     bootstrap-servers: localhost:9092
     producer:

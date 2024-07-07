@@ -12,7 +12,7 @@ import vn.iostar.groupservice.dto.response.PostGroupResponse;
 import vn.iostar.groupservice.dto.response.UserProfileResponse;
 import vn.iostar.groupservice.entity.Group;
 import vn.iostar.groupservice.entity.GroupMember;
-import vn.iostar.groupservice.repository.GroupMemberRepository;
+import vn.iostar.groupservice.repository.jpa.GroupMemberRepository;
 import vn.iostar.groupservice.service.MapperService;
 import vn.iostar.groupservice.service.client.UserClientService;
 import vn.iostar.groupservice.util.DateUtil;

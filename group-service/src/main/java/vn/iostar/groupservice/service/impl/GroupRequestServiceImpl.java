@@ -16,9 +16,9 @@ import vn.iostar.groupservice.entity.Group;
 import vn.iostar.groupservice.entity.GroupMember;
 import vn.iostar.groupservice.entity.GroupRequest;
 import vn.iostar.groupservice.exception.wrapper.NotFoundException;
-import vn.iostar.groupservice.repository.GroupMemberRepository;
-import vn.iostar.groupservice.repository.GroupRepository;
-import vn.iostar.groupservice.repository.GroupRequestRepository;
+import vn.iostar.groupservice.repository.jpa.GroupMemberRepository;
+import vn.iostar.groupservice.repository.jpa.GroupRepository;
+import vn.iostar.groupservice.repository.jpa.GroupRequestRepository;
 import vn.iostar.groupservice.service.GroupRequestService;
 import vn.iostar.groupservice.service.client.UserClientService;
 

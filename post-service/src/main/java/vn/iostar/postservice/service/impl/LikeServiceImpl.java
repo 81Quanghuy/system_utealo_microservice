@@ -1,6 +1,5 @@
 package vn.iostar.postservice.service.impl;
 
-import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -16,7 +15,10 @@ import vn.iostar.postservice.entity.Like;
 import vn.iostar.postservice.entity.Post;
 import vn.iostar.postservice.entity.Share;
 import vn.iostar.postservice.jwt.service.JwtService;
-import vn.iostar.postservice.repository.*;
+import vn.iostar.postservice.repository.jpa.CommentRepository;
+import vn.iostar.postservice.repository.jpa.LikeRepository;
+import vn.iostar.postservice.repository.jpa.PostRepository;
+import vn.iostar.postservice.repository.jpa.ShareRepository;
 import vn.iostar.postservice.service.CommentService;
 import vn.iostar.postservice.service.LikeService;
 import vn.iostar.postservice.service.PostService;

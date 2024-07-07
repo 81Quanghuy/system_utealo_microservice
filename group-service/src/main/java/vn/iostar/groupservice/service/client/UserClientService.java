@@ -6,7 +6,9 @@ import vn.iostar.groupservice.dto.SearchUser;
 import vn.iostar.groupservice.dto.UserIds;
 import vn.iostar.groupservice.dto.response.FriendResponse;
 import vn.iostar.groupservice.dto.response.UserProfileResponse;
+import vn.iostar.model.UserElastic;
 
+import java.io.IOException;
 import java.util.List;
 
 @FeignClient(name = "user-service", contextId = "userClientService", path = "/api/v1/user")
@@ -19,4 +21,7 @@ public interface UserClientService {
     UserProfileResponse getUser(@PathVariable String userId);
     @GetMapping("/searchUser")
     List<SearchUser> getUsersByName(@RequestParam("search") String search);
+
+    @GetMapping("/search")
+    List<UserElastic> searchUser(@RequestParam String key) throws IOException;
 }

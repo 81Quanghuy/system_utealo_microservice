@@ -4,6 +4,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import vn.iostar.userservice.constant.TokenType;
 import vn.iostar.userservice.dto.response.GenericResponse;
 import vn.iostar.userservice.entity.Account;
 import vn.iostar.userservice.entity.Token;
@@ -14,10 +15,7 @@ import vn.iostar.userservice.repository.jpa.TokenRepository;
 import vn.iostar.userservice.repository.jpa.UserRepository;
 import vn.iostar.userservice.service.TokenService;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 
 @Service
@@ -118,6 +116,19 @@ public class TokenServiceImpl implements TokenService {
     @Override
     public Optional<Token> findByToken(String token) {
         return refreshTokenRepository.findByToken(token);
+    }
+
+    @Override
+    public Token createTokenVerifyParent(User user) {
+        Token token = new Token();
+        token.setUser(user);
+        token.setToken(UUID.randomUUID().toString());
+        token.setIsExpired(false);
+        token.setIsRevoked(false);
+        token.setType(TokenType.VERIFICATION_TOKEN);
+        token.setExpiredAt(new Date(System.currentTimeMillis() + 7 * 24 * 60 * 60 * 1000));
+        refreshTokenRepository.save(token);
+        return token;
     }
 
     private GenericResponse buildSuccessResponse(String message) {

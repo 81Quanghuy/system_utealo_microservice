@@ -3,8 +3,6 @@ package vn.iostar.postservice.controller.user;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -15,6 +13,7 @@ import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import vn.iostar.groupservice.dto.FilesOfGroupDTO;
 import vn.iostar.groupservice.dto.PhotosOfGroupDTO;
+import vn.iostar.model.PostElastic;
 import vn.iostar.postservice.dto.GenericResponse;
 import vn.iostar.postservice.dto.request.CreatePostRequestDTO;
 import vn.iostar.postservice.dto.request.PostUpdateRequest;
@@ -23,14 +22,13 @@ import vn.iostar.postservice.dto.response.PostsResponse;
 import vn.iostar.postservice.dto.response.UserProfileResponse;
 import vn.iostar.postservice.entity.Post;
 import vn.iostar.postservice.jwt.service.JwtService;
-import vn.iostar.postservice.repository.PostRepository;
+import vn.iostar.postservice.repository.jpa.PostRepository;
 import vn.iostar.postservice.service.PostService;
-import vn.iostar.postservice.service.RedisService;
 import vn.iostar.postservice.service.ShareService;
 import vn.iostar.postservice.service.client.GroupClientService;
 import vn.iostar.postservice.service.client.UserClientService;
-import vn.iostar.postservice.service.impl.RedisServiceImpl;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -204,4 +202,13 @@ public class PostController {
         return simplifiedUserPosts;
     }
 
+    // search post by content and location
+    @GetMapping("/search")
+    public  List<PostElastic> searchPost(@RequestParam("search") String search,
+                                        @RequestParam(defaultValue = "0") int page,
+                                        @RequestParam(defaultValue = "20") int size)
+            throws IOException {
+        Pageable pageable = PageRequest.of(page, size);
+        return postService.searchPost(search, pageable);
+    }
 }

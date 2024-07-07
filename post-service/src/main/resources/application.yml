@@ -7,11 +7,23 @@ eureka:
 server:
   port: 8082
 spring:
+  elasticsearch:
+    # Địa chỉ máy chủ Elasticsearch
+    host: localhost
+    # Cổng kết nối Elasticsearch
+    port: 9200
+    # Tên cluster Elasticsearch
+    cluster-name: docker-cluster
+    # Bật/tắt refresh (mặc định: true)
+    refresh: true
   cache:
     type: redis
   application:
     name: post-service
   data:
+    elasticsearch:
+      repositories:
+        auto-create-index: true
     mongodb:
       uri: mongodb+srv://huy:huyvff111@cluster0.wteenm1.mongodb.net/testmongo?retryWrites=true&w=majority
       database: post-service

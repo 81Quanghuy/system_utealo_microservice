@@ -7,7 +7,6 @@ import com.cloudinary.utils.ObjectUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 import vn.iostar.mediaservice.exception.wrapper.UnsupportedMediaTypeException;
 import vn.iostar.mediaservice.service.CloudinaryService;
@@ -67,13 +66,13 @@ public class CloudinaryServiceImpl implements CloudinaryService {
     }
 
     @Override
-    public String deleteMediaFile(String url, String folder) throws IOException {
+    public void deleteMediaFile(String url, String folder) throws IOException {
         var params = ObjectUtils.asMap(
                 "folder", ROOT_FOLDER + folder,
                 "resource_type", "image");
         var result = cloudinary.uploader().destroy(getPublicIdFromUrl(url, folder), params);
         log.info("CloudinaryServiceImpl, deleteUserImage, result: {}", result.get("result").toString());
-        return result.get("result").toString();
+        result.get("result").toString();
     }
 
     public String getPublicIdFromUrl(String imageUrl, String folder) {

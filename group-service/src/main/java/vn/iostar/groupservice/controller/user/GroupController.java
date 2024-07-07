@@ -277,6 +277,6 @@ public class GroupController {
                                                              @RequestParam(defaultValue = "0") int page,
                                                              @RequestParam(defaultValue = "20") int size)
             throws IOException {
-        return groupService.searchKey(key,page,size);
+        return groupService.searchKey(key.trim(),page,size);
     }
 }

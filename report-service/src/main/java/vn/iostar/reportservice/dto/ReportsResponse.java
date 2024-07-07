@@ -1,12 +1,11 @@
 package vn.iostar.reportservice.dto;
 
-import java.util.Date;
-
 import lombok.Data;
-import vn.iostar.postservice.constant.RoleName;
-import vn.iostar.postservice.dto.response.UserProfileResponse;
+import vn.iostar.constant.RoleName;
 import vn.iostar.reportservice.constant.PrivacyLevel;
 import vn.iostar.reportservice.entity.Report;
+
+import java.util.Date;
 
 @Data
 public class ReportsResponse {

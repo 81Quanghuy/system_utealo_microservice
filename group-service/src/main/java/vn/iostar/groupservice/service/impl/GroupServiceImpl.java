@@ -844,7 +844,11 @@ public class GroupServiceImpl extends RedisServiceImpl implements GroupService {
     @Override
     public ResponseEntity<GenericResponse> searchKey(String key ,int page, int size) throws IOException {
         log.info("GroupServiceImpl, searchKey");
-
+        if(key == null || key.isEmpty()){
+            return ResponseEntity.ok(GenericResponse.builder().success(false)
+                    .message("Không tìm thấy kết quả!")
+                    .result(null).statusCode(HttpStatus.OK.value()).build());
+        }
         List<GroupDocument> list =  groupSynchronizationService.autoSuggestUserSearch(key);
         List<UserElastic> listUser = userClientService.searchUser(key);
         List<PostElastic> listPost = postClientService.searchPost(key,page,size);

@@ -40,56 +40,10 @@ public class ScheduleController {
 
     // Lấy thời khóa biểu của người khác (Admin)
     @GetMapping("/getScheduleOfUser/{userId}")
-    public ResponseEntity<GenericResponse> getScheduleOfUser(@RequestHeader("Authorization") String authorizationHeader, @RequestParam String userId, @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "20") int size) throws JsonProcessingException {
+    public ResponseEntity<GenericResponse> getScheduleOfUser(@RequestHeader("Authorization") String authorizationHeader, @PathVariable("userId") String userId, @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "20") int size) throws JsonProcessingException {
         String token = authorizationHeader.substring(7);
         String currentUserId = jwtService.extractUserId(token);
         Pageable pageable = PageRequest.of(page, size);
         return scheduleService.getScheduleofOtherUser(currentUserId,userId, pageable);
-    }
-
-    // Tạo thời khóa biểu
-    @PostMapping("/create")
-    public ResponseEntity<Object> createSchedule(@RequestBody ScheduleRequest requestDTO, @RequestHeader("Authorization") String authorizationHeader) throws Exception {
-        String token = authorizationHeader.substring(7);
-        String currentUserId = jwtService.extractUserId(token);
-        return scheduleService.createSchedule(currentUserId, requestDTO);
-    }
-
-    // Tạo thời khóa biểu chi tiết
-    @PostMapping("/createScheduleDetail")
-    public ResponseEntity<Object> createScheduleDetail(@RequestBody ScheduleRequest requestDTO, @RequestHeader("Authorization") String authorizationHeader) throws Exception {
-        String token = authorizationHeader.substring(7);
-        String currentUserId = jwtService.extractUserId(token);
-        return scheduleService.createScheduleDetail(currentUserId, requestDTO);
-    }
-
-    // Thêm ScheduleDetial vào Schedule
-    @PostMapping("/addScheduleDetail")
-    public ResponseEntity<Object> addScheduleDetailtoSchdule(@RequestBody AddScheduleDetailRequest requestDTO, @RequestHeader("Authorization") String authorizationHeader) throws Exception {
-        String token = authorizationHeader.substring(7);
-        String currentUserId = jwtService.extractUserId(token);
-        return scheduleService.addScheduleDetailtoSchdule(currentUserId, requestDTO);
-    }
-
-    // Cập nhật thời khóa biểu
-    @PutMapping("/update/{scheduleId}")
-    public ResponseEntity<Object> updateSchedule(@PathVariable String scheduleId, @RequestBody ScheduleRequest requestDTO, @RequestHeader("Authorization") String authorizationHeader) throws Exception {
-        String token = authorizationHeader.substring(7);
-        String currentUserId = jwtService.extractUserId(token);
-        return scheduleService.updateSchedule(scheduleId, requestDTO, currentUserId);
-    }
-
-    // Cập nhật thời khóa biểu chi tiết
-    @PutMapping("/updateScheduleDetail/{scheduleDetailId}")
-    public ResponseEntity<Object> updateScheduleDetail(@PathVariable String scheduleDetailId, @RequestBody ScheduleDetailRequest requestDTO, @RequestHeader("Authorization") String authorizationHeader) throws Exception {
-        String token = authorizationHeader.substring(7);
-        String currentUserId = jwtService.extractUserId(token);
-        return scheduleService.updateScheduleDetail(scheduleDetailId, requestDTO, currentUserId);
-    }
-
-    // Import thời khóa biểu chi tiết từ file excel
-    @PostMapping("/importScheduleDetails")
-    public ResponseEntity<Object> importScheduleDetails(@ModelAttribute FileRequest fileRequest) throws IOException, ParseException {
-        return scheduleService.importScheduleDetails(fileRequest);
     }
 }

@@ -16,11 +16,14 @@ public interface RelationshipRepository extends JpaRepository<Relationship,Strin
 
     Optional<Relationship> findByParentUserId(String id);
 
-    List<Relationship> findByParent(User id);
+    List<Relationship> findByParentAndIsAcceptedTrue(User id);
 
     Optional<Relationship> findByParentUserIdAndChildUserId(String parentUserId, String childUserId);
 
+    List<Relationship> findByChildUserIdAndIsAcceptedTrue(String id);
 
     @Query("SELECT r FROM Relationship r WHERE r.parent IN :users")
     void deleteAllByParentIn(@Param("users") List<User> users);
+
+    List<Relationship> findByChildUserIdAndIsAcceptedFalse(String userId);
 }

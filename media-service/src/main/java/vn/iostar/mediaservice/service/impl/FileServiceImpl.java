@@ -187,6 +187,7 @@ public class FileServiceImpl implements FileService {
             return  mapperService.mapToFileDto(fileEntity);
 
         } catch (Exception e) {
+            System.out.println(e.getMessage());
             throw new BadRequestException("Upload file failed");
         }
     }

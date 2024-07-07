@@ -150,4 +150,14 @@ public interface UserService {
 	ResponseEntity<GenericResponse> getChildren(String userId);
 
 	RelationshipResponse getRelationship(String currentId, String userId);
+
+	ResponseEntity<GenericResponse> addRelationShip(String currentId, String email);
+
+	ResponseEntity<GenericResponse> getParent(String userId);
+
+    ResponseEntity<GenericResponse> getParentNotVerify(String userId);
+
+	ResponseEntity<GenericResponse> acceptParent(String currentUserId, String userId);
+
+	ResponseEntity<GenericResponse> declineParent(String currentUserId, String userId);
 }

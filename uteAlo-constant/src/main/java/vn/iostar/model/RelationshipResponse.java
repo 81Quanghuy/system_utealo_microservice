@@ -14,4 +14,5 @@ public class RelationshipResponse {
     private String parentUserId;
     private String childUserId;
     private Boolean isAccepted;
+
 }

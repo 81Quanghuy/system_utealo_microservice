@@ -4,9 +4,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import vn.iostar.postservice.dto.GenericResponse;
-import vn.iostar.postservice.entity.Like;
 import vn.iostar.postservice.jwt.service.JwtService;
-import vn.iostar.postservice.repository.ShareRepository;
+import vn.iostar.postservice.repository.jpa.ShareRepository;
 import vn.iostar.postservice.service.LikeService;
 
 @RestController

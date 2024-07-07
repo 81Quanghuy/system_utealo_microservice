@@ -1,4 +1,4 @@
-package vn.iostar.groupservice.repository;
+package vn.iostar.groupservice.repository.jpa;
 
 
 import org.springframework.data.domain.Page;

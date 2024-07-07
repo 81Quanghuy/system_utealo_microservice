@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.RestController;
 import vn.iostar.postservice.dto.GenericResponse;
 import vn.iostar.postservice.dto.request.CreateCommentShareRequestDTO;
 import vn.iostar.postservice.dto.request.ReplyCommentShareRequestDTO;
-import vn.iostar.postservice.repository.CommentRepository;
+import vn.iostar.postservice.repository.jpa.CommentRepository;
 import vn.iostar.postservice.service.CommentService;
 
 

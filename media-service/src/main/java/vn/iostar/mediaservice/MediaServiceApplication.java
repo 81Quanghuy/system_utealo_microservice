@@ -36,7 +36,7 @@ public class MediaServiceApplication {
                         FileType.builder()
                                 .id(FileEnum.IMAGE.getId())
                                 .name(FileEnum.IMAGE.getName())
-                                .extension(List.of("jpg", "png", "jpeg"))
+                                .extension(List.of("jpg", "png", "jpeg", "gif","bmp","svg","webp","ico","tiff","psd","raw"))
                                 .createdAt(now)
                                 .build()
                 );
@@ -46,7 +46,7 @@ public class MediaServiceApplication {
                         FileType.builder()
                                 .id(FileEnum.VIDEO.getId())
                                 .name(FileEnum.VIDEO.getName())
-                                .extension(List.of("mp4", "avi", "mkv"))
+                                .extension(List.of("mp4", "avi", "mkv","flv","wmv","mov","webm","mpeg","3gp","3g2","flv","m4v","h264","h265","rm","rmvb","vob","ts","swf","avchd","m2ts","mxf","divx","xvid","f4v","asf","amv","dav","mpg","ogv","qt","yuv","rm","rmvb","vob","ts","swf","avchd","m2ts","mxf","divx","xvid","f4v","asf","amv","dav","mpg","ogv","qt","yuv","rm","rmvb","vob","ts","swf","avchd","m2ts","mxf","divx","xvid","f4v","asf","amv","dav","mpg","ogv","qt","yuv","rm","rmvb","vob","ts","swf","avchd","m2ts","mxf","divx","xvid","f4v","asf","amv","dav","mpg","ogv","qt","yuv","rm","rmvb","vob","ts","swf","avchd","m2ts","mxf","divx","xvid","f4v","asf","amv","dav","mpg","ogv","qt","yuv","rm","rmvb","vob","ts","swf","avchd","m2ts","mxf","divx","xvid","f4v","asf","amv","dav","mpg","ogv","qt","yuv","rm","rmvb","vob","ts","swf","avchd","m2ts","mxf","divx","xvid","f4v","asf","amv","dav","mpg","ogv","qt","yuv","rm","rmvb","vob","ts","swf","avchd","m2ts","mxf","divx","xvid","f4v","asf","amv","dav","mpg","ogv","qt","yuv","rm","rmvb","vob","ts","swf","avchd","m2ts","mxf","divx","xvid","f4v","asf","amv","dav","mpg","ogv","qt","yuv"))
                                 .createdAt(now)
                                 .build()
                 );

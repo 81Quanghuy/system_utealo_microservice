@@ -16,11 +16,13 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 import vn.iostar.constant.*;
 import vn.iostar.model.GroupResponse;
 import vn.iostar.model.PasswordReset;
 import vn.iostar.model.RelationshipResponse;
+import vn.iostar.model.VerifyParent;
 import vn.iostar.userservice.constant.RoleUserGroup;
 import vn.iostar.userservice.dto.*;
 import vn.iostar.userservice.dto.request.AccountManager;
@@ -35,11 +37,13 @@ import vn.iostar.userservice.entity.*;
 import vn.iostar.userservice.exception.wrapper.BadRequestException;
 import vn.iostar.userservice.exception.wrapper.NotFoundException;
 import vn.iostar.userservice.jwt.service.JwtService;
+import vn.iostar.userservice.mapper.RelationShipMapper;
 import vn.iostar.userservice.mapper.UserMapper;
 import vn.iostar.userservice.repository.elasticsearch.UsersElasticSearchRepository;
 import vn.iostar.userservice.repository.jpa.*;
 import vn.iostar.userservice.service.AccountService;
 import vn.iostar.userservice.service.RoleService;
+import vn.iostar.userservice.service.TokenService;
 import vn.iostar.userservice.service.UserService;
 import vn.iostar.userservice.service.client.GroupClient;
 
@@ -77,7 +81,9 @@ public class UserServiceImpl implements UserService {
     private final RelationshipRepository relationshipRepository;
 
     private final KafkaTemplate<String, PasswordReset> kafkaTemplate;
+    private final KafkaTemplate<String, VerifyParent> kafkaTemplateParent;
     private final UsersElasticSearchRepository usersElasticSearchRepository;
+    private final TokenService tokenService;
     final String indexCell = "Tại dòng ";
 
     @Override
@@ -1069,7 +1075,7 @@ public class UserServiceImpl implements UserService {
         if (user.isEmpty()) {
             throw new NotFoundException("Người dùng không tồn tại");
         }
-        List<Relationship> children = relationshipRepository.findByParent(user.get());
+        List<Relationship> children = relationshipRepository.findByParentAndIsAcceptedTrue(user.get());
         List<UserResponse> childrenResponse = new ArrayList<>();
         for (Relationship child : children) {
             childrenResponse.add(new UserResponse(child.getChild()));
@@ -1095,6 +1101,124 @@ public class UserServiceImpl implements UserService {
         relationshipResponse.setId(relationship.get().getId());
         relationshipResponse.setChildUserId(userId);
         relationshipResponse.setParentUserId(currentId);
+        relationshipResponse.setIsAccepted(relationship.get().getIsAccepted());
         return relationshipResponse;
+    }
+
+    @Override
+    @Transactional
+    public ResponseEntity<GenericResponse> addRelationShip(String currentId, String email) {
+        Optional<User> currentUser = findById(currentId);
+        Optional<User> user = findByAccountEmail(email);
+        if (currentUser.isEmpty() || user.isEmpty()) {
+            throw new NotFoundException("Sinh vien co email " + email + " khong ton tai");
+        }
+        if (currentUser.get().getUserId().equals(user.get().getUserId())) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(
+                    new GenericResponse(false,
+                            "Không thể thêm mối quan hệ với chính mình",
+                            null,
+                            HttpStatus.BAD_REQUEST.value()));
+        }
+        Optional<Relationship> relationship = relationshipRepository.findByParentUserIdAndChildUserId(currentUser.get().getUserId(), user.get().getUserId());
+        if (relationship.isPresent()) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(
+                    new GenericResponse(false,
+                            "Mối quan hệ đã tồn tại",
+                            null,
+                            HttpStatus.BAD_REQUEST.value()));
+        }
+        Relationship newRelationship = new Relationship();
+        newRelationship.setParent(currentUser.get());
+        newRelationship.setChild(user.get());
+        newRelationship.setIsAccepted(false);
+        relationshipRepository.save(newRelationship);
+        Token token = tokenService.createTokenVerifyParent(currentUser.get());
+        VerifyParent verifyParent = new VerifyParent(email,currentUser.get().getAccount().getEmail(),currentUser.get().getUserName(), token.getToken());
+        kafkaTemplateParent.send(KafkaTopicName.EMAIL_VERIFY_TOPIC, verifyParent);
+        return ResponseEntity.ok().body(new GenericResponse(true,
+                "Thêm mối quan hệ thành công!",
+                RelationShipMapper.toRelationshipResponse(newRelationship),
+                HttpStatus.OK.value()));
+    }
+
+    @Override
+    public ResponseEntity<GenericResponse> getParent(String userId) {
+        Optional<User> user = findById(userId);
+        if (user.isEmpty()) {
+            throw new NotFoundException("Người dùng không tồn tại");
+        }
+        List<Relationship> parents = relationshipRepository.findByChildUserIdAndIsAcceptedTrue(userId);
+        List<UserResponse> parentResponse = new ArrayList<>();
+        for (Relationship parent : parents) {
+            parentResponse.add(new UserResponse(parent.getParent()));
+        }
+        return ResponseEntity.ok().body(new GenericResponse(true,
+                "Lấy danh sách phụ huynh thành công!",
+                parentResponse,
+                HttpStatus.OK.value()));
+
+    }
+
+    @Override
+    public ResponseEntity<GenericResponse> getParentNotVerify(String userId) {
+        Optional<User> user = findById(userId);
+        if (user.isEmpty()) {
+            throw new NotFoundException("Người dùng không tồn tại");
+        }
+        List<Relationship> parents = relationshipRepository.findByChildUserIdAndIsAcceptedFalse(userId);
+        List<UserResponse> parentResponse = new ArrayList<>();
+        for (Relationship parent : parents) {
+            parentResponse.add(new UserResponse(parent.getParent()));
+        }
+        return ResponseEntity.ok().body(new GenericResponse(true,
+                "Lấy danh sách phụ huynh chưa xác nhận thành công!",
+                parentResponse,
+                HttpStatus.OK.value()));
+    }
+
+    @Override
+    public ResponseEntity<GenericResponse> acceptParent(String currentUserId, String userId) {
+        Optional<User> currentUser = findById(currentUserId);
+        Optional<User> user = findById(userId);
+        if (currentUser.isEmpty() || user.isEmpty()) {
+            throw new NotFoundException("Người dùng không tồn tại");
+        }
+        Optional<Relationship> relationship = relationshipRepository.findByParentUserIdAndChildUserId(user.get().getUserId(), currentUser.get().getUserId());
+        if (relationship.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(
+                    new GenericResponse(false,
+                            "Mối quan hệ không tồn tại",
+                            null,
+                            HttpStatus.BAD_REQUEST.value()));
+        }
+        relationship.get().setIsAccepted(true);
+        relationshipRepository.save(relationship.get());
+        return ResponseEntity.ok().body(new GenericResponse(true,
+                "Xác nhận phụ huynh thành công!",
+                RelationShipMapper.toRelationshipResponse(relationship.get()),
+                HttpStatus.OK.value()));
+    }
+
+    @Override
+    public ResponseEntity<GenericResponse> declineParent(String currentUserId, String userId) {
+        Optional<User> currentUser = findById(currentUserId);
+        Optional<User> user = findById(userId);
+        if (currentUser.isEmpty() || user.isEmpty()) {
+            throw new NotFoundException("Người dùng không tồn tại");
+        }
+        Optional<Relationship> relationship = relationshipRepository.findByParentUserIdAndChildUserId(user.get().getUserId(), currentUser.get().getUserId());
+        if (relationship.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(
+                    new GenericResponse(false,
+                            "Mối quan hệ không tồn tại",
+                            null,
+                            HttpStatus.BAD_REQUEST.value()));
+        }
+        relationshipRepository.delete(relationship.get());
+        return ResponseEntity.ok().body(new GenericResponse(true,
+                "Từ chối phụ huynh thành công!",
+                null,
+                HttpStatus.OK.value()));
     }
 }

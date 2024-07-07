@@ -12,7 +12,7 @@ import vn.iostar.postservice.dto.GenericResponseAdmin;
 import vn.iostar.postservice.dto.PaginationInfo;
 import vn.iostar.postservice.dto.response.SharesResponse;
 import vn.iostar.postservice.dto.response.UserProfileResponse;
-import vn.iostar.postservice.repository.ShareRepository;
+import vn.iostar.postservice.repository.jpa.ShareRepository;
 import vn.iostar.postservice.service.ShareService;
 import vn.iostar.postservice.service.client.UserClientService;
 

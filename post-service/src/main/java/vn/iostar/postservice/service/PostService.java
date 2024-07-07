@@ -6,6 +6,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import vn.iostar.groupservice.dto.FilesOfGroupDTO;
 import vn.iostar.groupservice.dto.PhotosOfGroupDTO;
+import vn.iostar.model.PostElastic;
 import vn.iostar.postservice.dto.GenericResponse;
 import vn.iostar.postservice.dto.GenericResponseAdmin;
 import vn.iostar.postservice.dto.request.CreatePostRequestDTO;
@@ -13,6 +14,7 @@ import vn.iostar.postservice.dto.request.PostUpdateRequest;
 import vn.iostar.postservice.dto.response.PostsResponse;
 import vn.iostar.postservice.entity.Post;
 
+import java.io.IOException;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -85,4 +87,5 @@ public interface PostService extends RedisService{
     // Lấy những bài viết trong nhóm do Admin đăng
     List<PostsResponse> findPostsByAdminRoleInGroup(String groupId, Pageable pageable);
 
+    List<PostElastic>searchPost(String search, Pageable pageable) throws IOException;
 }

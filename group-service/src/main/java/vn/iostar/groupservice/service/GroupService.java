@@ -105,4 +105,6 @@ public interface GroupService {
     void deleteMemberInGroup(List<String> userIds);
 
     ResponseEntity<GenericResponse> addMemberToSystemGroup(GroupResponse groupResponse);
+
+    ResponseEntity<GenericResponse> searchKey(String key,int page, int size) throws IOException;
 }

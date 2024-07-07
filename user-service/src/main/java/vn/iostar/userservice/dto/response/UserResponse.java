@@ -55,7 +55,7 @@ public class UserResponse {
 		this.phone = user.getPhone();
 		this.gender = user.getGender();
 		this.dayOfBirth = user.getDayOfBirth();
-		this.isActive = user.getIsActive();
+		this.isActive = user.getAccount().getIsActive();
 		this.roleName = user.getRole().getRoleName();
 		this.email = user.getAccount().getEmail();
 		this.isOnline = user.getIsOnline();

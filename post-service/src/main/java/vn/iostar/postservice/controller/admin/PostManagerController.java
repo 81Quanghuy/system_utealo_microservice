@@ -14,7 +14,7 @@ import vn.iostar.postservice.dto.PaginationInfo;
 import vn.iostar.postservice.dto.request.CreatePostRequestDTO;
 import vn.iostar.postservice.dto.response.PostsResponse;
 import vn.iostar.postservice.dto.response.UserProfileResponse;
-import vn.iostar.postservice.repository.PostRepository;
+import vn.iostar.postservice.repository.jpa.PostRepository;
 import vn.iostar.postservice.service.PostService;
 import vn.iostar.postservice.service.client.UserClientService;
 

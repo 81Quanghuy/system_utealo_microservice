@@ -24,9 +24,9 @@ public class ScheduledTaskConfig {
     private final RelationshipRepository relationshipRepository;
     private final GroupClient groupClient;
 
-    @Scheduled(fixedRate = 60) // 86400000 milliseconds = 1 day
+    @Scheduled(fixedRate = 604800000) // 86400000 milliseconds = 1 day
     public void deleteUnverifiedUsers() {
-        Date oneDayAgo = new Date(System.currentTimeMillis() - 86400000);
+        Date oneDayAgo = new Date(System.currentTimeMillis() - 604800000);
         List<User> unverifiedUsers = userRepository.findByIsVerifiedFalseAndCreatedAtBefore(oneDayAgo);
         // lấy chuỗi id của user chưa xác thực
         List<String> userIds = unverifiedUsers.stream().map(User::getUserId).toList();
@@ -42,7 +42,7 @@ public class ScheduledTaskConfig {
 
         userRepository.deleteAll(unverifiedUsers);
     }
-    @Scheduled(fixedRate = 60) // 86400000 milliseconds = 1 day
+    @Scheduled(fixedRate = 604800000) // 86400000 milliseconds = 1 day
     public void deleteExpired(){
         Date now = new Date();
         List<Token> tokens = tokenRepository.findAllByExpiredAtBefore(now);

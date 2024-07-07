@@ -1,4 +1,4 @@
-package vn.iostar.postservice.repository;
+package vn.iostar.postservice.repository.jpa;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;

@@ -4,7 +4,10 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.json.JSONException;
 import org.json.JSONObject;
-import org.springframework.data.domain.*;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -13,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import vn.iostar.groupservice.dto.FilesOfGroupDTO;
 import vn.iostar.groupservice.dto.PhotosOfGroupDTO;
+import vn.iostar.model.PostElastic;
 import vn.iostar.postservice.constant.PrivacyLevel;
 import vn.iostar.postservice.constant.RoleName;
 import vn.iostar.postservice.dto.GenericResponse;
@@ -20,19 +24,24 @@ import vn.iostar.postservice.dto.GenericResponseAdmin;
 import vn.iostar.postservice.dto.PaginationInfo;
 import vn.iostar.postservice.dto.request.CreatePostRequestDTO;
 import vn.iostar.postservice.dto.request.PostUpdateRequest;
-import vn.iostar.postservice.dto.response.*;
+import vn.iostar.postservice.dto.response.GroupProfileResponse;
+import vn.iostar.postservice.dto.response.PhoToResponse;
+import vn.iostar.postservice.dto.response.PostsResponse;
+import vn.iostar.postservice.dto.response.UserProfileResponse;
 import vn.iostar.postservice.entity.Post;
 import vn.iostar.postservice.jwt.service.JwtService;
-import vn.iostar.postservice.repository.CommentRepository;
-import vn.iostar.postservice.repository.LikeRepository;
-import vn.iostar.postservice.repository.PostRepository;
-import vn.iostar.postservice.repository.ShareRepository;
+import vn.iostar.postservice.mapper.PostMapper;
+import vn.iostar.postservice.repository.elasticsearch.PostElasticSearchRepository;
+import vn.iostar.postservice.repository.jpa.CommentRepository;
+import vn.iostar.postservice.repository.jpa.LikeRepository;
+import vn.iostar.postservice.repository.jpa.PostRepository;
+import vn.iostar.postservice.repository.jpa.ShareRepository;
 import vn.iostar.postservice.service.PostService;
 import vn.iostar.postservice.service.client.FileClientService;
 import vn.iostar.postservice.service.client.FriendClientService;
 import vn.iostar.postservice.service.client.GroupClientService;
 import vn.iostar.postservice.service.client.UserClientService;
-
+import vn.iostar.postservice.service.synchronization.PostSynchronizationService;
 
 import java.io.IOException;
 import java.text.ParseException;
@@ -55,10 +64,22 @@ public class PostServiceImpl extends RedisServiceImpl implements PostService {
     private final FriendClientService friendClientService;
     private final ShareRepository shareRepository;
     private final FileClientService fileClientService;
+    private final PostSynchronizationService postSynchronizationService;
 
+    private final PostElasticSearchRepository postElasticSearchRepository;
     ObjectMapper objectMapper;
 
-    public PostServiceImpl(RedisTemplate<String, Object> redisTemplate, PostRepository postRepository, JwtService jwtService, UserClientService userClientService, GroupClientService groupClientService, CommentRepository commentRepository, LikeRepository likeRepository, FriendClientService friendClientService, ShareRepository shareRepository, FileClientService fileClientService) {
+    public PostServiceImpl(RedisTemplate<String, Object> redisTemplate,
+                           PostRepository postRepository, JwtService jwtService,
+                           UserClientService userClientService,
+                           GroupClientService groupClientService,
+                           CommentRepository commentRepository,
+                           LikeRepository likeRepository,
+                           FriendClientService friendClientService,
+                           ShareRepository shareRepository,
+                           FileClientService fileClientService,
+                           PostSynchronizationService postSynchronizationService,
+                           PostElasticSearchRepository postElasticSearchRepository) {
         super(redisTemplate);
         this.postRepository = postRepository;
         this.jwtService = jwtService;
@@ -69,10 +90,13 @@ public class PostServiceImpl extends RedisServiceImpl implements PostService {
         this.friendClientService = friendClientService;
         this.shareRepository = shareRepository;
         this.fileClientService = fileClientService;
+        this.postSynchronizationService = postSynchronizationService;
+        this.postElasticSearchRepository = postElasticSearchRepository;
     }
 
     @Override
     public <S extends Post> S save(S entity) {
+        postElasticSearchRepository.save(PostMapper.toPostDocument(entity));
         return postRepository.save(entity);
     }
 
@@ -194,7 +218,9 @@ public class PostServiceImpl extends RedisServiceImpl implements PostService {
             post.setComments(new ArrayList<>());
             post.setLikes(new ArrayList<>());
             shareRepository.deleteByPostId(postId);
+            postElasticSearchRepository.delete(PostMapper.toPostDocument(post));
             postRepository.delete(post);
+
             List<String> shares = post.getShares();
             if (shares != null) {
                 for (String shareId : shares) {
@@ -270,6 +296,7 @@ public class PostServiceImpl extends RedisServiceImpl implements PostService {
             e.printStackTrace();
         }
         save(post);
+
         if (this.exists("postsTimeline")) this.delete("postsTimeline");
         if (this.exists("postsOfUser")) this.delete("postsOfUser");
         if (this.exists("postsOfGroup")) this.delete("postsOfGroup");
@@ -462,6 +489,7 @@ public class PostServiceImpl extends RedisServiceImpl implements PostService {
             }
             post.setComments(new ArrayList<>());
             post.setLikes(new ArrayList<>());
+            postElasticSearchRepository.delete(PostMapper.toPostDocument(post));
             postRepository.delete(post);
             return ResponseEntity.ok()
                     .body(new GenericResponse(true, "Delete Successful!", userPostsPage, HttpStatus.OK.value()));
@@ -981,6 +1009,11 @@ public class PostServiceImpl extends RedisServiceImpl implements PostService {
             simplifiedUserPosts.add(postsResponse);
         }
         return simplifiedUserPosts;
+    }
+
+    @Override
+    public  List<PostElastic> searchPost(String search, Pageable pageable) throws IOException {
+        return postSynchronizationService.autoSuggestUserSearch(search);
     }
 
 }

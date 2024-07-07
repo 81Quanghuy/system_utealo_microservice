@@ -60,7 +60,7 @@ spring:
             enable: true
   datasource:
     driver-class-name: com.microsoft.sqlserver.jdbc.SQLServerDriver
-#    url: jdbc:sqlserver://userservice.mssql.somee.com;database=userservice;encrypt=false;trustServerCertificate=true;hostNameInCertificate=*.database.windows.net;loginTimeout=30;
+#    url: jdbc:sqlserver://userservice.mssql.somee.com;database=userservice;encrypt=false;trustServerCertificate=true;hostNameInCertificate=*.database.windows.net;...eout=30;
 #    username: quanghuy81_SQLLogin_1
 #    password: Huyvff@111
     url: jdbc:sqlserver://localhost;database=user_service;encrypt=false;trustServerCertificate=true;hostNameInCertificate=*.database.windows.net;loginTimeout=30;
@@ -99,7 +99,7 @@ resilience4j:
 cloudinary:
   cloud-name: ddccjvlbf
   api-key: 135792485217745
-  api-secret: 6XXhPgTw6dZ3x7d43S_x5tIF7oU
+api-secret: 6XXhPgTw6dZ3x7d43S_x5tIF7oU
 
 management:
   endpoints:

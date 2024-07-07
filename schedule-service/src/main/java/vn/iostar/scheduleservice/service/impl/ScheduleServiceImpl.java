@@ -7,6 +7,8 @@ import org.apache.poi.ss.usermodel.DataFormatter;
 import org.apache.poi.xssf.usermodel.XSSFRow;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.HttpStatus;
@@ -16,11 +18,14 @@ import org.springframework.web.multipart.MultipartFile;
 import vn.iostar.model.RelationshipResponse;
 import vn.iostar.scheduleservice.constant.RoleName;
 import vn.iostar.scheduleservice.dto.GenericResponse;
+import vn.iostar.scheduleservice.dto.PaginationInfo;
 import vn.iostar.scheduleservice.dto.request.AddScheduleDetailRequest;
 import vn.iostar.scheduleservice.dto.request.FileRequest;
 import vn.iostar.scheduleservice.dto.request.ScheduleDetailRequest;
 import vn.iostar.scheduleservice.dto.request.ScheduleRequest;
 import vn.iostar.scheduleservice.dto.response.BadRequestException;
+import vn.iostar.scheduleservice.dto.response.GenericResponseAdmin;
+import vn.iostar.scheduleservice.dto.response.ScheduleResponse;
 import vn.iostar.scheduleservice.dto.response.UserProfileResponse;
 import vn.iostar.scheduleservice.entity.Schedule;
 import vn.iostar.scheduleservice.entity.ScheduleDetail;
@@ -34,6 +39,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.text.ParseException;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 public class ScheduleServiceImpl extends RedisServiceImpl implements ScheduleService {
@@ -272,7 +278,7 @@ public class ScheduleServiceImpl extends RedisServiceImpl implements ScheduleSer
 
 
     @Override
-    public ResponseEntity<Object> createScheduleDetail(String userId, ScheduleRequest requestDTO) {
+    public ResponseEntity<Object> createScheduleDetailList(String userId, ScheduleRequest requestDTO) {
 
         List<ScheduleDetail> scheduleDetails = new ArrayList<>();
         for (ScheduleDetailRequest detailRequest : requestDTO.getScheduleDetails()) {
@@ -303,6 +309,31 @@ public class ScheduleServiceImpl extends RedisServiceImpl implements ScheduleSer
     }
 
     @Override
+    public ResponseEntity<Object> createScheduleDetail(String userId, ScheduleDetailRequest requestDTO) {
+        String scheduleDetailId = UUID.randomUUID().toString();
+        ScheduleDetail scheduleDetail = new ScheduleDetail();
+        scheduleDetail.setId(scheduleDetailId);
+        scheduleDetail.setCourseName(requestDTO.getCourseName());
+        scheduleDetail.setInstructorName(requestDTO.getInstructorName());
+        scheduleDetail.setRoomName(requestDTO.getRoomName());
+        scheduleDetail.setDayOfWeek(requestDTO.getDayOfWeek());
+        scheduleDetail.setStartTime(requestDTO.getStartTime());
+        scheduleDetail.setEndTime(requestDTO.getEndTime());
+        scheduleDetail.setStartPeriod(requestDTO.getStartPeriod());
+        scheduleDetail.setEndPeriod(requestDTO.getEndPeriod());
+        scheduleDetail.setNote(requestDTO.getNote());
+        scheduleDetail.setBasis(requestDTO.getBasis());
+        scheduleDetail.setNumber(requestDTO.getNumber());
+        scheduleDetailRepository.save(scheduleDetail);
+        return ResponseEntity.ok(GenericResponse.builder()
+                .success(true)
+                .message("Created schedule detail successfully")
+                .result(scheduleDetail)
+                .statusCode(HttpStatus.OK.value())
+                .build());
+    }
+
+    @Override
     public ResponseEntity<Object> addScheduleDetailtoSchdule(String currentUserId, AddScheduleDetailRequest requestDTO) {
         Optional<ScheduleDetail> optionalScheduleDetail = scheduleDetailRepository.findById(requestDTO.getScheduleDetailId());
         if (!optionalScheduleDetail.isPresent()) {
@@ -313,24 +344,45 @@ public class ScheduleServiceImpl extends RedisServiceImpl implements ScheduleSer
                             .statusCode(HttpStatus.NOT_FOUND.value())
                             .build());
         }
-        Optional<Schedule> optionalSchedule = scheduleRepository.findById(requestDTO.getScheduleId());
-        if (!optionalSchedule.isPresent()) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(GenericResponse.builder()
-                            .success(false)
-                            .message("Schedule not found")
-                            .statusCode(HttpStatus.NOT_FOUND.value())
-                            .build());
+        Schedule schedule = scheduleRepository.findByYearAndSemesterAndWeekOfSemester(requestDTO.getYear(), requestDTO.getSemester(), requestDTO.getWeekOfSemester());
+        if (schedule == null) {
+            schedule = new Schedule();
+            schedule.setId(UUID.randomUUID().toString());
+            schedule.setYear(requestDTO.getYear());
+            schedule.setSemester(requestDTO.getSemester());
+            schedule.setWeekOfSemester(requestDTO.getWeekOfSemester());
+            List<String> userIds = new ArrayList<>();
+            userIds.add(requestDTO.getUserId());
+            schedule.setUserId(userIds);
+            ScheduleDetail scheduleDetail = optionalScheduleDetail.get();
+            List<ScheduleDetail> scheduleDetails = new ArrayList<>();
+            scheduleDetails.add(scheduleDetail);
+            schedule.setScheduleDetails(scheduleDetails);
+            scheduleRepository.save(schedule);
+            return ResponseEntity.ok(GenericResponse.builder()
+                    .success(true)
+                    .message("Tạo thời khóa biểu thành công")
+                    .result(schedule)
+                    .statusCode(HttpStatus.OK.value())
+                    .build());
         }
 
-        Schedule schedule = optionalSchedule.get();
         ScheduleDetail scheduleDetail = optionalScheduleDetail.get();
+        for (ScheduleDetail detail : schedule.getScheduleDetails()) {
+            if (detail.getId().equals(scheduleDetail.getId())) {
+                return ResponseEntity.ok(GenericResponse.builder()
+                        .success(false)
+                        .message("Môn học đã tồn tại trong thời khóa biểu")
+                        .statusCode(300)
+                        .build());
+
+            }
+        }
         schedule.getScheduleDetails().add(scheduleDetail);
         scheduleRepository.save(schedule);
-
         return ResponseEntity.ok(GenericResponse.builder()
                 .success(true)
-                .message("Added schedule detail to schedule successfully")
+                .message("Thêm môn học vào thời khóa biểu thành công")
                 .result(schedule)
                 .statusCode(HttpStatus.OK.value())
                 .build());
@@ -443,6 +495,154 @@ public class ScheduleServiceImpl extends RedisServiceImpl implements ScheduleSer
         );
     }
 
+    @Override
+    public ResponseEntity<Object> importSchedule(FileRequest fileRequest) throws IOException, ParseException {
+        MultipartFile multipartFile = fileRequest.getFile();
+        InputStream inputStream = multipartFile.getInputStream();
+        int countMember = 0;
+        Schedule schedule = new Schedule();
+        String scheduleId = UUID.randomUUID().toString();
+        schedule.setId(scheduleId);
+        if (fileRequest.getUserId() == null) {
+            schedule.setUserId(new ArrayList<>());
+        } else {
+            schedule.setUserId(fileRequest.getUserId());
+        }
+        schedule.setSemester(fileRequest.getSemester());
+        schedule.setYear(fileRequest.getYear());
+        schedule.setWeekOfSemester(fileRequest.getWeekOfSemester());
+        try (XSSFWorkbook workbook = new XSSFWorkbook(inputStream)) {
+            XSSFSheet sheet = workbook.getSheetAt(0); // Lấy sheet đầu tiên
+            List<ScheduleDetail> scheduleDetails = new ArrayList<>();
+
+            for (int i = 1; i <= sheet.getLastRowNum(); i++) {
+                // Kiểm tra nếu hàng không tồn tại
+                XSSFRow row = sheet.getRow(i);
+                if (row == null) {
+                    break; // Dừng vòng lặp nếu gặp hàng không tồn tại
+                }
+
+                ScheduleDetailRequest scheduleDetailRequest = mapRowToScheduleDetail(sheet, i, inputStream);
+                if (scheduleDetailRequest == null) {
+                    continue; // Bỏ qua hàng này nếu row là null
+                }
+
+                ScheduleDetail scheduleDetail = new ScheduleDetail();
+                String scheduleDetailId = UUID.randomUUID().toString();
+                scheduleDetail.setId(scheduleDetailId);
+                if (scheduleDetailRequest.getCourseName() != null) {
+                    scheduleDetail.setCourseName(scheduleDetailRequest.getCourseName());
+                }
+                if (scheduleDetailRequest.getInstructorName() != null) {
+                    scheduleDetail.setInstructorName(scheduleDetailRequest.getInstructorName());
+                }
+                if (scheduleDetailRequest.getRoomName() != null) {
+                    scheduleDetail.setRoomName(scheduleDetailRequest.getRoomName());
+                }
+                if (scheduleDetailRequest.getDayOfWeek() != null) {
+                    scheduleDetail.setDayOfWeek(scheduleDetailRequest.getDayOfWeek());
+                }
+                if (scheduleDetailRequest.getStartTime() != null) {
+                    scheduleDetail.setStartTime(scheduleDetailRequest.getStartTime());
+                }
+                if (scheduleDetailRequest.getEndTime() != null) {
+                    scheduleDetail.setEndTime(scheduleDetailRequest.getEndTime());
+                }
+                if (scheduleDetailRequest.getStartPeriod() != null) {
+                    scheduleDetail.setStartPeriod(scheduleDetailRequest.getStartPeriod());
+                }
+                if (scheduleDetailRequest.getEndPeriod() != null) {
+                    scheduleDetail.setEndPeriod(scheduleDetailRequest.getEndPeriod());
+                }
+                if (scheduleDetailRequest.getNote() != null) {
+                    scheduleDetail.setNote(scheduleDetailRequest.getNote());
+                }
+                if (scheduleDetailRequest.getBasis() != null) {
+                    scheduleDetail.setBasis(scheduleDetailRequest.getBasis());
+                }
+                if (scheduleDetailRequest.getNumber() != null) {
+                    scheduleDetail.setNumber(scheduleDetailRequest.getNumber());
+                }
+                scheduleDetails.add(scheduleDetail);
+                countMember++;
+            }
+
+            schedule.setScheduleDetails(scheduleDetails);
+            // Đóng file Excel
+            workbook.close();
+
+            // Lưu danh sách scheduleDetails vào database
+            scheduleDetailRepository.saveAll(scheduleDetails);
+            // Lưu schedule vào database
+            scheduleRepository.save(schedule);
+        }
+
+        inputStream.close();
+        return ResponseEntity.status(HttpStatus.OK).body(
+                GenericResponse.builder().success(true).message("Có " + countMember + " dòng đã được thêm vào hệ thống!!!").statusCode(HttpStatus.OK.value()).build()
+        );
+    }
+
+    @Override
+    public ResponseEntity<GenericResponseAdmin> getAllScheduleDetails(int page, int itemsPerPage) {
+        Pageable pageable = PageRequest.of(page - 1, itemsPerPage);
+        Page<ScheduleDetail> scheduleDetailsPage = scheduleDetailRepository.findAll(pageable);
+        long totalScheduleDetails = scheduleDetailRepository.count();
+        PaginationInfo pagination = new PaginationInfo();
+        pagination.setPage(page);
+        pagination.setItemsPerPage(itemsPerPage);
+        pagination.setCount(totalScheduleDetails);
+        pagination.setPages((int) Math.ceil((double) totalScheduleDetails / itemsPerPage));
+        if (scheduleDetailsPage.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(GenericResponseAdmin.builder().success(true).message("Empty").result(null).statusCode(HttpStatus.NOT_FOUND.value()).build());
+        } else {
+            return ResponseEntity.status(HttpStatus.OK).body(GenericResponseAdmin.builder().success(true).message("Lấy danh sách thời khóa biểu chi tiết thành công").result(scheduleDetailsPage).pagination(pagination).statusCode(HttpStatus.OK.value()).build());
+        }
+    }
+
+    @Override
+    public ResponseEntity<Object> getAllSchedules(int page, int itemsPerPage) {
+        Pageable pageable = PageRequest.of(page - 1, itemsPerPage);
+        Page<Schedule> schedulesPage = scheduleRepository.findAll(pageable);
+        long totalSchedules = scheduleRepository.count();
+
+        PaginationInfo pagination = new PaginationInfo();
+        pagination.setPage(page);
+        pagination.setItemsPerPage(itemsPerPage);
+        pagination.setCount(totalSchedules);
+        pagination.setPages((int) Math.ceil((double) totalSchedules / itemsPerPage));
+
+        if (schedulesPage.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(GenericResponseAdmin.builder()
+                    .success(true)
+                    .message("Empty")
+                    .result(null)
+                    .statusCode(HttpStatus.NOT_FOUND.value())
+                    .build());
+        } else {
+            List<ScheduleResponse> scheduleResponses = schedulesPage.stream().map(schedule -> {
+                List<String> userNames = getUserNamesFromIds(schedule.getUserId());
+                return new ScheduleResponse(schedule, userNames);
+            }).collect(Collectors.toList());
+
+            return ResponseEntity.status(HttpStatus.OK).body(GenericResponseAdmin.builder()
+                    .success(true)
+                    .message("Lấy danh sách thời khóa biểu thành công")
+                    .result(scheduleResponses)
+                    .pagination(pagination)
+                    .statusCode(HttpStatus.OK.value())
+                    .build());
+        }
+    }
+
+    public List<String> getUserNamesFromIds(List<String> userIds) {
+        List<String> userNames = new ArrayList<>();
+        for (String userId : userIds) {
+//            UserProfileResponse userProfileResponse = userClientService.getUser(userId);
+//            userNames.add(userProfileResponse.getUserName());
+        }
+        return userNames;
+    }
 
     private ScheduleDetailRequest mapRowToScheduleDetail(XSSFSheet sheet, int i, InputStream inputStream) throws IOException {
 
@@ -572,6 +772,34 @@ public class ScheduleServiceImpl extends RedisServiceImpl implements ScheduleSer
         } else if (cell.getCellType() == CellType.STRING && cell.getStringCellValue().trim().isEmpty()) {
             return true;
         } else return false;
+    }
+
+    // Xóa môn học ra khỏi Schedule
+    @Override
+    public ResponseEntity<Object> deleteScheduleDetail(String scheduleDetailId) {
+        Optional<ScheduleDetail> optionalScheduleDetail = scheduleDetailRepository.findById(scheduleDetailId);
+        if (optionalScheduleDetail.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(GenericResponse.builder()
+                            .success(false)
+                            .message("Không tìm thấy môn học")
+                            .statusCode(HttpStatus.NOT_FOUND.value())
+                            .build());
+        }
+
+        ScheduleDetail scheduleDetail = optionalScheduleDetail.get();
+        List<Schedule> schedules = scheduleRepository.findByScheduleDetails(scheduleDetail);
+        for (Schedule schedule : schedules) {
+            schedule.getScheduleDetails().remove(scheduleDetail);
+            scheduleRepository.save(schedule);
+        }
+
+        return ResponseEntity.ok(GenericResponse.builder()
+                .success(true)
+                .message("Xóa môn học thành công")
+                .result(scheduleDetail)
+                .statusCode(HttpStatus.OK.value())
+                .build());
     }
 
 }

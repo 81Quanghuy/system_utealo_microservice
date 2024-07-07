@@ -16,7 +16,7 @@ public interface GroupMemberRepository extends MongoRepository<GroupMember, Stri
     List<GroupMember> findByUserIdAndIsLocked(String userId, Boolean isLocked);
     Optional<GroupMember> findByUserIdAndGroupId(String userId, String groupId);
     List<GroupMember> findAllByGroupId(String groupId);
-    Optional<GroupMember> findByUserIdAndRoleAndGroupId(String userId, GroupMemberRoleType role,String groupId);
+    Optional<GroupMember> findByUserIdAndRoleAndGroupId(String userId, GroupMemberRoleType role, String groupId);
     Integer countByGroupId(String groupId);
     List<GroupMember> findAllByGroupIdAndRoleIn(String groupId, List<GroupMemberRoleType> roles);
     Boolean existsByUserIdAndGroupId(String userId, String groupId);

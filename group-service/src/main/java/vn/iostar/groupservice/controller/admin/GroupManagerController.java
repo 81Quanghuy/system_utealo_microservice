@@ -1,5 +1,6 @@
 package vn.iostar.groupservice.controller.admin;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
@@ -7,8 +8,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import vn.iostar.groupservice.dto.CountDTO;
 import vn.iostar.groupservice.dto.SearchPostGroup;
+import vn.iostar.groupservice.dto.request.GroupCreateRequest;
 import vn.iostar.groupservice.dto.response.GenericResponse;
 import vn.iostar.groupservice.dto.response.GenericResponseAdmin;
+import vn.iostar.groupservice.jwt.service.JwtService;
 import vn.iostar.groupservice.service.GroupService;
 
 import java.util.Date;
@@ -21,6 +24,7 @@ import java.util.Map;
 public class GroupManagerController {
 
     private final GroupService postGroupService;
+    private final JwtService jwtService;
 
 
     // Lấy danh sách tất cả các nhóm trong hệ thống
@@ -94,4 +98,12 @@ public class GroupManagerController {
         return null;
     }
 
+    // Tạo nhóm
+    @PostMapping("/create")
+    public ResponseEntity<GenericResponse> createGroupByUser(@RequestBody  @Valid GroupCreateRequest postGroup,
+                                                             @RequestHeader("Authorization") String authorizationHeader) {
+        String accessToken = authorizationHeader.substring(7);
+        String userId = jwtService.extractUserId(accessToken);
+        return postGroupService.createGroup(postGroup, userId);
+    }
 }

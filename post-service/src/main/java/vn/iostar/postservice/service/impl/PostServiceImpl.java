@@ -940,7 +940,6 @@ public class PostServiceImpl extends RedisServiceImpl implements PostService {
                 throw new RuntimeException(e);
             }
         }
-
         return filesDTO;
     }
 
@@ -948,42 +947,34 @@ public class PostServiceImpl extends RedisServiceImpl implements PostService {
     public Page<PhotosOfGroupDTO> findLatestPhotosByGroupId(String groupId, int page, int size) {
         PageRequest pageable = PageRequest.of(page, size);
         Page<String> photos = postRepository.findPhotosOfPostByGroupId(groupId, pageable);
-
         List<PhotosOfGroupDTO> photosDTOList = new ArrayList<>();
-
         for (String photo : photos.getContent()) {
             try {
                 // Parse JSON string to JSONObject
                 JSONObject jsonObject = new JSONObject(photo);
-
                 // Check if the JSON object has "photos" field
                 if (jsonObject.has("photos")) {
                     PhotosOfGroupDTO photoDTO = new PhotosOfGroupDTO();
                     photoDTO.setPhotos(jsonObject.getString("photos"));
-
                     if (jsonObject.has("_id")) {
                         photoDTO.setPostId(jsonObject.getString("_id"));
                     }
-
                     if (jsonObject.has("user_id")) {
                         UserProfileResponse userProfileResponse = userClientService.getUser(jsonObject.getString("user_id"));
                         photoDTO.setUserName(userProfileResponse.getUserName());
                         photoDTO.setUserId(jsonObject.getString("user_id"));
                     }
-
                     if (jsonObject.has("group_id")) {
                         GroupProfileResponse groupProfileResponse = groupClientService.getGroup(jsonObject.getString("group_id"));
                         photoDTO.setPostGroupName(groupProfileResponse.getGroupName());
                         photoDTO.setUserId(jsonObject.getString("group_id"));
                     }
-
                     photosDTOList.add(photoDTO);
                 }
             } catch (JSONException e) {
                 e.printStackTrace();
             }
         }
-
         // Create a Page object from the list of DTOs and return
         return new PageImpl<>(photosDTOList, pageable, photos.getTotalElements());
     }
@@ -998,8 +989,8 @@ public class PostServiceImpl extends RedisServiceImpl implements PostService {
         List<UserProfileResponse> userProfileResponses = new ArrayList<>();
         List<PostsResponse> simplifiedUserPosts = new ArrayList<>();
         for (Post post : userPosts) {
-            boolean checUser = userProfileResponses.stream().noneMatch(user -> user.getUserId().equals(post.getUserId()));
-            if(checUser){
+            boolean checkUser = userProfileResponses.stream().noneMatch(user -> user.getUserId().equals(post.getUserId()));
+            if(checkUser){
                 UserProfileResponse user = userClientService.getUser(post.getUserId());
                 userProfileResponses.add(user);
             }
@@ -1010,10 +1001,8 @@ public class PostServiceImpl extends RedisServiceImpl implements PostService {
         }
         return simplifiedUserPosts;
     }
-
     @Override
     public  List<PostElastic> searchPost(String search, Pageable pageable) throws IOException {
         return postSynchronizationService.autoSuggestUserSearch(search);
     }
-
 }

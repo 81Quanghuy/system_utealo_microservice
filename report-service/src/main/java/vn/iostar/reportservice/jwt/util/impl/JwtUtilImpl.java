@@ -5,7 +5,7 @@ import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.UnsupportedJwtException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
-import vn.iostar.postservice.constant.AppConstant;
+import vn.iostar.reportservice.constant.AppConstant;
 import vn.iostar.reportservice.jwt.util.JwtUtil;
 
 import java.security.Key;

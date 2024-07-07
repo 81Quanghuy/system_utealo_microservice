@@ -99,7 +99,7 @@ resilience4j:
 cloudinary:
   cloud-name: ddccjvlbf
   api-key: 135792485217745
-api-secret: 6XXhPgTw6dZ3x7d43S_x5tIF7oU
+  api-secret: 6XXhPgTw6dZ3x7d43S_x5tIF7oU
 
 management:
   endpoints:

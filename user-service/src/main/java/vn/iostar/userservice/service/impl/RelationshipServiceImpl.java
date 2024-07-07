@@ -1,11 +1,10 @@
 package vn.iostar.userservice.service.impl;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Example;
 import org.springframework.stereotype.Service;
 import vn.iostar.userservice.entity.Relationship;
-import vn.iostar.userservice.repository.RelationshipRepository;
+import vn.iostar.userservice.repository.jpa.RelationshipRepository;
 import vn.iostar.userservice.service.RelationshipService;
 
 import java.util.List;

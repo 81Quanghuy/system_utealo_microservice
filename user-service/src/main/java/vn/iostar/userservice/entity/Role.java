@@ -36,7 +36,7 @@ public class Role extends AbstractMappedEntity implements Serializable {
     @Column(name = "role_description")
     private String description = "";
 
-    @OneToMany(mappedBy = "role",fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "role")
     private List<User> users;
 
 }

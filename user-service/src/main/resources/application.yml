@@ -10,15 +10,28 @@ server:
   port: 8000
 
 spring:
+  elasticsearch:
+    # Địa chỉ máy chủ Elasticsearch
+    host: localhost
+    # Cổng kết nối Elasticsearch
+    port: 9200
+    # Tên cluster Elasticsearch
+    cluster-name: docker-cluster
+    # Bật/tắt refresh (mặc định: true)
+    refresh: true
+  data:
+    elasticsearch:
+      repositories:
+        auto-create-index: true
   kafka:
     bootstrap-servers: localhost:9092
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
       properties:
-        [ enable.idempotence ]: true #check trung lap event
-        [ max.in.flight.requests.per.connection ]: 5 # so luong request toi da tren 1 connection
-        [ request.timeout.ms ]: 60000
+        [enable.idempotence]: true #check trung lap event
+        [max.in.flight.requests.per.connection]: 5 # so luong request toi da tren 1 connection
+        [request.timeout.ms]: 60000
       retries: 1
       # 0 : no wait for kafka response
       # 1: leader write success, no wait for follower
@@ -47,14 +60,21 @@ spring:
             enable: true
   datasource:
     driver-class-name: com.microsoft.sqlserver.jdbc.SQLServerDriver
-    url: jdbc:sqlserver://userservice.mssql.somee.com;database=userservice;encrypt=false;trustServerCertificate=true;hostNameInCertificate=*.database.windows.net;loginTimeout=30;
-    username: quanghuy81_SQLLogin_1
-    password: Huyvff@111
+#    url: jdbc:sqlserver://userservice.mssql.somee.com;database=userservice;encrypt=false;trustServerCertificate=true;hostNameInCertificate=*.database.windows.net;...eout=30;
+#    username: quanghuy81_SQLLogin_1
+#    password: Huyvff@111
+    url: jdbc:sqlserver://localhost;database=user_service;encrypt=false;trustServerCertificate=true;hostNameInCertificate=*.database.windows.net;loginTimeout=30;
+    username: sa
+    password: 123
   jpa:
     hibernate:
       ddl-auto: update
     database: sql_server
     database-platform: org.hibernate.dialect.SQLServerDialect
+    properties:
+      hibernate:
+        transaction:
+          flush_before_completion: true
 
 springdoc:
   packages-to-scan:
@@ -79,7 +99,7 @@ resilience4j:
 cloudinary:
   cloud-name: ddccjvlbf
   api-key: 135792485217745
-  api-secret: 6XXhPgTw6dZ3x7d43S_x5tIF7oU
+api-secret: 6XXhPgTw6dZ3x7d43S_x5tIF7oU
 
 management:
   endpoints:

@@ -1,10 +1,5 @@
 package vn.iostar.userservice.service.impl;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -14,10 +9,15 @@ import vn.iostar.userservice.entity.Account;
 import vn.iostar.userservice.entity.Token;
 import vn.iostar.userservice.entity.User;
 import vn.iostar.userservice.jwt.service.JwtService;
-import vn.iostar.userservice.repository.AccountRepository;
-import vn.iostar.userservice.repository.TokenRepository;
-import vn.iostar.userservice.repository.UserRepository;
+import vn.iostar.userservice.repository.jpa.AccountRepository;
+import vn.iostar.userservice.repository.jpa.TokenRepository;
+import vn.iostar.userservice.repository.jpa.UserRepository;
 import vn.iostar.userservice.service.TokenService;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
 
 @Service

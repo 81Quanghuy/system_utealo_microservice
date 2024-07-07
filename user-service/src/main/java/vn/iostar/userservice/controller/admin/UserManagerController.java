@@ -1,35 +1,25 @@
 package vn.iostar.userservice.controller.admin;
 
-import java.io.IOException;
-import java.text.ParseException;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.ModelAttribute;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestHeader;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
-
-
+import org.springframework.web.bind.annotation.*;
 import vn.iostar.userservice.dto.*;
 import vn.iostar.userservice.dto.request.AccountManager;
 import vn.iostar.userservice.dto.request.UserManagerRequest;
 import vn.iostar.userservice.dto.response.UserResponse;
 import vn.iostar.userservice.entity.User;
 import vn.iostar.userservice.jwt.service.JwtService;
-import vn.iostar.userservice.repository.UserRepository;
+import vn.iostar.userservice.repository.jpa.UserRepository;
 import vn.iostar.userservice.service.UserService;
+
+import java.io.IOException;
+import java.text.ParseException;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/v1/user/admin")

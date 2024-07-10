@@ -1,4 +1,4 @@
-package vn.iostar.scheduleservice.controller;
+package vn.iostar.scheduleservice.controller.user;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import lombok.RequiredArgsConstructor;

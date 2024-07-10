@@ -1,4 +1,4 @@
-package vn.iostar.scheduleservice.controller;
+package vn.iostar.scheduleservice.controller.admin;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;

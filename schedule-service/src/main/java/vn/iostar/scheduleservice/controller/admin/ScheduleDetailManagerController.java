@@ -1,13 +1,11 @@
-package vn.iostar.scheduleservice.controller;
+package vn.iostar.scheduleservice.controller.admin;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import vn.iostar.scheduleservice.dto.GenericResponse;
 import vn.iostar.scheduleservice.dto.request.AddScheduleDetailRequest;
 import vn.iostar.scheduleservice.dto.request.FileRequest;
 import vn.iostar.scheduleservice.dto.request.ScheduleDetailRequest;
-import vn.iostar.scheduleservice.dto.request.ScheduleRequest;
 import vn.iostar.scheduleservice.dto.response.GenericResponseAdmin;
 import vn.iostar.scheduleservice.jwt.service.JwtService;
 import vn.iostar.scheduleservice.service.ScheduleService;
@@ -54,10 +52,16 @@ public class ScheduleDetailManagerController {
         return scheduleService.importScheduleDetails(fileRequest);
     }
 
-    // Lấy tất cả thời khóa biểu chi tiết trong hệ thống có phân
+    // Lấy tất cả thời khóa biểu chi tiết trong hệ thống có phân trang
     @GetMapping("/list")
     public ResponseEntity<GenericResponseAdmin> getAllScheduleDetails(@RequestParam(defaultValue = "1") int page, @RequestParam(defaultValue = "10") int items) {
         return scheduleService.getAllScheduleDetails(page, items);
+    }
+
+    // Lấy tất cả thời khóa biểu chi tiết trong hệ thống không có phân
+    @GetMapping("/listAll")
+    public ResponseEntity<Object> listAllScheduleDetails() {
+        return scheduleService.getAllScheduleDetails();
     }
 
     // Xóa môn học ra khỏi Schedule

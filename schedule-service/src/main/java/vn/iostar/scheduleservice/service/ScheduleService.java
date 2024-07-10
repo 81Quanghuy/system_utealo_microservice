@@ -41,6 +41,8 @@ public interface ScheduleService extends RedisService{
     ResponseEntity<Object> importSchedule(FileRequest file)  throws IOException, ParseException;
     // Lấy tất cả thời khóa biểu chi tiết trong hệ thống có phân trang
     ResponseEntity<GenericResponseAdmin> getAllScheduleDetails(int page, int items);
+    // Lấy tất cả thời khóa biểu chi tiết trong hệ thống không có phân trang
+    ResponseEntity<Object> getAllScheduleDetails();
     // Lấy tất cả thời khóa biểu trong hệ thống có phân trang
     ResponseEntity<Object> getAllSchedules(int page, int items);
     // Xóa môn học ra khỏi Schedule

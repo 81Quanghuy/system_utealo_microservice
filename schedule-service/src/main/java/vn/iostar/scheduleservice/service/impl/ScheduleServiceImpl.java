@@ -36,7 +36,6 @@ import vn.iostar.scheduleservice.service.client.UserClientService;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.text.ParseException;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -597,6 +596,17 @@ public class ScheduleServiceImpl extends RedisServiceImpl implements ScheduleSer
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(GenericResponseAdmin.builder().success(true).message("Empty").result(null).statusCode(HttpStatus.NOT_FOUND.value()).build());
         } else {
             return ResponseEntity.status(HttpStatus.OK).body(GenericResponseAdmin.builder().success(true).message("Lấy danh sách thời khóa biểu chi tiết thành công").result(scheduleDetailsPage).pagination(pagination).statusCode(HttpStatus.OK.value()).build());
+        }
+    }
+
+    // Lấy tất cả thời khóa biểu chi tiết trong hệ thống không có phân trang
+    @Override
+    public ResponseEntity<Object> getAllScheduleDetails() {
+        List<ScheduleDetail> scheduleDetailsPage = scheduleDetailRepository.findAll();
+        if (scheduleDetailsPage.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(GenericResponseAdmin.builder().success(true).message("Empty").result(null).statusCode(HttpStatus.NOT_FOUND.value()).build());
+        } else {
+            return ResponseEntity.status(HttpStatus.OK).body(GenericResponseAdmin.builder().success(true).message("Lấy danh sách thời khóa biểu chi tiết thành công").result(scheduleDetailsPage).statusCode(HttpStatus.OK.value()).build());
         }
     }
 

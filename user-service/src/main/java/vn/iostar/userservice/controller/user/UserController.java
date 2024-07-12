@@ -25,7 +25,6 @@ import vn.iostar.userservice.dto.response.UserProfileResponse;
 import vn.iostar.userservice.entity.PasswordResetOtp;
 import vn.iostar.userservice.entity.User;
 import vn.iostar.userservice.jwt.service.JwtService;
-import vn.iostar.userservice.mapper.UserMapper;
 import vn.iostar.userservice.model.UserDocument;
 import vn.iostar.userservice.repository.elasticsearch.UsersElasticSearchRepository;
 import vn.iostar.userservice.repository.jpa.UserRepository;
@@ -51,14 +50,6 @@ public class UserController {
     private final UserService userService;
 
     private final CloudinaryService cloudinaryService;
-
-    private final JavaMailSender javaMailSender;
-
-    private final AccountService accountService;
-
-    private final TemplateEngine templateEngine;
-
-    private final Environment env;
 
     private final UserRepository userRepository;
     private final UserSynchronizationService userSynchronizationService;

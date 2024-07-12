@@ -5,7 +5,6 @@ import lombok.Data;
 
 @Data
 public class GroupConfigRequest {
-;
     @NotNull(message = "accessibilityCode is required")
     private Boolean isPublic;
     @NotNull(message = "isAcceptAllRequest is required")

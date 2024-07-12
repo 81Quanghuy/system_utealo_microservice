@@ -68,7 +68,7 @@ public class ShareController {
         String currentUserId = jwtService.extractUserId(token);
         Pageable pageable = PageRequest.of(page, size);
         ObjectMapper objectMapper = new ObjectMapper();
-        String indexStr = String.valueOf(page)+String.valueOf(size) + userId;
+        String indexStr = String.valueOf(page)+ size + userId;
         if (shareService.hashExists("sharesOfUser", indexStr)) {
             Object sharesTimeline = shareService.hashGet("sharesOfUser", indexStr);
             HashMap<String, Object> data = objectMapper.readValue((String) sharesTimeline, HashMap.class);

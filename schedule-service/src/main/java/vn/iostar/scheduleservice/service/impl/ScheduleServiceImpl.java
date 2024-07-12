@@ -779,9 +779,7 @@ public class ScheduleServiceImpl extends RedisServiceImpl implements ScheduleSer
             return true;
         } else if (cell.getCellType() == CellType.BLANK) {
             return true;
-        } else if (cell.getCellType() == CellType.STRING && cell.getStringCellValue().trim().isEmpty()) {
-            return true;
-        } else return false;
+        } else return cell.getCellType() == CellType.STRING && cell.getStringCellValue().trim().isEmpty();
     }
 
     // Xóa môn học ra khỏi Schedule

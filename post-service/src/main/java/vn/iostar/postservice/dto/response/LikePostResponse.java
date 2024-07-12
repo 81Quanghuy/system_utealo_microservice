@@ -1,4 +1,4 @@
-package vn.iostar.dto;
+package vn.iostar.postservice.dto.response;
 
 
 

@@ -40,7 +40,7 @@ public interface ShareService extends RedisService{
     // Đếm số lượng bài Shares trong ngày hôm nay
     long countSharesToday();
     // Đếm số lượng bài Shares trong 7 ngày
-    public long countSharesInWeek();
+    long countSharesInWeek();
     // Đếm số lượng bài Shares trong 1 tháng
     long countSharesInMonthFromNow();
     // Đếm số lượng bài Shares trong 1 năm

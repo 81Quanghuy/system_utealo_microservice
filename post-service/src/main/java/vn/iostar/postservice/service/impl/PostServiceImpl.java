@@ -16,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import vn.iostar.groupservice.dto.FilesOfGroupDTO;
 import vn.iostar.groupservice.dto.PhotosOfGroupDTO;
+import vn.iostar.groupservice.entity.Group;
 import vn.iostar.model.PostElastic;
 import vn.iostar.postservice.constant.PrivacyLevel;
 import vn.iostar.postservice.constant.RoleName;
@@ -96,8 +97,9 @@ public class PostServiceImpl extends RedisServiceImpl implements PostService {
 
     @Override
     public <S extends Post> S save(S entity) {
+        S group = postRepository.save(entity);
         postElasticSearchRepository.save(PostMapper.toPostDocument(entity));
-        return postRepository.save(entity);
+        return group;
     }
 
     @Override
@@ -218,8 +220,8 @@ public class PostServiceImpl extends RedisServiceImpl implements PostService {
             post.setComments(new ArrayList<>());
             post.setLikes(new ArrayList<>());
             shareRepository.deleteByPostId(postId);
-            postElasticSearchRepository.delete(PostMapper.toPostDocument(post));
             postRepository.delete(post);
+            postElasticSearchRepository.delete(PostMapper.toPostDocument(post));
 
             List<String> shares = post.getShares();
             if (shares != null) {
@@ -377,7 +379,7 @@ public class PostServiceImpl extends RedisServiceImpl implements PostService {
         if (userOfPostResponse == null)
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(GenericResponse.builder().success(false)
                     .message("User not found.").statusCode(HttpStatus.NOT_FOUND.value()).build());
-        List<PrivacyLevel> privacyLevels = Arrays.asList(PrivacyLevel.GROUP_MEMBERS);
+        List<PrivacyLevel> privacyLevels = List.of(PrivacyLevel.GROUP_MEMBERS);
         if (!currentUserId.equals(userId)) {
             privacyLevels = Arrays.asList(PrivacyLevel.GROUP_MEMBERS, PrivacyLevel.PRIVATE);
         }
@@ -489,8 +491,8 @@ public class PostServiceImpl extends RedisServiceImpl implements PostService {
             }
             post.setComments(new ArrayList<>());
             post.setLikes(new ArrayList<>());
-            postElasticSearchRepository.delete(PostMapper.toPostDocument(post));
             postRepository.delete(post);
+            postElasticSearchRepository.delete(PostMapper.toPostDocument(post));
             return ResponseEntity.ok()
                     .body(new GenericResponse(true, "Delete Successful!", userPostsPage, HttpStatus.OK.value()));
         }
@@ -592,7 +594,7 @@ public class PostServiceImpl extends RedisServiceImpl implements PostService {
     @Override
     public long countPostsInWeek() {
         LocalDateTime now = LocalDateTime.now();
-        LocalDateTime weekAgo = now.minus(1, ChronoUnit.WEEKS);
+        LocalDateTime weekAgo = now.minusWeeks(1);
         Date startDate = Date.from(weekAgo.atZone(ZoneId.systemDefault()).toInstant());
         Date endDate = Date.from(now.atZone(ZoneId.systemDefault()).toInstant());
         return postRepository.countByPostTimeBetween(startDate, endDate);
@@ -670,7 +672,7 @@ public class PostServiceImpl extends RedisServiceImpl implements PostService {
         UserProfileResponse user = userClientService.getUser(userId);
 
         // Tạo một danh sách các tháng
-        List<Month> months = Arrays.asList(Month.values());
+        Month[] months = Month.values();
         Map<String, Long> postCountsByMonth = new LinkedHashMap<>(); // Sử dụng LinkedHashMap để duy trì thứ tự
 
         for (Month month : months) {
@@ -694,7 +696,7 @@ public class PostServiceImpl extends RedisServiceImpl implements PostService {
         int currentYear = now.getYear();
 
         // Tạo một danh sách các tháng
-        List<Month> months = Arrays.asList(Month.values());
+        Month[] months = Month.values();
         Map<String, Long> postCountsByMonth = new LinkedHashMap<>(); // Sử dụng LinkedHashMap để duy trì thứ tự
 
         for (Month month : months) {
@@ -756,7 +758,7 @@ public class PostServiceImpl extends RedisServiceImpl implements PostService {
             throws RuntimeException, JsonProcessingException {
 
         objectMapper = new ObjectMapper();
-        String indexStr = String.valueOf(page)+String.valueOf(size) + userId;
+        String indexStr = String.valueOf(page)+ size + userId;
         if (this.hashExists("postsTimeline", indexStr)) {
             Object postsTimeline = this.hashGet("postsTimeline", indexStr);
             HashMap<String, Object> data = objectMapper.readValue((String) postsTimeline, HashMap.class);
@@ -820,7 +822,7 @@ public class PostServiceImpl extends RedisServiceImpl implements PostService {
     public ResponseEntity<GenericResponse> getGroupPosts(String userId, String postGroupId, Integer page,
                                                          Integer size) throws JsonProcessingException {
         objectMapper = new ObjectMapper();
-        String indexStr = String.valueOf(page)+String.valueOf(size) + postGroupId;
+        String indexStr = String.valueOf(page)+ size + postGroupId;
         if (this.hashExists("postsOfGroup", indexStr)) {
             Object postsTimeline = this.hashGet("postsOfGroup", indexStr);
             HashMap<String, Object> data = objectMapper.readValue((String) postsTimeline, HashMap.class);
@@ -855,7 +857,7 @@ public class PostServiceImpl extends RedisServiceImpl implements PostService {
     @Override
     public ResponseEntity<GenericResponse> getPostOfPostGroup(String userId, Integer page, Integer size) throws JsonProcessingException {
         objectMapper = new ObjectMapper();
-        String indexStr = String.valueOf(page)+String.valueOf(size) + userId;
+        String indexStr = String.valueOf(page)+ size + userId;
         if (this.hashExists("postsOfGroupJoin", indexStr)) {
             Object postsTimeline = this.hashGet("postsOfGroupJoin", indexStr);
             HashMap<String, Object> data = objectMapper.readValue((String) postsTimeline, HashMap.class);

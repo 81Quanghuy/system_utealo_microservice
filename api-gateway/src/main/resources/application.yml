@@ -35,6 +35,10 @@ spring:
             allowed-origins:
               - "http://localhost:3000"
               - "http://localhost:3001"
+              - "https://system-utealo.vercel.app"
+              - "https://social-media-utealo.vercel.app"
+              - "http://192.168.1.10:3000"
+              - "http://127.0.0.1/3000"
             allowed-headers:
               - "*"
             allowed-methods:

@@ -20,5 +20,5 @@ public class PostElastic extends AbstractMappedEntity implements Serializable {
     private String content;
     private String privacyLevel;
     private String userId;
-    private String groupId;
+    private String postGroupId;
 }

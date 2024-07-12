@@ -17,7 +17,7 @@ public class PostMapper {
         postDocument.setContent(post.getContent());
         postDocument.setPrivacyLevel(post.getPrivacyLevel().toString());
         postDocument.setUserId(post.getUserId());
-        postDocument.setGroupId(post.getGroupId());
+        postDocument.setPostGroupId(post.getGroupId());
         return postDocument;
     }
     public static PostElastic toPostElastic(PostDocument user) {
@@ -30,7 +30,7 @@ public class PostMapper {
         postElastic.setContent(user.getContent());
         postElastic.setPrivacyLevel(user.getPrivacyLevel());
         postElastic.setUserId(user.getUserId());
-        postElastic.setGroupId(user.getGroupId());
+        postElastic.setPostGroupId(user.getPostGroupId());
         return postElastic;
     }
 }

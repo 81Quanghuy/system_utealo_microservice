@@ -755,7 +755,7 @@ public class CommentServiceImpl extends RedisServiceImpl implements CommentServi
         int currentYear = now.getYear();
 
         // Tạo một danh sách các tháng
-        List<Month> months = Arrays.asList(Month.values());
+        Month[] months = Month.values();
         Map<String, Long> commentCountsByMonth = new LinkedHashMap<>(); // Sử dụng LinkedHashMap để duy trì thứ tự
 
         for (Month month : months) {
@@ -876,7 +876,7 @@ public class CommentServiceImpl extends RedisServiceImpl implements CommentServi
         UserProfileResponse user = userClientService.getUser(userId);
 
         // Tạo một danh sách các tháng
-        List<Month> months = Arrays.asList(Month.values());
+        Month[] months = Month.values();
         Map<String, Long> commentCountsByMonth = new LinkedHashMap<>(); // Sử dụng LinkedHashMap để duy trì thứ tự
 
         for (Month month : months) {

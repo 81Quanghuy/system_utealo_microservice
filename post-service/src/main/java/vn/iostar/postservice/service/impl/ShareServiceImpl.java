@@ -384,7 +384,7 @@ public class ShareServiceImpl extends RedisServiceImpl implements ShareService {
     @Override
     public long countSharesInWeek() {
         LocalDateTime now = LocalDateTime.now();
-        LocalDateTime weekAgo = now.minus(1, ChronoUnit.WEEKS);
+        LocalDateTime weekAgo = now.minusWeeks(1);
         Date startDate = Date.from(weekAgo.atZone(ZoneId.systemDefault()).toInstant());
         Date endDate = Date.from(now.atZone(ZoneId.systemDefault()).toInstant());
         return shareRepository.countByCreateAtBetween(startDate, endDate);
@@ -455,7 +455,7 @@ public class ShareServiceImpl extends RedisServiceImpl implements ShareService {
         int currentYear = now.getYear();
 
         // Tạo một danh sách các tháng
-        List<Month> months = Arrays.asList(Month.values());
+        Month[] months = Month.values();
         Map<String, Long> postCountsByMonth = new LinkedHashMap<>(); // Sử dụng LinkedHashMap để duy trì thứ tự
 
         for (Month month : months) {
@@ -480,7 +480,7 @@ public class ShareServiceImpl extends RedisServiceImpl implements ShareService {
         UserProfileResponse user = userClientService.getUser(userId);
 
         // Tạo một danh sách các tháng
-        List<Month> months = Arrays.asList(Month.values());
+        Month[] months = Month.values();
         Map<String, Long> postCountsByMonth = new LinkedHashMap<>(); // Sử dụng LinkedHashMap để duy trì thứ tự
 
         for (Month month : months) {
@@ -565,7 +565,7 @@ public class ShareServiceImpl extends RedisServiceImpl implements ShareService {
     public ResponseEntity<GenericResponse> getTimeLineSharePosts(String userId, Integer page, Integer size) throws JsonProcessingException {
 
         ObjectMapper objectMapper = new ObjectMapper();
-        String indexStr = String.valueOf(page)+String.valueOf(size) + userId;
+        String indexStr = String.valueOf(page)+ size + userId;
         if (this.hashExists("sharesOfTimeLine", indexStr)) {
             Object sharesTimeline = this.hashGet("sharesOfTimeLine", indexStr);
             HashMap<String, Object> data = objectMapper.readValue((String) sharesTimeline, HashMap.class);
@@ -611,7 +611,7 @@ public class ShareServiceImpl extends RedisServiceImpl implements ShareService {
     @Override
     public ResponseEntity<GenericResponse> getShareOfPostGroup(String userId, Integer page, Integer size) throws JsonProcessingException {
         ObjectMapper objectMapper = new ObjectMapper();
-        String indexStr = String.valueOf(page)+String.valueOf(size) + userId;
+        String indexStr = String.valueOf(page)+ size + userId;
         if (this.hashExists("sharesOfGroup", indexStr)) {
             Object sharesTimeline = this.hashGet("sharesOfGroup", indexStr);
             HashMap<String, Object> data = objectMapper.readValue((String) sharesTimeline, HashMap.class);
@@ -648,7 +648,7 @@ public class ShareServiceImpl extends RedisServiceImpl implements ShareService {
     public ResponseEntity<GenericResponse> getGroupSharePosts(String userId, String postGroupId, Integer page,
                                                               Integer size) throws JsonProcessingException {
         ObjectMapper objectMapper = new ObjectMapper();
-        String indexStr = String.valueOf(page)+String.valueOf(size) + userId;
+        String indexStr = String.valueOf(page)+ size + userId;
         if (this.hashExists("sharesOfGroupJoin", indexStr)) {
             Object sharesTimeline = this.hashGet("sharesOfGroupJoin", indexStr);
             HashMap<String, Object> data = objectMapper.readValue((String) sharesTimeline, HashMap.class);

@@ -100,7 +100,7 @@ public interface UserService {
 	long countUsersToday();
 
 	// Đếm số lượng user trong 7 ngày
-	public long countUsersInWeek();
+    long countUsersInWeek();
 
 	// Đếm số lượng user trong 1 tháng
 	long countUsersInMonthFromNow();

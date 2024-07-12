@@ -27,7 +27,9 @@ import vn.iostar.groupservice.entity.GroupRequest;
 import vn.iostar.groupservice.exception.wrapper.ForbiddenException;
 import vn.iostar.groupservice.exception.wrapper.NotFoundException;
 import vn.iostar.groupservice.jwt.service.JwtService;
+import vn.iostar.groupservice.mapper.GroupMapper;
 import vn.iostar.groupservice.model.GroupDocument;
+import vn.iostar.groupservice.repository.elasticsearch.GroupElasticSearchRepository;
 import vn.iostar.groupservice.repository.jpa.GroupMemberRepository;
 import vn.iostar.groupservice.repository.jpa.GroupRepository;
 import vn.iostar.groupservice.repository.jpa.GroupRequestRepository;
@@ -64,8 +66,20 @@ public class GroupServiceImpl extends RedisServiceImpl implements GroupService {
     private final PostClientService postClientService;
     ObjectMapper objectMapper = new ObjectMapper();
     private final GroupSynchronizationService groupSynchronizationService;
+    private final GroupElasticSearchRepository groupElasticSearchRepository;
 
-    public GroupServiceImpl(RedisTemplate<String, Object> redisTemplate, GroupRepository groupRepository, GroupMemberRepository groupMemberRepository, MapperService mapperService, GroupRequestRepository groupRequestRepository, JwtService jwtService, FileClientService fileClientService, UserClientService userClientService, FriendClientService friendClientService, PostClientService postClientService, GroupSynchronizationService groupSynchronizationService) {
+    public GroupServiceImpl(RedisTemplate<String, Object> redisTemplate,
+                            GroupRepository groupRepository,
+                            GroupMemberRepository groupMemberRepository,
+                            MapperService mapperService,
+                            GroupRequestRepository groupRequestRepository,
+                            JwtService jwtService,
+                            FileClientService fileClientService,
+                            UserClientService userClientService,
+                            FriendClientService friendClientService,
+                            PostClientService postClientService,
+                            GroupSynchronizationService groupSynchronizationService,
+                            GroupElasticSearchRepository groupElasticSearchRepository) {
         super(redisTemplate);
         this.groupRepository = groupRepository;
         this.groupMemberRepository = groupMemberRepository;
@@ -77,6 +91,7 @@ public class GroupServiceImpl extends RedisServiceImpl implements GroupService {
         this.friendClientService = friendClientService;
         this.postClientService = postClientService;
         this.groupSynchronizationService = groupSynchronizationService;
+        this.groupElasticSearchRepository = groupElasticSearchRepository;
     }
 
     @Override
@@ -115,6 +130,7 @@ public class GroupServiceImpl extends RedisServiceImpl implements GroupService {
                 .isActive(true)
                 .createdAt(new Date()).build();
         groupRepository.save(group);
+        groupElasticSearchRepository.save(GroupMapper.toGroupDocument(group));
 
         // Add author to group
         GroupMember groupMember = GroupMember.builder()
@@ -157,6 +173,7 @@ public class GroupServiceImpl extends RedisServiceImpl implements GroupService {
         }
         Group group = updateGroup(postGroup, currentUserId, optionalGroup.get());
         groupRepository.save(group);
+        groupElasticSearchRepository.save(GroupMapper.toGroupDocument(group));
         return ResponseEntity.ok(GenericResponse.builder().success(true).message("Cập nhật nhóm thành công!").result(group.getId()).statusCode(HttpStatus.OK.value()).build());
     }
 
@@ -175,13 +192,16 @@ public class GroupServiceImpl extends RedisServiceImpl implements GroupService {
             String avatarOld = group.getAvatarGroup();
             group.setAvatarGroup(updateImage(avatarOld, postGroup.getAvatar(), true));
             groupRepository.save(group);
+            groupElasticSearchRepository.save(GroupMapper.toGroupDocument(group));
         } else if (postGroup.getBackground() != null) {
             String backgroundOld = group.getBackgroundGroup();
             group.setBackgroundGroup(updateImage(backgroundOld, postGroup.getBackground(), false));
             groupRepository.save(group);
+            groupElasticSearchRepository.save(GroupMapper.toGroupDocument(group));
         }
         group.setUpdatedAt(new Date());
         groupRepository.save(group);
+        groupElasticSearchRepository.save(GroupMapper.toGroupDocument(group));
         return ResponseEntity.ok(GenericResponse.builder().success(true).message("Cập nhật ảnh nhóm thành công!").result(group.getId()).statusCode(HttpStatus.OK.value()).build());
     }
 
@@ -195,6 +215,7 @@ public class GroupServiceImpl extends RedisServiceImpl implements GroupService {
         List<GroupRequest> groupRequest = groupRequestRepository.findAllByGroupId(postGroupId);
         groupRequestRepository.deleteAll(groupRequest);
         groupRepository.delete(group);
+        groupElasticSearchRepository.delete(GroupMapper.toGroupDocument(group));
 
         return ResponseEntity.ok(GenericResponse.builder().success(true).message("Xóa nhóm thành công!").result(group.getId()).statusCode(HttpStatus.OK.value()).build());
 
@@ -208,6 +229,7 @@ public class GroupServiceImpl extends RedisServiceImpl implements GroupService {
         group.setIsActive(!group.getIsActive());
         group.setUpdatedAt(new Date());
         groupRepository.save(group);
+        groupElasticSearchRepository.save(GroupMapper.toGroupDocument(group));
         return ResponseEntity.ok(GenericResponse.builder().success(true).message("Cập nhật trạng thái nhóm thành công!").result(group.getId()).statusCode(HttpStatus.OK.value()).build());
     }
 
@@ -472,6 +494,7 @@ public class GroupServiceImpl extends RedisServiceImpl implements GroupService {
             List<GroupRequest> groupRequest = groupRequestRepository.findAllByGroupId(postGroupId);
             groupRequestRepository.deleteAll(groupRequest);
             groupRepository.delete(posGroupOptional.get());
+            groupElasticSearchRepository.delete(GroupMapper.toGroupDocument(posGroupOptional.get()));
             return ResponseEntity.ok()
                     .body(new GenericResponse(true, "Delete Successful!", groups, HttpStatus.OK.value()));
         } else {
@@ -487,7 +510,7 @@ public class GroupServiceImpl extends RedisServiceImpl implements GroupService {
         int currentYear = now.getYear();
 
         // Tạo một danh sách các tháng
-        List<Month> months = Arrays.asList(Month.values());
+        Month[] months = Month.values();
         Map<String, Long> groupCountsByMonth = new LinkedHashMap<>(); // Sử dụng LinkedHashMap để duy trì thứ tự
 
         for (Month month : months) {
@@ -538,7 +561,7 @@ public class GroupServiceImpl extends RedisServiceImpl implements GroupService {
     @Override
     public long countGroupsInWeek() {
         LocalDateTime now = LocalDateTime.now();
-        LocalDateTime weekAgo = now.minus(1, ChronoUnit.WEEKS);
+        LocalDateTime weekAgo = now.minusWeeks(1);
         Date startDate = Date.from(weekAgo.atZone(ZoneId.systemDefault()).toInstant());
         Date endDate = Date.from(now.atZone(ZoneId.systemDefault()).toInstant());
         return groupRepository.countByCreatedAtBetween(startDate, endDate);
@@ -741,6 +764,7 @@ public class GroupServiceImpl extends RedisServiceImpl implements GroupService {
                 group.setUpdatedAt(new Date());
                 group.setAuthorId(groupResponse.getUserId());
                 groupRepository.save(group);
+                groupElasticSearchRepository.save(GroupMapper.toGroupDocument(group));
                 GroupMember groupMember = GroupMember.builder()
                         .id(UUID.randomUUID().toString())
                         .userId(groupResponse.getUserId())
@@ -849,6 +873,13 @@ public class GroupServiceImpl extends RedisServiceImpl implements GroupService {
                     .message("Không tìm thấy kết quả!")
                     .result(null).statusCode(HttpStatus.OK.value()).build());
         }
+//        <GroupDocument> groupDocuments = (List<GroupDocument>) groupElasticSearchRepository.findAll();
+//        if (groupDocuments ==null && groupDocuments.isEmpty()){
+//            List<Group> groups = groupRepository.findAll();
+//            for (Group group : groups) {
+//                groupElasticSearchRepository.save(GroupMapper.toGroupDocument(group));
+//            }
+//        }
         List<GroupDocument> list =  groupSynchronizationService.autoSuggestUserSearch(key);
         List<UserElastic> listUser = userClientService.searchUser(key);
         List<PostElastic> listPost = postClientService.searchPost(key,page,size);

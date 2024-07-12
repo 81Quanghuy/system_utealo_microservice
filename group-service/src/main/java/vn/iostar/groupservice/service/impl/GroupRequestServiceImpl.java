@@ -103,7 +103,7 @@ public class GroupRequestServiceImpl implements GroupRequestService {
             Optional<Group> group = groupRepository.findById(groupRequest.getGroup().getId());
             if (group.isEmpty()) {
                 return new InvitedPostGroupResponse();
-            };
+            }
             UserProfileResponse userProfileResponse = userClientService.getProfileByUserId(groupRequest.getInvitedUser());
             return InvitedPostGroupResponse.builder()
                     .postGroupRequestId(groupRequest.getId())

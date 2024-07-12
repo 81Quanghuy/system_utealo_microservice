@@ -88,8 +88,9 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public <S extends User> S save(S entity) {
-        usersElasticSearchRepository.save(UserMapper.toUserDocument(entity));
-        return userRepository.save(entity);
+        S user = userRepository.save(entity);
+        usersElasticSearchRepository.save(UserMapper.toUserDocument(user));
+        return user;
     }
 
     @Override
@@ -114,10 +115,10 @@ public class UserServiceImpl implements UserService {
 
 
     public <S extends User> void saveAll(Iterable<S> entities) {
-       for (User user : entities) {
-           usersElasticSearchRepository.save(UserMapper.toUserDocument(user));
-       }
         userRepository.saveAll(entities);
+        for (User user : entities) {
+            usersElasticSearchRepository.save(UserMapper.toUserDocument(user));
+        }
     }
 
     @Override
@@ -214,7 +215,7 @@ public class UserServiceImpl implements UserService {
         }
         User user = verificationToken.get().getUser();
         user.setIsVerified(true);
-        userRepository.save(user);
+        save(user);
         return "Xác minh tài khoản thành công, vui lòng đăng nhập!";
     }
 
@@ -304,7 +305,7 @@ public class UserServiceImpl implements UserService {
                 // không xóa user , chỉ cập nhật active về flase
                 user.getAccount().setIsActive(false);
 
-                User updatedUser = userRepository.save(user);
+                User updatedUser = save(user);
                 /// nếu cập nhật active về false
                 if (updatedUser != null) {
                     return ResponseEntity.ok().body(new GenericResponse(true, "Xóa thành công!", updatedUser, HttpStatus.OK.value()));
@@ -350,11 +351,7 @@ public class UserServiceImpl implements UserService {
 
                 boolean isActive = userOptional.get().getAccount().getIsActive();
                 // Kiểm tra isActive và thiết lập trạng thái tương ứng
-                if (isActive) {
-                    userItem.setIsActive(true);
-                } else {
-                    userItem.setIsActive(false);
-                }
+                userItem.setIsActive(isActive);
                 userItem.setRoleName(userOptional.get().getRole().getRoleName());
                 userItem.setEmail(userOptional.get().getAccount().getEmail());
 
@@ -487,7 +484,7 @@ public class UserServiceImpl implements UserService {
         int currentYear = now.getYear();
 
         // Tạo một danh sách các tháng
-        List<Month> months = Arrays.asList(Month.values());
+        Month[] months = Month.values();
         Map<String, Long> userCountsByMonth = new LinkedHashMap<>(); // Sử dụng LinkedHashMap để duy trì thứ tự
 
         for (Month month : months) {
@@ -516,7 +513,7 @@ public class UserServiceImpl implements UserService {
     @Override
     public long countUsersInWeek() {
         LocalDateTime now = LocalDateTime.now();
-        LocalDateTime weekAgo = now.minus(1, ChronoUnit.WEEKS);
+        LocalDateTime weekAgo = now.minusWeeks(1);
         Date startDate = Date.from(weekAgo.atZone(ZoneId.systemDefault()).toInstant());
         Date endDate = Date.from(now.atZone(ZoneId.systemDefault()).toInstant());
         return userRepository.countUsersByAccountCreatedAtBetween(startDate, endDate);
@@ -825,9 +822,7 @@ public class UserServiceImpl implements UserService {
             return true;
         } else if (cell.getCellType() == CellType.BLANK) {
             return true;
-        } else if (cell.getCellType() == CellType.STRING && cell.getStringCellValue().trim().isEmpty()) {
-            return true;
-        } else return false;
+        } else return cell.getCellType() == CellType.STRING && cell.getStringCellValue().trim().isEmpty();
     }
 
     private UserFileDTO mapRowToUserDTO(XSSFSheet sheet, int i, InputStream inputStream, int j) throws IOException {

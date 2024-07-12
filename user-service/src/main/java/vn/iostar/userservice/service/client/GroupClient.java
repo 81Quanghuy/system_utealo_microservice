@@ -14,15 +14,15 @@ import java.util.List;
 public interface GroupClient {
 
     @PostMapping("/update/group-from-excel")
-    public ResponseEntity<GenericResponse> updateGroupFromExcel(@RequestBody List<GroupResponse> groupResponse);
+    ResponseEntity<GenericResponse> updateGroupFromExcel(@RequestBody List<GroupResponse> groupResponse);
 
     // check admin in group
     @GetMapping("/check-admin-in-group")
-    public AdminInGroup checkAdminInGroup(@RequestParam("name") String groupName);
+    AdminInGroup checkAdminInGroup(@RequestParam("name") String groupName);
 
     @DeleteMapping("/delete-member-in-group")
     void deleteMemberInGroup(@RequestBody List<String> userIds);
 
     @PostMapping("/add-member-to-group")
-    public ResponseEntity<GenericResponse> addMemberToGroup(@RequestBody GroupResponse groupResponse);
+    ResponseEntity<GenericResponse> addMemberToGroup(@RequestBody GroupResponse groupResponse);
 }

@@ -61,7 +61,7 @@ public class PostController {
         String currentUserId = jwtService.extractUserId(token);
         Pageable pageable = PageRequest.of(page, size);
         ObjectMapper objectMapper = new ObjectMapper();
-        String indexStr = String.valueOf(page)+String.valueOf(size) + userId;
+        String indexStr = String.valueOf(page)+ size + userId;
         if (postService.hashExists("postsOfUser", indexStr)) {
             Object postsTimeline = postService.hashGet("postsOfUser", indexStr);
             HashMap<String, Object> data = objectMapper.readValue((String) postsTimeline, HashMap.class);

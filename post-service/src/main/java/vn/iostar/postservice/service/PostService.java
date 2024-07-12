@@ -55,7 +55,7 @@ public interface PostService extends RedisService{
     // Đếm số lượng bài post trong ngày hôm nay
     long countPostsToday();
     // Đếm số lượng bài post trong 7 ngày
-    public long countPostsInWeek();
+    long countPostsInWeek();
     // Đếm số lượng bài post trong 1 tháng
     long countPostsInMonthFromNow();
     // Đếm số lượng bài post trong 1 năm

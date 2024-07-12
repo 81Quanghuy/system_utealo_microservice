@@ -66,7 +66,7 @@ public interface GroupService {
     long countGroupsToday();
 
     // Đếm số lượng user trong 7 ngày
-    public long countGroupsInWeek();
+    long countGroupsInWeek();
 
     // Đếm số lượng user trong 1 tháng
     long countGroupsInMonthFromNow();

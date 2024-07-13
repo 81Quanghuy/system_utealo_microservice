@@ -1,22 +1,22 @@
 package vn.iostar.postservice.service.impl;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.RequiredArgsConstructor;
+import org.jetbrains.annotations.NotNull;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
+import org.springframework.web.bind.annotation.PathVariable;
 import vn.iostar.groupservice.dto.FilesOfGroupDTO;
 import vn.iostar.groupservice.dto.PhotosOfGroupDTO;
-import vn.iostar.groupservice.entity.Group;
 import vn.iostar.model.PostElastic;
 import vn.iostar.postservice.constant.PrivacyLevel;
 import vn.iostar.postservice.constant.RoleName;
@@ -50,11 +50,11 @@ import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
 import java.time.Month;
 import java.time.ZoneId;
-import java.time.temporal.ChronoUnit;
 import java.util.*;
 
 @Service
-public class PostServiceImpl extends RedisServiceImpl implements PostService {
+@RequiredArgsConstructor
+public class PostServiceImpl implements PostService {
 
     private final PostRepository postRepository;
     private final JwtService jwtService;
@@ -68,31 +68,30 @@ public class PostServiceImpl extends RedisServiceImpl implements PostService {
     private final PostSynchronizationService postSynchronizationService;
 
     private final PostElasticSearchRepository postElasticSearchRepository;
-    ObjectMapper objectMapper;
+    @NotNull
+    private static List<PhoToResponse> getPhoToResponses(List<String> jsonStrings) {
+        List<PhoToResponse> photos = new ArrayList<>();
 
-    public PostServiceImpl(RedisTemplate<String, Object> redisTemplate,
-                           PostRepository postRepository, JwtService jwtService,
-                           UserClientService userClientService,
-                           GroupClientService groupClientService,
-                           CommentRepository commentRepository,
-                           LikeRepository likeRepository,
-                           FriendClientService friendClientService,
-                           ShareRepository shareRepository,
-                           FileClientService fileClientService,
-                           PostSynchronizationService postSynchronizationService,
-                           PostElasticSearchRepository postElasticSearchRepository) {
-        super(redisTemplate);
-        this.postRepository = postRepository;
-        this.jwtService = jwtService;
-        this.userClientService = userClientService;
-        this.groupClientService = groupClientService;
-        this.commentRepository = commentRepository;
-        this.likeRepository = likeRepository;
-        this.friendClientService = friendClientService;
-        this.shareRepository = shareRepository;
-        this.fileClientService = fileClientService;
-        this.postSynchronizationService = postSynchronizationService;
-        this.postElasticSearchRepository = postElasticSearchRepository;
+        for (String jsonString : jsonStrings) {
+            try {
+                JSONObject jsonObject = new JSONObject(jsonString);
+                if (jsonObject.has("photos")) {
+                    // Tạo một đối tượng PhoToResponse từ JSON
+                    PhoToResponse photo = new PhoToResponse();
+                    photo.setPhotos(jsonObject.getString("photos"));
+
+                    // Nếu có "_id" trong JSON, gán vào postId
+                    if (jsonObject.has("_id")) {
+                        photo.setPostId(jsonObject.getString("_id"));
+                    }
+
+                    photos.add(photo);
+                }
+            } catch (JSONException e) {
+                throw new RuntimeException(e);
+            }
+        }
+        return photos;
     }
 
     @Override
@@ -150,7 +149,7 @@ public class PostServiceImpl extends RedisServiceImpl implements PostService {
             }
         } catch (IOException e) {
             // Xử lý ngoại lệ nếu có
-            e.printStackTrace();
+            throw new RuntimeException(e);
         }
 
         if (userId == null) {
@@ -160,7 +159,8 @@ public class PostServiceImpl extends RedisServiceImpl implements PostService {
         }
 
         GroupProfileResponse groupProfileResponse = null;
-        if (requestDTO.getPostGroupId() == null || (requestDTO.getPostGroupId().isEmpty() || "0".equals(requestDTO.getPostGroupId()))) {
+        if (requestDTO.getPostGroupId() == null || (requestDTO.getPostGroupId().isEmpty()
+                || "0".equals(requestDTO.getPostGroupId()))) {
             post.setGroupId(null);
         } else {
             // Kiểm tra xem người dùng có quyền đăng bài trong nhóm không
@@ -181,11 +181,6 @@ public class PostServiceImpl extends RedisServiceImpl implements PostService {
         postsResponse.setComments(count);
         postsResponse.setLikes(count);
 
-        if (this.exists("postsTimeline")) this.delete("postsTimeline");
-        if (this.exists("postsOfUser")) this.delete("postsOfUser");
-        if (this.exists("postsOfGroup")) this.delete("postsOfGroup");
-        if (this.exists("postsOfGroupJoin")) this.delete("postsOfGroupJoin");
-
         return ResponseEntity.ok(GenericResponse.builder().success(true).message("Create post successfully")
                 .result(postsResponse).statusCode(HttpStatus.OK.value()).build());
     }
@@ -197,10 +192,10 @@ public class PostServiceImpl extends RedisServiceImpl implements PostService {
 
         String accessToken = token.substring(7);
         String currentUserId = jwtService.extractUserId(accessToken);
-        String a = userId.replace("\"", "").replace("\r\n\r\n", "");
         if (!currentUserId.equals(userId.replace("\"", "").replace("\r\n\r\n", ""))) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(new GenericResponse(false, "Delete denied!", null, HttpStatus.NOT_FOUND.value()));
+                    .body(new GenericResponse(false, "Delete denied!", null,
+                            HttpStatus.NOT_FOUND.value()));
         }
         Optional<Post> optionalPost = findById(postId);
         if (optionalPost.isPresent()) {
@@ -229,22 +224,15 @@ public class PostServiceImpl extends RedisServiceImpl implements PostService {
                     shareRepository.deleteById(shareId);
                 }
             }
-            if (this.exists("sharesOfTimeLine")) this.delete("sharesOfTimeLine");
-            if (this.exists("sharesOfUser")) this.delete("sharesOfUser");
-            if (this.exists("sharesOfGroup")) this.delete("sharesOfGroup");
-            if (this.exists("sharesOfGroupJoin")) this.delete("sharesOfGroupJoin");
-            if (this.exists("postsTimeline")) this.delete("postsTimeline");
-            if (this.exists("postsOfUser")) this.delete("postsOfUser");
-            if (this.exists("postsOfGroup")) this.delete("postsOfGroup");
-            if (this.exists("postsOfGroupJoin")) this.delete("postsOfGroupJoin");
-
             return ResponseEntity.ok()
-                    .body(new GenericResponse(true, "Delete Successful!", null, HttpStatus.OK.value()));
+                    .body(new GenericResponse(true, "Delete Successful!", null,
+                            HttpStatus.OK.value()));
         }
         // Khi không tìm thấy bài post với id
         else {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(new GenericResponse(false, "Cannot found post!", null, HttpStatus.NOT_FOUND.value()));
+                    .body(new GenericResponse(false, "Cannot found post!", null,
+                            HttpStatus.NOT_FOUND.value()));
         }
     }
 
@@ -255,7 +243,6 @@ public class PostServiceImpl extends RedisServiceImpl implements PostService {
         List<String> allowedFileExtensions = Arrays.asList("docx", "txt", "pdf");
         UserProfileResponse userOfPostResponse = userClientService.getUser(currentUserId);
         GroupProfileResponse groupProfileResponse = null;
-
 
         Optional<Post> postOp = findById(postId);
         if (postOp.isEmpty()) {
@@ -295,14 +282,9 @@ public class PostServiceImpl extends RedisServiceImpl implements PostService {
             }
         } catch (IOException e) {
             // Xử lý ngoại lệ nếu có
-            e.printStackTrace();
+            throw new Exception(e);
         }
         save(post);
-
-        if (this.exists("postsTimeline")) this.delete("postsTimeline");
-        if (this.exists("postsOfUser")) this.delete("postsOfUser");
-        if (this.exists("postsOfGroup")) this.delete("postsOfGroup");
-        if (this.exists("postsOfGroupJoin")) this.delete("postsOfGroupJoin");
         PostsResponse postResponse = new PostsResponse(post, userOfPostResponse, groupProfileResponse);
         return ResponseEntity.ok(GenericResponse.builder().success(true).message("Update successful")
                 .result(postResponse).statusCode(200).build());
@@ -312,29 +294,31 @@ public class PostServiceImpl extends RedisServiceImpl implements PostService {
     public ResponseEntity<GenericResponse> getPost(String currentId, String postId) throws JsonProcessingException {
 
         Optional<Post> post = postRepository.findById(postId);
-        UserProfileResponse userOfPostResponse = userClientService.getUser(currentId);
+        if (post.isEmpty())
+            return ResponseEntity.ok(GenericResponse.builder().success(null).message("not found post").result(null)
+                    .statusCode(HttpStatus.NOT_FOUND.value()).build());
+        UserProfileResponse userOfPostResponse = userClientService.getUser(post.get().getUserId());
         GroupProfileResponse groupProfileResponse = null;
         if (post.get().getGroupId() != null) {
             groupProfileResponse = groupClientService.getGroup(post.get().getGroupId());
         }
-        if (post.isEmpty())
-            return ResponseEntity.ok(GenericResponse.builder().success(null).message("not found post").result(null)
-                    .statusCode(HttpStatus.NOT_FOUND.value()).build());
-
-
-
         PostsResponse postsResponse = new PostsResponse(post.get(), userOfPostResponse, groupProfileResponse);
 
         return ResponseEntity.ok(GenericResponse.builder().success(true).message("Retrieving user profile successfully")
                 .result(postsResponse).statusCode(HttpStatus.OK.value()).build());
     }
 
-
     @Override
     public List<PostsResponse> findUserPosts(String currentUserId, String userId, Pageable pageable) {
-        List<PrivacyLevel> privacyLevels = Arrays.asList(PrivacyLevel.PUBLIC, PrivacyLevel.FRIENDS);
-        if (currentUserId.equals(userId))
-            privacyLevels = Arrays.asList(PrivacyLevel.PUBLIC, PrivacyLevel.FRIENDS, PrivacyLevel.PRIVATE);
+        List<PrivacyLevel> privacyLevels = List.of(PrivacyLevel.PUBLIC);
+        List<String>  friendIds =  friendClientService.getFriendIdsByUserId(userId);
+        if(friendIds.isEmpty())
+            friendIds = new ArrayList<>();
+        if (currentUserId.equals(userId)) {
+            privacyLevels = List.of(PrivacyLevel.PUBLIC, PrivacyLevel.FRIENDS, PrivacyLevel.PRIVATE);
+        } else if (friendIds.contains(currentUserId)) {
+            privacyLevels = List.of(PrivacyLevel.FRIENDS, PrivacyLevel.PUBLIC);
+        }
 
         List<Post> userPosts = postRepository.findByUserIdAndPrivacyLevelInOrderByPostTimeDesc(userId,
                 privacyLevels, pageable);
@@ -365,13 +349,12 @@ public class PostServiceImpl extends RedisServiceImpl implements PostService {
                     photos.add(jsonObject.getString("photos"));
                 }
             } catch (JSONException e) {
-                e.printStackTrace();
+                throw new RuntimeException(e);
             }
         }
 
         return photos;
     }
-
 
     @Override
     public ResponseEntity<Object> findLatestPhotosByUserId(String currentUserId, String userId, Pageable pageable) {
@@ -385,29 +368,7 @@ public class PostServiceImpl extends RedisServiceImpl implements PostService {
         }
 
         List<String> jsonStrings = postRepository.findLatestPhotosByUserIdAndNotNull(privacyLevels, userId, pageable);
-        List<PhoToResponse> photos = new ArrayList<>();
-
-        for (String jsonString : jsonStrings) {
-            try {
-                JSONObject jsonObject = new JSONObject(jsonString);
-                if (jsonObject.has("photos")) {
-                    // Tạo một đối tượng PhoToResponse từ JSON
-                    PhoToResponse photo = new PhoToResponse();
-                    photo.setPhotos(jsonObject.getString("photos"));
-
-                    // Nếu có "_id" trong JSON, gán vào postId
-                    if (jsonObject.has("_id")) {
-                        photo.setPostId(jsonObject.getString("_id"));
-                    }
-
-                    photos.add(photo);
-                }
-            } catch (JSONException e) {
-                e.printStackTrace();
-            }
-        }
-
-
+        List<PhoToResponse> photos = getPhoToResponses(jsonStrings);
         return ResponseEntity.ok(GenericResponse.builder().success(true).message("Retrieved user posts successfully")
                 .result(photos).statusCode(HttpStatus.OK.value()).build());
     }
@@ -455,8 +416,7 @@ public class PostServiceImpl extends RedisServiceImpl implements PostService {
             if (post.getGroupId() != null && !post.getGroupId().isEmpty()) {
                 groupProfileResponse = groupClientService.getGroup(post.getGroupId());
             }
-            PostsResponse postsResponse = new PostsResponse(post, userOfPostResponse, groupProfileResponse);
-            return postsResponse;
+            return new PostsResponse(post, userOfPostResponse, groupProfileResponse);
         });
     }
 
@@ -610,12 +570,11 @@ public class PostServiceImpl extends RedisServiceImpl implements PostService {
         LocalDateTime startDate = now.minusMonths(1);
 
         // Thời gian kết thúc là thời điểm hiện tại
-        LocalDateTime endDate = now;
 
         // Chuyển LocalDateTime sang Date (với ZoneId cụ thể, ở đây là
         // ZoneId.systemDefault())
         Date startDateAsDate = Date.from(startDate.atZone(ZoneId.systemDefault()).toInstant());
-        Date endDateAsDate = Date.from(endDate.atZone(ZoneId.systemDefault()).toInstant());
+        Date endDateAsDate = Date.from(now.atZone(ZoneId.systemDefault()).toInstant());
 
         // Truy vấn số lượng bài post trong khoảng thời gian này
         return postRepository.countByPostTimeBetween(startDateAsDate, endDateAsDate);
@@ -636,9 +595,8 @@ public class PostServiceImpl extends RedisServiceImpl implements PostService {
     public long countPostsInSixMonthsFromNow() {
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime startDate = now.minusMonths(6);
-        LocalDateTime endDate = now;
         Date startDateAsDate = Date.from(startDate.atZone(ZoneId.systemDefault()).toInstant());
-        Date endDateAsDate = Date.from(endDate.atZone(ZoneId.systemDefault()).toInstant());
+        Date endDateAsDate = Date.from(now.atZone(ZoneId.systemDefault()).toInstant());
         return postRepository.countByPostTimeBetween(startDateAsDate, endDateAsDate);
     }
 
@@ -647,9 +605,8 @@ public class PostServiceImpl extends RedisServiceImpl implements PostService {
     public long countPostsInNineMonthsFromNow() {
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime startDate = now.minusMonths(9);
-        LocalDateTime endDate = now;
         Date startDateAsDate = Date.from(startDate.atZone(ZoneId.systemDefault()).toInstant());
-        Date endDateAsDate = Date.from(endDate.atZone(ZoneId.systemDefault()).toInstant());
+        Date endDateAsDate = Date.from(now.atZone(ZoneId.systemDefault()).toInstant());
         return postRepository.countByPostTimeBetween(startDateAsDate, endDateAsDate);
     }
 
@@ -658,9 +615,8 @@ public class PostServiceImpl extends RedisServiceImpl implements PostService {
     public long countPostsInOneYearFromNow() {
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime startDate = now.minusYears(1);
-        LocalDateTime endDate = now;
         Date startDateAsDate = Date.from(startDate.atZone(ZoneId.systemDefault()).toInstant());
-        Date endDateAsDate = Date.from(endDate.atZone(ZoneId.systemDefault()).toInstant());
+        Date endDateAsDate = Date.from(now.atZone(ZoneId.systemDefault()).toInstant());
         return postRepository.countByPostTimeBetween(startDateAsDate, endDateAsDate);
     }
 
@@ -726,8 +682,7 @@ public class PostServiceImpl extends RedisServiceImpl implements PostService {
             if (post.getGroupId() != null && !post.getGroupId().isEmpty()) {
                 groupProfileResponse = groupClientService.getGroup(post.getGroupId());
             }
-            PostsResponse postsResponse = new PostsResponse(post, userOfPostResponse, groupProfileResponse);
-            return postsResponse;
+            return new PostsResponse(post, userOfPostResponse, groupProfileResponse);
         });
     }
 
@@ -747,26 +702,15 @@ public class PostServiceImpl extends RedisServiceImpl implements PostService {
             if (post.getGroupId() != null && !post.getGroupId().isEmpty()) {
                 groupProfileResponse = groupClientService.getGroup(post.getGroupId());
             }
-            PostsResponse postsResponse = new PostsResponse(post, userOfPostResponse, groupProfileResponse);
-            return postsResponse;
+            return new PostsResponse(post, userOfPostResponse, groupProfileResponse);
         });
     }
 
     // Lấy những bài post liên quan đến user như cá nhân, nhóm, bạn bè
     @Override
     public ResponseEntity<GenericResponse> getPostTimelineByUserId(String userId, int page, int size)
-            throws RuntimeException, JsonProcessingException {
+            throws RuntimeException {
 
-        objectMapper = new ObjectMapper();
-        String indexStr = String.valueOf(page)+ size + userId;
-        if (this.hashExists("postsTimeline", indexStr)) {
-            Object postsTimeline = this.hashGet("postsTimeline", indexStr);
-            HashMap<String, Object> data = objectMapper.readValue((String) postsTimeline, HashMap.class);
-            Object postsTimelineObj = data.get("postsTimeline");
-            ArrayList<HashMap<String, Object>> postsTimelineList = (ArrayList<HashMap<String, Object>>) postsTimelineObj;
-            return ResponseEntity.ok(GenericResponse.builder().success(true).message("Retrieving user profile successfully from redis")
-                    .result(postsTimelineList).statusCode(HttpStatus.OK.value()).build());
-        }
         UserProfileResponse userOfPostResponse = userClientService.getUser(userId);
         if (userOfPostResponse == null) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(GenericResponse.builder().success(false)
@@ -793,7 +737,7 @@ public class PostServiceImpl extends RedisServiceImpl implements PostService {
             // Lấy thông tin người dùng từ user-service đưa vào list
 
             boolean checUser = userProfileResponses.stream().noneMatch(user -> user.getUserId().equals(post.getUserId()));
-            if(checUser){
+            if (checUser) {
                 UserProfileResponse user = userClientService.getUser(post.getUserId());
                 userProfileResponses.add(user);
             }
@@ -809,28 +753,13 @@ public class PostServiceImpl extends RedisServiceImpl implements PostService {
                 simplifiedUserPosts.add(postsResponse);
             }
         }
-        HashMap<String, Object> response = new HashMap<>();
-        response.put("postsTimeline", simplifiedUserPosts);
-        String jsonData = objectMapper.writeValueAsString(response);
-        this.hashSet("postsTimeline", indexStr, jsonData);
-
         return ResponseEntity.ok(GenericResponse.builder().success(true).message("Retrieved user posts successfully")
                 .result(simplifiedUserPosts).statusCode(HttpStatus.OK.value()).build());
     }
 
     @Override
     public ResponseEntity<GenericResponse> getGroupPosts(String userId, String postGroupId, Integer page,
-                                                         Integer size) throws JsonProcessingException {
-        objectMapper = new ObjectMapper();
-        String indexStr = String.valueOf(page)+ size + postGroupId;
-        if (this.hashExists("postsOfGroup", indexStr)) {
-            Object postsTimeline = this.hashGet("postsOfGroup", indexStr);
-            HashMap<String, Object> data = objectMapper.readValue((String) postsTimeline, HashMap.class);
-            Object postsTimelineObj = data.get("postsOfGroup");
-            ArrayList<HashMap<String, Object>> postsTimelineList = (ArrayList<HashMap<String, Object>>) postsTimelineObj;
-            return ResponseEntity.ok(GenericResponse.builder().success(true).message("Retrieved group posts successfully from redis")
-                    .result(postsTimelineList).statusCode(HttpStatus.OK.value()).build());
-        }
+                                                         Integer size) {
         if (userId == null)
             return ResponseEntity.badRequest().body(new GenericResponse(false, "User not found", null, 400));
         PageRequest pageable = PageRequest.of(page, size);
@@ -845,27 +774,12 @@ public class PostServiceImpl extends RedisServiceImpl implements PostService {
             PostsResponse postResponses = new PostsResponse(post, userProfileResponse, groupProfileResponse);
             postsResponses.add(postResponses);
         }
-
-        HashMap<String, Object> response = new HashMap<>();
-        response.put("postsOfGroup", postsResponses);
-        String jsonData = objectMapper.writeValueAsString(response);
-        this.hashSet("postsOfGroup", indexStr, jsonData);
         return ResponseEntity.ok(GenericResponse.builder().success(true).message("Retrieved group posts successfully")
                 .result(postsResponses).statusCode(HttpStatus.OK.value()).build());
     }
 
     @Override
     public ResponseEntity<GenericResponse> getPostOfPostGroup(String userId, Integer page, Integer size) throws JsonProcessingException {
-        objectMapper = new ObjectMapper();
-        String indexStr = String.valueOf(page)+ size + userId;
-        if (this.hashExists("postsOfGroupJoin", indexStr)) {
-            Object postsTimeline = this.hashGet("postsOfGroupJoin", indexStr);
-            HashMap<String, Object> data = objectMapper.readValue((String) postsTimeline, HashMap.class);
-            Object postsTimelineObj = data.get("postsOfGroupJoin");
-            ArrayList<HashMap<String, Object>> postsTimelineList = (ArrayList<HashMap<String, Object>>) postsTimelineObj;
-            return ResponseEntity.ok(GenericResponse.builder().success(true).message("Retrieved post of group join successfully from redis")
-                    .result(postsTimelineList).statusCode(HttpStatus.OK.value()).build());
-        }
         if (userId == null)
             return ResponseEntity.badRequest().body(new GenericResponse(false, "User not found", null, 400));
         List<String> groupIds = groupClientService.getGroupIdsByUserId(userId);
@@ -881,10 +795,6 @@ public class PostServiceImpl extends RedisServiceImpl implements PostService {
             PostsResponse postResponse = new PostsResponse(post, userProfileResponse, groupProfileResponse);
             postsResponses.add(postResponse);
         }
-        HashMap<String, Object> response = new HashMap<>();
-        response.put("postsOfGroupJoin", postsResponses);
-        String jsonData = objectMapper.writeValueAsString(response);
-        this.hashSet("postsOfGroupJoin", indexStr, jsonData);
         return ResponseEntity.ok(GenericResponse.builder().success(true).message("Retrieved post of group join successfully")
                 .result(postsResponses).statusCode(HttpStatus.OK.value()).build());
     }
@@ -892,7 +802,7 @@ public class PostServiceImpl extends RedisServiceImpl implements PostService {
     @Override
     public List<FilesOfGroupDTO> findLatestFilesByGroupId(String groupId) {
 
-        List<String> files= postRepository.findFilesOfPostByGroupId(groupId);
+        List<String> files = postRepository.findFilesOfPostByGroupId(groupId);
 
         List<FilesOfGroupDTO> filesDTO = new ArrayList<>();
 
@@ -936,9 +846,7 @@ public class PostServiceImpl extends RedisServiceImpl implements PostService {
 
                     filesDTO.add(filesOfGroupDTO);
                 }
-            } catch (JSONException e) {
-                e.printStackTrace();
-            } catch (ParseException e) {
+            } catch (JSONException | ParseException e) {
                 throw new RuntimeException(e);
             }
         }
@@ -974,7 +882,7 @@ public class PostServiceImpl extends RedisServiceImpl implements PostService {
                     photosDTOList.add(photoDTO);
                 }
             } catch (JSONException e) {
-                e.printStackTrace();
+                throw new RuntimeException(e);
             }
         }
         // Create a Page object from the list of DTOs and return
@@ -985,14 +893,14 @@ public class PostServiceImpl extends RedisServiceImpl implements PostService {
     public List<PostsResponse> findPostsByAdminRoleInGroup(String groupId, Pageable pageable) {
 
         List<String> userIds = groupClientService.getAdminsInGroup(groupId);
-        List<Post> userPosts = postRepository.findPostsByAdminRoleInGroup(userIds,groupId, pageable);
+        List<Post> userPosts = postRepository.findPostsByAdminRoleInGroup(userIds, groupId, pageable);
 
         GroupProfileResponse groupProfileResponse = groupClientService.getGroup(groupId);
         List<UserProfileResponse> userProfileResponses = new ArrayList<>();
         List<PostsResponse> simplifiedUserPosts = new ArrayList<>();
         for (Post post : userPosts) {
             boolean checkUser = userProfileResponses.stream().noneMatch(user -> user.getUserId().equals(post.getUserId()));
-            if(checkUser){
+            if (checkUser) {
                 UserProfileResponse user = userClientService.getUser(post.getUserId());
                 userProfileResponses.add(user);
             }
@@ -1003,8 +911,9 @@ public class PostServiceImpl extends RedisServiceImpl implements PostService {
         }
         return simplifiedUserPosts;
     }
+
     @Override
-    public  List<PostElastic> searchPost(String search, Pageable pageable) throws IOException {
+    public List<PostElastic> searchPost(String search, Pageable pageable) throws IOException {
         return postSynchronizationService.autoSuggestUserSearch(search);
     }
 }

@@ -1,5 +1,6 @@
 package vn.iostar.postservice.service.impl;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -27,7 +28,8 @@ import java.util.Optional;
 import java.util.UUID;
 
 @Service
-public class LikeServiceImpl extends RedisServiceImpl implements LikeService {
+@RequiredArgsConstructor
+public class LikeServiceImpl implements LikeService {
 
     private final LikeRepository likeRepository;
     private final PostRepository postRepository;
@@ -38,19 +40,6 @@ public class LikeServiceImpl extends RedisServiceImpl implements LikeService {
     private final ShareRepository shareRepository;
     private final CommentService commentService;
     private final CommentRepository commentRepository;
-
-    public LikeServiceImpl(RedisTemplate<String, Object> redisTemplate, LikeRepository likeRepository, PostRepository postRepository, PostService postService, UserClientService userClientService, JwtService jwtService, ShareService shareService, ShareRepository shareRepository, CommentService commentService, CommentRepository commentRepository) {
-        super(redisTemplate);
-        this.likeRepository = likeRepository;
-        this.postRepository = postRepository;
-        this.postService = postService;
-        this.userClientService = userClientService;
-        this.jwtService = jwtService;
-        this.shareService = shareService;
-        this.shareRepository = shareRepository;
-        this.commentService = commentService;
-        this.commentRepository = commentRepository;
-    }
 
     @Override
     public void delete(Like entity) {
@@ -115,7 +104,7 @@ public class LikeServiceImpl extends RedisServiceImpl implements LikeService {
             return ResponseEntity.badRequest().body("User not found");
         }
         Optional<Post> post = postService.findById(postId);
-        if (!post.isPresent()) {
+        if (post.isEmpty()) {
             return ResponseEntity.badRequest().body("Post not found");
         }
         // Kiểm tra xem cặp giá trị postId và userId đã tồn tại trong bảng Like chưa
@@ -132,28 +121,22 @@ public class LikeServiceImpl extends RedisServiceImpl implements LikeService {
             if (postLike != null) {
                 // Lấy danh sách likes của post
                 List<String> postLikes = postLike.getLikes();
-
-                if (postLikes != null) {
-                    // Kiểm tra xem danh sách likes của post có null hay không
-                    // Nếu là null, khởi tạo một danh sách mới
-                    if (postLikes == null) {
-                        postLikes = new ArrayList<>();
-                    }
-
-                    // Xóa commentId khỏi danh sách comments của post
-                    postLikes.remove(existingLike.get().getId());
-
-                    // Cập nhật lại danh sách comments của post
-                    postLike.setLikes(postLikes);
-
-                    // Cập nhật lại post vào MongoDB
-                    postRepository.save(postLike);
+                if (postLikes == null) {
+                    postLikes = new ArrayList<>();
                 }
+                // Kiểm tra xem danh sách likes của post có null hay không
+                // Nếu là null, khởi tạo một danh sách mới
+
+
+                // Xóa commentId khỏi danh sách comments của post
+                postLikes.remove(existingLike.get().getId());
+
+                // Cập nhật lại danh sách comments của post
+                postLike.setLikes(postLikes);
+
+                // Cập nhật lại post vào MongoDB
+                postRepository.save(postLike);
             }
-            if (this.exists("postsTimeline")) this.delete("postsTimeline");
-            if (this.exists("postsOfUser")) this.delete("postsOfUser");
-            if (this.exists("postsOfGroup")) this.delete("postsOfGroup");
-            if (this.exists("postsOfGroupJoin")) this.delete("postsOfGroupJoin");
             return ResponseEntity.ok("Like post removed successfully");
         } else {
             // Nếu chưa tồn tại, tạo và lưu Like mới
@@ -175,10 +158,6 @@ public class LikeServiceImpl extends RedisServiceImpl implements LikeService {
 
             // Cập nhật lại post vào MongoDB
             postRepository.save(post.get());
-            if (this.exists("postsTimeline")) this.delete("postsTimeline");
-            if (this.exists("postsOfUser")) this.delete("postsOfUser");
-            if (this.exists("postsOfGroup")) this.delete("postsOfGroup");
-            if (this.exists("postsOfGroupJoin")) this.delete("postsOfGroupJoin");
             GenericResponse response = GenericResponse.builder().success(true).message("Like Post Successfully").result(
                             new LikePostResponse(like.getId(), like.getPost().getId(), user.getUserName()))
                     .statusCode(200).build();
@@ -197,7 +176,7 @@ public class LikeServiceImpl extends RedisServiceImpl implements LikeService {
             return ResponseEntity.badRequest().body("User not found");
         }
         Optional<Post> post = postService.findById(postId);
-        if (!post.isPresent()) {
+        if (post.isEmpty()) {
             return ResponseEntity.badRequest().body("Post not found");
         }
         // Kiểm tra xem cặp giá trị postId và userId đã tồn tại trong bảng Like chưa
@@ -267,7 +246,7 @@ public class LikeServiceImpl extends RedisServiceImpl implements LikeService {
             return ResponseEntity.badRequest().body("User not found");
         }
         Optional<Share> share = shareService.findById(shareId);
-        if (!share.isPresent()) {
+        if (share.isEmpty()) {
             return ResponseEntity.badRequest().body("Share not found");
         }
         // Kiểm tra xem cặp giá trị shareId và userId đã tồn tại trong bảng Like chưa
@@ -281,28 +260,18 @@ public class LikeServiceImpl extends RedisServiceImpl implements LikeService {
             if (shareLike != null) {
                 // Lấy danh sách likes của share
                 List<String> shareLikes = shareLike.getLikes();
-
-                if (shareLikes != null) {
-                    // Kiểm tra xem danh sách likes của share có null hay không
-                    // Nếu là null, khởi tạo một danh sách mới
-                    if (shareLikes == null) {
-                        shareLikes = new ArrayList<>();
-                    }
-
-                    // Xóa likeId khỏi danh sách likes của share
-                    shareLikes.remove(existingLike.get().getId());
-
-                    // Cập nhật lại danh sách likes của share
-                    shareLike.setLikes(shareLikes);
-
-                    // Cập nhật lại share vào MongoDB
-                    shareRepository.save(shareLike);
+                if (shareLikes == null) {
+                    shareLikes = new ArrayList<>();
                 }
+                // Xóa likeId khỏi danh sách likes của share
+                shareLikes.remove(existingLike.get().getId());
+
+                // Cập nhật lại danh sách likes của share
+                shareLike.setLikes(shareLikes);
+
+                // Cập nhật lại share vào MongoDB
+                shareRepository.save(shareLike);
             }
-            if (this.exists("sharesOfTimeLine")) this.delete("sharesOfTimeLine");
-            if (this.exists("sharesOfUser")) this.delete("sharesOfUser");
-            if (this.exists("sharesOfGroup")) this.delete("sharesOfGroup");
-            if (this.exists("sharesOfGroupJoin")) this.delete("sharesOfGroupJoin");
             return ResponseEntity.ok("Like share post removed successfully");
         } else {
             // Nếu chưa tồn tại, tạo và lưu Like mới
@@ -324,10 +293,6 @@ public class LikeServiceImpl extends RedisServiceImpl implements LikeService {
 
             // Cập nhật lại share vào MongoDB
             shareRepository.save(share.get());
-            if (this.exists("sharesOfTimeLine")) this.delete("sharesOfTimeLine");
-            if (this.exists("sharesOfUser")) this.delete("sharesOfUser");
-            if (this.exists("sharesOfGroup")) this.delete("sharesOfGroup");
-            if (this.exists("sharesOfGroupJoin")) this.delete("sharesOfGroupJoin");
             GenericResponse response = GenericResponse.builder().success(true).message("Like Share Post Successfully").result(
                             new LikePostResponse(like.getId(), like.getShare().getId(), user.getUserName()))
                     .statusCode(200).build();
@@ -345,7 +310,7 @@ public class LikeServiceImpl extends RedisServiceImpl implements LikeService {
             return ResponseEntity.badRequest().body("User not found");
         }
         Optional<Share> share = shareService.findById(shareId);
-        if (!share.isPresent()) {
+        if (share.isEmpty()) {
             return ResponseEntity.badRequest().body("Share not found");
         }
         // Kiểm tra xem cặp giá trị postId và userId đã tồn tại trong bảng Like chưa
@@ -374,7 +339,6 @@ public class LikeServiceImpl extends RedisServiceImpl implements LikeService {
                 listUserLikeShare.add(new ListUserLikePost(user.getUserName(), user.getUserId(), user.getAvatar()));
             }
         }
-
         GenericResponse response = GenericResponse.builder()
                 .success(true)
                 .message("List User Like Share Post")
@@ -435,7 +399,7 @@ public class LikeServiceImpl extends RedisServiceImpl implements LikeService {
             return ResponseEntity.badRequest().body("User not found");
         }
         Optional<Comment> comment = commentService.findById(commentId);
-        if (!comment.isPresent()) {
+        if (comment.isEmpty()) {
             return ResponseEntity.badRequest().body("Comment not found");
         }
         // Kiểm tra xem cặp giá trị commentId và userId đã tồn tại trong bảng Like chưa
@@ -449,26 +413,18 @@ public class LikeServiceImpl extends RedisServiceImpl implements LikeService {
             if (commentLike != null) {
                 // Lấy danh sách likes của comment
                 List<String> commentLikes = commentLike.getLikes();
-
-                if (commentLikes != null) {
-                    // Kiểm tra xem danh sách likes của comment có null hay không
-                    // Nếu là null, khởi tạo một danh sách mới
-                    if (commentLikes == null) {
-                        commentLikes = new ArrayList<>();
-                    }
-
-                    // Xóa commentId khỏi danh sách likes của comment
-                    commentLikes.remove(existingLike.get().getId());
-
-                    // Cập nhật lại danh sách likes của comment
-                    commentLike.setLikes(commentLikes);
-
-                    // Cập nhật lại comment vào MongoDB
-                    commentRepository.save(commentLike);
+                if (commentLikes == null) {
+                    commentLikes = new ArrayList<>();
                 }
+                // Xóa commentId khỏi danh sách likes của comment
+                commentLikes.remove(existingLike.get().getId());
+
+                // Cập nhật lại danh sách likes của comment
+                commentLike.setLikes(commentLikes);
+
+                // Cập nhật lại comment vào MongoDB
+                commentRepository.save(commentLike);
             }
-            if (this.exists("commentOfPost")) this.delete("commentOfPost");
-            if (this.exists("commentReplyOfCommentPost")) this.delete("commentReplyOfCommentPost");
             return ResponseEntity.ok("Like comment removed successfully");
         } else {
             // Nếu chưa tồn tại, tạo và lưu Like mới
@@ -490,8 +446,6 @@ public class LikeServiceImpl extends RedisServiceImpl implements LikeService {
 
             // Cập nhật lại comment vào MongoDB
             commentRepository.save(comment.get());
-            if (this.exists("commentOfPost")) this.delete("commentOfPost");
-            if (this.exists("commentReplyOfCommentPost")) this.delete("commentReplyOfCommentPost");
             GenericResponse response = GenericResponse.builder().success(true).message("Like Comment Successfully")
                     .result(new LikeCommentResponse(like.getId(), like.getComment().getId(),
                            user.getUserName()))
@@ -510,7 +464,7 @@ public class LikeServiceImpl extends RedisServiceImpl implements LikeService {
             return ResponseEntity.badRequest().body("User not found");
         }
         Optional<Comment> comment = commentService.findById(commentId);
-        if (!comment.isPresent()) {
+        if (comment.isEmpty()) {
             return ResponseEntity.badRequest().body("Comment not found");
         }
         // Kiểm tra xem cặp giá trị postId và userId đã tồn tại trong bảng Like chưa
@@ -538,15 +492,12 @@ public class LikeServiceImpl extends RedisServiceImpl implements LikeService {
                 listUserLikeComment.add(new ListUserLikePost(user.getUserName(), user.getUserId(), user.getAvatar()));
             }
         }
-
         GenericResponse response = GenericResponse.builder()
                 .success(true)
                 .message("List User Like Comment")
                 .result(listUserLikeComment)
                 .statusCode(200)
                 .build();
-
         return ResponseEntity.ok(response);
     }
-
 }

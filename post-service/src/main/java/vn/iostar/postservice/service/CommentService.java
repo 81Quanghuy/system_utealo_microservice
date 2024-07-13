@@ -13,7 +13,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-public interface CommentService extends RedisService{
+public interface CommentService {
     <S extends Comment> S save(S entity);
     Optional<Comment> findById(String id);
     ResponseEntity<GenericResponse> getCommentOfPost(String postId) throws JsonProcessingException;

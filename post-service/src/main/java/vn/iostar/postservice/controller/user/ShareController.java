@@ -1,14 +1,11 @@
 package vn.iostar.postservice.controller.user;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import vn.iostar.postservice.dto.GenericResponse;
 import vn.iostar.postservice.dto.SharePostRequestDTO;
@@ -19,8 +16,6 @@ import vn.iostar.postservice.jwt.service.JwtService;
 import vn.iostar.postservice.service.ShareService;
 import vn.iostar.postservice.service.client.UserClientService;
 
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
 
@@ -40,12 +35,11 @@ public class ShareController {
         String token = authorizationHeader.substring(7);
         String currentUserId = jwtService.extractUserId(token);
         Optional<Share> share = shareService.findById(shareId);
-
+        if (share.isEmpty())
+            throw new RuntimeException("Share Post not found.");
         UserProfileResponse userProfileResponse = userClientService.getUser(share.get().getUserId());
 
-        if (share.isEmpty()) {
-            throw new RuntimeException("Share Post not found.");
-        } else if (currentUserId.equals(userProfileResponse.getUserId())) {
+        if (currentUserId.equals(userProfileResponse.getUserId())) {
             SharesResponse sharePosts = shareService.getSharePost(share.get(), currentUserId);
             return ResponseEntity.ok(
                     GenericResponse.builder().success(true).message("Retrieving share post successfully and access update")
@@ -63,25 +57,12 @@ public class ShareController {
             @RequestHeader("Authorization") String authorizationHeader,
             @PathVariable("userId") String userId,
             @RequestParam(defaultValue = "0") Integer page,
-            @RequestParam(defaultValue = "20") Integer size) throws JsonProcessingException {
+            @RequestParam(defaultValue = "20") Integer size)  {
         String token = authorizationHeader.substring(7);
         String currentUserId = jwtService.extractUserId(token);
         Pageable pageable = PageRequest.of(page, size);
-        ObjectMapper objectMapper = new ObjectMapper();
-        String indexStr = String.valueOf(page)+ size + userId;
-        if (shareService.hashExists("sharesOfUser", indexStr)) {
-            Object sharesTimeline = shareService.hashGet("sharesOfUser", indexStr);
-            HashMap<String, Object> data = objectMapper.readValue((String) sharesTimeline, HashMap.class);
-            Object sharesTimelineObj = data.get("sharesOfUser");
-            ArrayList<HashMap<String, Object>> sharesTimelineList = (ArrayList<HashMap<String, Object>>) sharesTimelineObj;
-            return ResponseEntity.ok(GenericResponse.builder().success(true).message("Retrieving share post successfully from redis")
-                    .result(sharesTimelineList).statusCode(HttpStatus.OK.value()).build());
-        }
+
         List<SharesResponse> sharePosts = shareService.findUserSharePosts(currentUserId, userId, pageable);
-        HashMap<String, Object> response = new HashMap<>();
-        response.put("sharesOfUser", sharePosts);
-        String jsonData = objectMapper.writeValueAsString(response);
-        shareService.hashSet("sharesOfUser", indexStr, jsonData);
         return ResponseEntity.ok(GenericResponse.builder().success(true).message("Retrieving share post successfully")
                 .result(sharePosts).statusCode(HttpStatus.OK.value()).build());
     }
@@ -97,19 +78,18 @@ public class ShareController {
     // Cập nhật bài share
     @PutMapping("/update")
     public ResponseEntity<Object> updateSharePost(@ModelAttribute SharePostRequestDTO requestDTO,
-                                                  @RequestHeader("Authorization") String authorizationHeader,
-                                                  BindingResult bindingResult) throws Exception {
+                                                  @RequestHeader("Authorization") String authorizationHeader) {
 
         String token = authorizationHeader.substring(7);
         String currentUserId = jwtService.extractUserId(token);
         return shareService.updateSharePost(requestDTO, currentUserId);
     }
 
-
     // Xóa bài share
     @DeleteMapping("/delete/{shareId}")
     public ResponseEntity<GenericResponse> deleteSharePost(@RequestHeader("Authorization") String token,
-                                                           @PathVariable("shareId") String shareId, @RequestBody String userId) {
+                                                           @PathVariable("shareId") String shareId,
+                                                           @RequestBody String userId) {
         return shareService.deleteSharePost(shareId, token, userId);
     }
 
@@ -136,7 +116,6 @@ public class ShareController {
         return shareService.getShareOfPostGroup(currentUserId, page, size);
     }
 
-
     // Lấy những bài share post của nhóm
     @GetMapping("/{postGroupId}/shares")
     public ResponseEntity<GenericResponse> getGroupSharePosts(
@@ -147,6 +126,4 @@ public class ShareController {
         String currentUserId = jwtService.extractUserId(token);
         return shareService.getGroupSharePosts(currentUserId, postGroupId, page, size);
     }
-
-
 }

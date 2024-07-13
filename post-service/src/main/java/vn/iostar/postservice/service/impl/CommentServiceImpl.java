@@ -1,11 +1,10 @@
 package vn.iostar.postservice.service.impl;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.util.Streamable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -40,7 +39,8 @@ import java.time.ZoneId;
 import java.util.*;
 
 @Service
-public class CommentServiceImpl extends RedisServiceImpl implements CommentService {
+@RequiredArgsConstructor
+public class CommentServiceImpl implements CommentService {
 
     private final CommentRepository commentRepository;
     private final PostRepository postRepository;
@@ -50,19 +50,6 @@ public class CommentServiceImpl extends RedisServiceImpl implements CommentServi
     private final PostService postService;
     private final ShareService shareService;
     private final FileClientService fileClientService;
-    ObjectMapper objectMapper;
-
-    public CommentServiceImpl(RedisTemplate<String, Object> redisTemplate, CommentRepository commentRepository, PostRepository postRepository, ShareRepository shareRepository, UserClientService userClientService, JwtService jwtService, PostService postService, ShareService shareService, FileClientService fileClientService) {
-        super(redisTemplate);
-        this.commentRepository = commentRepository;
-        this.postRepository = postRepository;
-        this.shareRepository = shareRepository;
-        this.userClientService = userClientService;
-        this.jwtService = jwtService;
-        this.postService = postService;
-        this.shareService = shareService;
-        this.fileClientService = fileClientService;
-    }
 
     @Override
     public <S extends Comment> S save(S entity) {
@@ -76,16 +63,6 @@ public class CommentServiceImpl extends RedisServiceImpl implements CommentServi
 
     @Override
     public ResponseEntity<GenericResponse> getCommentOfPost(String postId) throws JsonProcessingException {
-        objectMapper = new ObjectMapper();
-        String indexStr = postId;
-        if (this.hashExists("commentOfPost", indexStr)) {
-            Object postsTimeline = this.hashGet("commentOfPost", indexStr);
-            HashMap<String, Object> data = objectMapper.readValue((String) postsTimeline, HashMap.class);
-            Object commentOfPost = data.get("commentOfPost");
-            ArrayList<HashMap<String, Object>> pcommentOfPostList = (ArrayList<HashMap<String, Object>>) commentOfPost;
-            return ResponseEntity.ok(GenericResponse.builder().success(true).message("Retrieving comment of post successfully")
-                    .result(pcommentOfPostList).statusCode(HttpStatus.OK.value()).build());
-        }
         Optional<Post> post = postService.findById(postId);
         if (post.isEmpty())
             return ResponseEntity.ok(GenericResponse.builder().success(false).message("Post not found").result(false)
@@ -94,10 +71,6 @@ public class CommentServiceImpl extends RedisServiceImpl implements CommentServi
         if (comments.isEmpty())
             return ResponseEntity.ok(GenericResponse.builder().success(false).message("This post has no comment")
                     .result(false).statusCode(HttpStatus.OK.value()).build());
-        HashMap<String, Object> response = new HashMap<>();
-        response.put("commentOfPost", comments);
-        String jsonData = objectMapper.writeValueAsString(response);
-        this.hashSet("commentOfPost", indexStr, jsonData);
         return ResponseEntity
                 .ok(GenericResponse.builder().success(true).message("Retrieving comment of post successfully")
                         .result(comments).statusCode(HttpStatus.OK.value()).build());
@@ -125,7 +98,7 @@ public class CommentServiceImpl extends RedisServiceImpl implements CommentServi
             return ResponseEntity.badRequest().body("User not found");
         }
         Optional<Post> post = postService.findById(requestDTO.getPostId());
-        if (!post.isPresent()) {
+        if (post.isEmpty()) {
             return ResponseEntity.badRequest().body("Post not found");
         }
 
@@ -145,7 +118,7 @@ public class CommentServiceImpl extends RedisServiceImpl implements CommentServi
             }
         } catch (IOException e) {
             // Xử lý ngoại lệ nếu có
-            e.printStackTrace();
+           throw new RuntimeException(e);
         }
 
         comment.setUserId(userProfileResponse.getUserId());
@@ -161,8 +134,6 @@ public class CommentServiceImpl extends RedisServiceImpl implements CommentServi
 
         // Cập nhật lại post vào MongoDB
         postRepository.save(post.get());
-        if (this.exists("commentOfPost")) this.delete("commentOfPost");
-        if (this.exists("commentReplyOfCommentPost")) this.delete("commentReplyOfCommentPost");
         GenericResponse response = GenericResponse.builder().success(true).message("Comment Post Successfully")
                 .result(new CommentPostResponse(comment.getId(), comment.getContent(), comment.getCreateTime(),
                         comment.getPhotos(), userProfileResponse.getUserName(),comment.getPost().getId(), userProfileResponse.getAvatar(),  userProfileResponse.getUserId()))
@@ -180,11 +151,11 @@ public class CommentServiceImpl extends RedisServiceImpl implements CommentServi
             return ResponseEntity.badRequest().body("User not found");
         }
         Optional<Post> post = postService.findById(requestDTO.getPostId());
-        if (!post.isPresent()) {
+        if (post.isEmpty()) {
             return ResponseEntity.badRequest().body("Post not found");
         }
         Optional<Comment> commentReply = findById(String.valueOf(requestDTO.getCommentId()));
-        if (!commentReply.isPresent()) {
+        if (commentReply.isEmpty()) {
             return ResponseEntity.badRequest().body("Comment not found");
         }
 
@@ -204,7 +175,7 @@ public class CommentServiceImpl extends RedisServiceImpl implements CommentServi
             }
         } catch (IOException e) {
             // Xử lý ngoại lệ nếu có
-            e.printStackTrace();
+            throw new RuntimeException(e);
         }
         comment.setUserId(user.getUserId());
         comment.setCommentReply(commentReply.get());
@@ -220,8 +191,6 @@ public class CommentServiceImpl extends RedisServiceImpl implements CommentServi
 
         // Cập nhật lại post vào MongoDB
         postRepository.save(post.get());
-        if (this.exists("commentOfPost")) this.delete("commentOfPost");
-        if (this.exists("commentReplyOfCommentPost")) this.delete("commentReplyOfCommentPost");
         GenericResponse response = GenericResponse.builder().success(true).message("Comment Post Successfully")
                 .result(new CommentPostResponse(comment.getId(), comment.getContent(), comment.getCreateTime(),
                         comment.getPhotos(), user.getUserName(), comment.getPost().getId(),
@@ -252,12 +221,10 @@ public class CommentServiceImpl extends RedisServiceImpl implements CommentServi
             }
         } catch (IOException e) {
             // Xử lý ngoại lệ nếu có
-            e.printStackTrace();
+            throw new Exception(e);
         }
         comment.setUpdatedAt(new Date());
         save(comment);
-        if (this.exists("commentOfPost")) this.delete("commentOfPost");
-        if (this.exists("commentReplyOfCommentPost")) this.delete("commentReplyOfCommentPost");
         return ResponseEntity.ok(GenericResponse.builder().success(true).message("Update successful").result(null)
                 .statusCode(200).build());
     }
@@ -277,9 +244,7 @@ public class CommentServiceImpl extends RedisServiceImpl implements CommentServi
             List<CommentPostResponse> comments = getCommentsOfComment(commentId);
             for (CommentPostResponse c : comments) {
                 Optional<Comment> cmt = commentRepository.findById(c.getCommentId());
-                if (cmt.isPresent()) {
-                    commentRepository.delete(cmt.get());
-                }
+                cmt.ifPresent(commentRepository::delete);
             }
 
             // Xóa comment
@@ -291,72 +256,66 @@ public class CommentServiceImpl extends RedisServiceImpl implements CommentServi
             if (post != null) {
                 // Lấy danh sách comments của post
                 List<String> postComments = post.getComments();
-
-                if (postComments != null) {
-                    // Kiểm tra xem danh sách comments của post có null hay không
-                    // Nếu là null, khởi tạo một danh sách mới
-                    if (postComments == null) {
-                        postComments = new ArrayList<>();
-                    }
-
-                    // Xóa commentId khỏi danh sách comments của post
-                    postComments.remove(commentId);
-
-                    // Cập nhật lại danh sách comments của post
-                    post.setComments(postComments);
-
-                    for (Comment c : commentsWithReply) {
-                        postComments.remove(c.getId());
-
-                        for (Comment directReply : commentsWithReply) {
-                            postComments.remove(directReply.getId());
-                        }
-                    }
-
-                    for (CommentPostResponse c : comments) {
-                        postComments.remove(c.getCommentId());
-                    }
-
-                    // Cập nhật lại post vào MongoDB
-                    postRepository.save(post);
+                if (postComments == null) {
+                    postComments = new ArrayList<>();
                 }
+                // Kiểm tra xem danh sách comments của post có null hay không
+                // Nếu là null, khởi tạo một danh sách mới
+
+
+                // Xóa commentId khỏi danh sách comments của post
+                postComments.remove(commentId);
+
+                // Cập nhật lại danh sách comments của post
+                post.setComments(postComments);
+
+                for (Comment c : commentsWithReply) {
+                    postComments.remove(c.getId());
+
+                    for (Comment directReply : commentsWithReply) {
+                        postComments.remove(directReply.getId());
+                    }
+                }
+
+                for (CommentPostResponse c : comments) {
+                    postComments.remove(c.getCommentId());
+                }
+
+                // Cập nhật lại post vào MongoDB
+                postRepository.save(post);
             }
 
             Share share = comment.getShare();
             if (share != null) {
                 // Lấy danh sách comments của share
                 List<String> shareComments = share.getComments();
-
-                if (shareComments != null) {
-                    // Kiểm tra xem danh sách comments của share có null hay không
-                    // Nếu là null, khởi tạo một danh sách mới
-                    if (shareComments == null) {
-                        shareComments = new ArrayList<>();
-                    }
-
-                    // Xóa commentId khỏi danh sách comments của share
-                    shareComments.remove(commentId);
-
-                    // Cập nhật lại danh sách comments của share
-                    share.setComments(shareComments);
-
-                    for (Comment c : commentsWithReply) {
-                        shareComments.remove(c.getId());
-                        for (Comment directReply : commentsWithReply) {
-                            shareComments.remove(directReply.getId());
-                        }
-                    }
-
-                    for (CommentPostResponse c : comments) {
-                        shareComments.remove(c.getCommentId());
-                    }
-
-                    // Cập nhật lại share vào MongoDB
-                    shareRepository.save(share);
+                if (shareComments == null) {
+                    shareComments = new ArrayList<>();
                 }
+                // Kiểm tra xem danh sách comments của share có null hay không
+                // Nếu là null, khởi tạo một danh sách mới
+
+
+                // Xóa commentId khỏi danh sách comments của share
+                shareComments.remove(commentId);
+
+                // Cập nhật lại danh sách comments của share
+                share.setComments(shareComments);
+
+                for (Comment c : commentsWithReply) {
+                    shareComments.remove(c.getId());
+                    for (Comment directReply : commentsWithReply) {
+                        shareComments.remove(directReply.getId());
+                    }
+                }
+
+                for (CommentPostResponse c : comments) {
+                    shareComments.remove(c.getCommentId());
+                }
+
+                // Cập nhật lại share vào MongoDB
+                shareRepository.save(share);
             }
-            if (this.exists("commentOfPost")) this.delete("commentOfPost");
-            if (this.exists("commentReplyOfCommentPost")) this.delete("commentReplyOfCommentPost");
             return ResponseEntity.ok()
                     .body(new GenericResponse(true, "Delete Successful!", null, HttpStatus.OK.value()));
         } else {
@@ -368,29 +327,12 @@ public class CommentServiceImpl extends RedisServiceImpl implements CommentServi
 
     @Override
     public ResponseEntity<GenericResponse> getCommentReplyOfComment(String commentId) throws JsonProcessingException {
-        objectMapper = new ObjectMapper();
-        String indexStr = commentId;
-        if (this.hashExists("commentReplyOfCommentPost", indexStr)) {
-            Object postsTimeline = this.hashGet("commentReplyOfCommentPost", indexStr);
-            HashMap<String, Object> data = objectMapper.readValue((String) postsTimeline, HashMap.class);
-            Object commentReplyOfCommentPostObj = data.get("commentReplyOfCommentPost");
-            ArrayList<HashMap<String, Object>> commentReplyOfCommentPostList = (ArrayList<HashMap<String, Object>>) commentReplyOfCommentPostObj;
-            return ResponseEntity.ok(GenericResponse.builder().success(true).message("Retrieving comment of post successfully from redis")
-                    .result(commentReplyOfCommentPostList).statusCode(HttpStatus.OK.value()).build());
-        }
+
         Optional<Comment> comment = findById(commentId);
         if (comment.isEmpty())
             return ResponseEntity.ok(GenericResponse.builder().success(false).message("Comment not found").result(false)
                     .statusCode(HttpStatus.OK.value()).build());
         List<CommentPostResponse> comments = getCommentsOfComment(commentId);
-        if (comments.isEmpty())
-            return ResponseEntity
-                    .ok(GenericResponse.builder().success(false).message("This comment has no comment reply")
-                            .result(false).statusCode(HttpStatus.OK.value()).build());
-        HashMap<String, Object> response = new HashMap<>();
-        response.put("commentReplyOfCommentPost", comments);
-        String jsonData = objectMapper.writeValueAsString(response);
-        this.hashSet("commentReplyOfCommentPost", indexStr, jsonData);
         return ResponseEntity
                 .ok(GenericResponse.builder().success(true).message("Retrieving comment of post successfully")
                         .result(comments).statusCode(HttpStatus.OK.value()).build());
@@ -424,9 +366,9 @@ public class CommentServiceImpl extends RedisServiceImpl implements CommentServi
         Optional<Post> post = postService.findById(postId);
         Optional<Share> share = shareService.findById(postId);
         List<Comment> comments = new ArrayList<>();
-        if (!post.isEmpty())  {
+        if (post.isPresent())  {
             comments = commentRepository.findByPostIdOrderByCreateTimeDesc(postId);
-        } else if (!share.isEmpty()) {
+        } else if (share.isPresent()) {
             comments = commentRepository.findByShareIdOrderByCreateTimeDesc(postId);
         }
         if (!comments.isEmpty()) {
@@ -535,7 +477,7 @@ public class CommentServiceImpl extends RedisServiceImpl implements CommentServi
             }
         } catch (IOException e) {
             // Xử lý ngoại lệ nếu có
-            e.printStackTrace();
+            throw new RuntimeException(e);
         }
         comment.setUserId(user.getUserId());
         save(comment);
@@ -569,11 +511,11 @@ public class CommentServiceImpl extends RedisServiceImpl implements CommentServi
             return ResponseEntity.badRequest().body("User not found");
         }
         Optional<Share> share = shareService.findById(requestDTO.getShareId());
-        if (!share.isPresent()) {
+        if (share.isEmpty()) {
             return ResponseEntity.badRequest().body("Share post not found");
         }
         Optional<Comment> commentReply = findById(requestDTO.getCommentId());
-        if (!commentReply.isPresent()) {
+        if (commentReply.isEmpty()) {
             return ResponseEntity.badRequest().body("Comment not found");
         }
 
@@ -593,7 +535,7 @@ public class CommentServiceImpl extends RedisServiceImpl implements CommentServi
             }
         } catch (IOException e) {
             // Xử lý ngoại lệ nếu có
-            e.printStackTrace();
+            throw new RuntimeException(e);
         }
         comment.setUserId(user.getUserId());
         comment.setCommentReply(commentReply.get());
@@ -689,53 +631,46 @@ public class CommentServiceImpl extends RedisServiceImpl implements CommentServi
             if (post != null) {
                 // Lấy danh sách comments của post
                 List<String> postComments = post.getComments();
-
-                if (postComments != null) {
-                    // Kiểm tra xem danh sách comments của post có null hay không
-                    // Nếu là null, khởi tạo một danh sách mới
-                    if (postComments == null) {
-                        postComments = new ArrayList<>();
-                    }
-
-                    // Xóa commentId khỏi danh sách comments của post
-                    postComments.remove(commentId);
-
-                    // Cập nhật lại danh sách comments của post
-                    post.setComments(postComments);
-
-                    for (Comment c : commentsWithReply) {
-                        postComments.remove(c.getId());
-                    }
-
-                    // Cập nhật lại post vào MongoDB
-                    postRepository.save(post);
+                if (postComments == null) {
+                    postComments = new ArrayList<>();
                 }
+                // Kiểm tra xem danh sách comments của post có null hay không
+                // Nếu là null, khởi tạo một danh sách mới
+
+
+                // Xóa commentId khỏi danh sách comments của post
+                postComments.remove(commentId);
+
+                // Cập nhật lại danh sách comments của post
+                post.setComments(postComments);
+
+                for (Comment c : commentsWithReply) {
+                    postComments.remove(c.getId());
+                }
+
+                // Cập nhật lại post vào MongoDB
+                postRepository.save(post);
             }
             Share share = comment.getShare();
             if (share != null) {
                 // Lấy danh sách comments của share
                 List<String> shareComments = share.getComments();
-
-                if (shareComments != null) {
-                    // Kiểm tra xem danh sách comments của share có null hay không
-                    // Nếu là null, khởi tạo một danh sách mới
-                    if (shareComments == null) {
-                        shareComments = new ArrayList<>();
-                    }
-
-                    // Xóa commentId khỏi danh sách comments của share
-                    shareComments.remove(commentId);
-
-                    // Cập nhật lại danh sách comments của share
-                    share.setComments(shareComments);
-
-                    for (Comment c : commentsWithReply) {
-                        shareComments.remove(c.getId());
-                    }
-
-                    // Cập nhật lại share vào MongoDB
-                    shareRepository.save(share);
+                if (shareComments == null) {
+                    shareComments = new ArrayList<>();
                 }
+
+                // Xóa commentId khỏi danh sách comments của share
+                shareComments.remove(commentId);
+
+                // Cập nhật lại danh sách comments của share
+                share.setComments(shareComments);
+
+                for (Comment c : commentsWithReply) {
+                    shareComments.remove(c.getId());
+                }
+
+                // Cập nhật lại share vào MongoDB
+                shareRepository.save(share);
             }
             commentRepository.delete(comment);
             return ResponseEntity.ok()
@@ -777,9 +712,8 @@ public class CommentServiceImpl extends RedisServiceImpl implements CommentServi
     public long countCommentsInOneYearFromNow() {
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime startDate = now.minusYears(1);
-        LocalDateTime endDate = now;
         Date startDateAsDate = Date.from(startDate.atZone(ZoneId.systemDefault()).toInstant());
-        Date endDateAsDate = Date.from(endDate.atZone(ZoneId.systemDefault()).toInstant());
+        Date endDateAsDate = Date.from(now.atZone(ZoneId.systemDefault()).toInstant());
         return commentRepository.countByCreateTimeBetween(startDateAsDate, endDateAsDate);
     }
 
@@ -851,19 +785,16 @@ public class CommentServiceImpl extends RedisServiceImpl implements CommentServi
         Pageable pageable = PageRequest.of(page - 1, itemsPerPage);
         Page<Comment> commentsPage = commentRepository.findAllByUserIdOrderByCreateTimeDesc(userId, pageable);
 
-        Streamable<Object> commentResponsesPage = commentsPage.map(comment -> {
+        return commentsPage.map(comment -> {
             if (comment.getPost() != null && comment.getPost().getId() != null) {
                 UserProfileResponse userProfileResponse = userClientService.getUser(comment.getUserId());
-                CommentPostResponse cPostResponse = new CommentPostResponse(comment, userProfileResponse);
-                return cPostResponse;
+                return new CommentPostResponse(comment, userProfileResponse);
             } else if (comment.getShare() != null && comment.getShare().getId() != null) {
                 UserProfileResponse userProfileResponse = userClientService.getUser(comment.getUserId());
-                CommentShareResponse cShareResponse = new CommentShareResponse(comment, userProfileResponse);
-                return cShareResponse;
+                return new CommentShareResponse(comment, userProfileResponse);
             }
             return null;
-        }); // Lọc bất kỳ giá trị null nào nếu có
-        return commentResponsesPage;
+        });
     }
 
 

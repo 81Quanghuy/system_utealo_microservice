@@ -15,7 +15,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-public interface ShareService extends RedisService{
+public interface ShareService {
     <S extends Share> S save(S entity);
     Optional<Share> findById(String id);
     ResponseEntity<Object> sharePost(String token, SharePostRequestDTO requestDTO);

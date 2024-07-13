@@ -15,5 +15,4 @@ public class SharePostRequestDTO {
 	private Date createAt;
 	private Date updateAt;
 	private String userId;
-	
 }

@@ -381,13 +381,13 @@ public class GroupServiceImpl extends RedisServiceImpl implements GroupService {
     @Override
     public ResponseEntity<GenericResponse> getPostGroupJoinByUserId(String currentUserId) throws JsonProcessingException {
         log.info("GroupServiceImpl, getPostGroupJoinByUserId");
-        if (this.hashExists(AppConstant.POST_GROUP_JOIN_BY_USER_ID, currentUserId)) {
-            return ResponseEntity.ok(GenericResponse.builder()
-                    .success(true)
-                    .message("Lấy danh sách nhóm thành công!Redis cache")
-                    .result(this.hashGet(AppConstant.POST_GROUP_JOIN_BY_USER_ID, currentUserId))
-                    .statusCode(HttpStatus.OK.value()).build());
-        }
+//        if (this.hashExists(AppConstant.POST_GROUP_JOIN_BY_USER_ID, currentUserId)) {
+//            return ResponseEntity.ok(GenericResponse.builder()
+//                    .success(true)
+//                    .message("Lấy danh sách nhóm thành công!Redis cache")
+//                    .result(this.hashGet(AppConstant.POST_GROUP_JOIN_BY_USER_ID, currentUserId))
+//                    .statusCode(HttpStatus.OK.value()).build());
+//        }
         List<GroupMember> groupMembers = groupMemberRepository.findByUserIdAndIsLockedAndRole(currentUserId, false, GroupMemberRoleType.Member);
 
         return getGenericResponseResponseEntity(currentUserId, AppConstant.POST_GROUP_JOIN_BY_USER_ID, groupMembers);
@@ -396,17 +396,17 @@ public class GroupServiceImpl extends RedisServiceImpl implements GroupService {
     @Override
     public ResponseEntity<GenericResponse> getPostGroupOwnerByUserId(String currentUserId) throws JsonProcessingException {
         log.info("GroupServiceImpl, getPostGroupOwnerByUserId");
-        if (this.hashExists(AppConstant.REDIS_KEY_GROUP_OWNER, currentUserId)) {
-            Object getPostGroupJoinByUserId = this.hashGet(AppConstant.REDIS_KEY_GROUP_OWNER, currentUserId);
-            HashMap<String, Object> data = objectMapper.readValue((String) getPostGroupJoinByUserId, HashMap.class);
-            Object postsTimelineObj = data.get("postsTimeline");
-            ArrayList<HashMap<String, Object>> groupJoin = (ArrayList<HashMap<String, Object>>) postsTimelineObj;
-            return ResponseEntity.ok(GenericResponse.builder()
-                    .success(true)
-                    .message("Lấy danh sách nhóm thành công! Redis cache")
-                    .result(this.hashGet(AppConstant.REDIS_KEY_GROUP_OWNER, currentUserId))
-                    .statusCode(HttpStatus.OK.value()).build());
-        }
+//        if (this.hashExists(AppConstant.REDIS_KEY_GROUP_OWNER, currentUserId)) {
+//            Object getPostGroupJoinByUserId = this.hashGet(AppConstant.REDIS_KEY_GROUP_OWNER, currentUserId);
+//            HashMap<String, Object> data = objectMapper.readValue((String) getPostGroupJoinByUserId, HashMap.class);
+//            Object postsTimelineObj = data.get("postsTimeline");
+//            ArrayList<HashMap<String, Object>> groupJoin = (ArrayList<HashMap<String, Object>>) postsTimelineObj;
+//            return ResponseEntity.ok(GenericResponse.builder()
+//                    .success(true)
+//                    .message("Lấy danh sách nhóm thành công! Redis cache")
+//                    .result(this.hashGet(AppConstant.REDIS_KEY_GROUP_OWNER, currentUserId))
+//                    .statusCode(HttpStatus.OK.value()).build());
+//        }
         List<GroupMember> groupMembers = groupMemberRepository.findByUserIdAndIsLockedAndRoleIn(currentUserId, false, List.of(GroupMemberRoleType.Admin, GroupMemberRoleType.Deputy));
         return getGenericResponseResponseEntity(currentUserId, AppConstant.REDIS_KEY_GROUP_OWNER, groupMembers);
     }

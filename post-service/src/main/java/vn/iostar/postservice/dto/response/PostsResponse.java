@@ -47,7 +47,40 @@ public class PostsResponse {
 			this.avatarUser = user.getAvatar();
             this.roleName = user.getRoleName();
 		}
-		if (group != null) {
+		if (group!= null && post.getGroupId()!= null &&  post.getGroupId().equals(group.getId())) {
+			this.postGroupId = group.getId();
+			this.postGroupName = group.getGroupName();
+			this.avatarGroup = group.getGroupAvatar();
+			this.groupType = group.getGroupType();
+		}
+		this.privacyLevel = post.getPrivacyLevel();
+		if(post.getComments() != null) {
+			this.comments = post.getComments();
+		} else {
+			this.comments = new ArrayList<>();
+		}
+		if(post.getLikes() != null) {
+			this.likes = post.getLikes();
+		} else {
+			this.likes = new ArrayList<>();
+		}
+	}
+	public PostsResponse(Post post, String content ,UserProfileResponse user, GroupProfileResponse group) {
+		this.postId = post.getId();
+		this.postTime = post.getPostTime();
+		this.updateAt = post.getUpdatedAt();
+		this.content =content;
+		this.photos = post.getPhotos();
+		this.files = post.getFiles();
+		this.video = post.getVideo();
+		this.location = post.getLocation();
+		this.userId = post.getUserId();
+		if (user != null) {
+			this.userName = user.getUserName();
+			this.avatarUser = user.getAvatar();
+			this.roleName = user.getRoleName();
+		}
+		if (group!= null && post.getGroupId()!= null &&  post.getGroupId().equals(group.getId())) {
 			this.postGroupId = group.getId();
 			this.postGroupName = group.getGroupName();
 			this.avatarGroup = group.getGroupAvatar();

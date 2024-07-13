@@ -20,7 +20,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-public interface PostService extends RedisService{
+public interface PostService{
 
     <S extends Post> S save(S entity);
     Optional<Post> findById(String id);

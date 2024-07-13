@@ -1,7 +1,6 @@
 package vn.iostar.postservice.controller.user;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -9,7 +8,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import vn.iostar.groupservice.dto.FilesOfGroupDTO;
 import vn.iostar.groupservice.dto.PhotosOfGroupDTO;
@@ -30,7 +28,6 @@ import vn.iostar.postservice.service.client.UserClientService;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
 
@@ -56,62 +53,58 @@ public class PostController {
 
     // Lấy bài viết theo userId
     @GetMapping("/user/{userId}")
-    public ResponseEntity<GenericResponse> getPostByUserId(@RequestHeader("Authorization") String authorizationHeader, @PathVariable("userId") String userId, @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "20") int size) throws JsonProcessingException {
+    public ResponseEntity<GenericResponse> getPostByUserId(@RequestHeader("Authorization") String authorizationHeader,
+                                                           @PathVariable("userId") String userId,
+                                                           @RequestParam(defaultValue = "0") int page,
+                                                           @RequestParam(defaultValue = "20") int size)
+            throws JsonProcessingException {
         String token = authorizationHeader.substring(7);
         String currentUserId = jwtService.extractUserId(token);
         Pageable pageable = PageRequest.of(page, size);
-        ObjectMapper objectMapper = new ObjectMapper();
-        String indexStr = String.valueOf(page)+ size + userId;
-        if (postService.hashExists("postsOfUser", indexStr)) {
-            Object postsTimeline = postService.hashGet("postsOfUser", indexStr);
-            HashMap<String, Object> data = objectMapper.readValue((String) postsTimeline, HashMap.class);
-            Object postsTimelineObj = data.get("postsOfUser");
-            ArrayList<HashMap<String, Object>> postsTimelineList = (ArrayList<HashMap<String, Object>>) postsTimelineObj;
-            return ResponseEntity.ok(GenericResponse.builder().success(true).message("Retrieved user posts successfully and access update from redis")
-                    .result(postsTimelineList).statusCode(HttpStatus.OK.value()).build());
-        }
         List<PostsResponse> userPosts = postService.findUserPosts(currentUserId, userId, pageable);
-        HashMap<String, Object> response = new HashMap<>();
-        response.put("postsOfUser", userPosts);
-        String jsonData = objectMapper.writeValueAsString(response);
-        postService.hashSet("postsOfUser", indexStr, jsonData);
-        return ResponseEntity.ok(GenericResponse.builder().success(true).message("Retrieved user posts successfully and access update").result(userPosts).statusCode(HttpStatus.OK.value()).build());
+        return ResponseEntity.ok(GenericResponse.builder()
+                .success(true)
+                .message("Retrieved user posts successfully and access update")
+                .result(userPosts)
+                .statusCode(HttpStatus.OK.value()).build());
     }
 
     // Tạo bài viết
     @PostMapping("/create")
-    public ResponseEntity<Object> createUserPost(@ModelAttribute CreatePostRequestDTO requestDTO, @RequestHeader(HttpHeaders.AUTHORIZATION) String token) throws JsonProcessingException {
+    public ResponseEntity<Object> createUserPost(@ModelAttribute CreatePostRequestDTO requestDTO,
+                                                 @RequestHeader(HttpHeaders.AUTHORIZATION) String token)
+            throws JsonProcessingException {
         return postService.createUserPost(token, requestDTO);
     }
 
     // Xóa bài viết
     @DeleteMapping("/delete/{postId}")
-    public ResponseEntity<GenericResponse> deletePost(@RequestHeader("Authorization") String token, @PathVariable("postId") String postId, @RequestBody String userId) {
+    public ResponseEntity<GenericResponse> deletePost(@RequestHeader("Authorization") String token,
+                                                      @PathVariable("postId") String postId,
+                                                      @RequestBody String userId) {
         return postService.deletePost(postId, token, userId);
 
     }
 
     // Sửa bài viết
     @PutMapping("/update/{postId}")
-    public ResponseEntity<Object> updatePost(@ModelAttribute PostUpdateRequest request, @RequestHeader("Authorization") String authorizationHeader, @PathVariable("postId") String postId, BindingResult bindingResult) throws Exception {
-
+    public ResponseEntity<Object> updatePost(@ModelAttribute PostUpdateRequest request,
+                                             @RequestHeader("Authorization") String authorizationHeader,
+                                             @PathVariable("postId") String postId)
+            throws Exception {
         String token = authorizationHeader.substring(7);
         String currentUserId = jwtService.extractUserId(token);
         return postService.updatePost(postId, request, currentUserId);
-
     }
-
 
     // Lấy bài viết
     @GetMapping("/getPost/{postId}")
     public Post getGroup(@PathVariable String postId) {
         Optional<Post> post = postService.findById(postId);
-
         if (post.isEmpty()) {
             throw new RuntimeException("Post not found.");
         }
         return post.get();
-
     }
 
     // Lấy tất cả hình của user đó
@@ -122,7 +115,10 @@ public class PostController {
 
     // Lấy 9 hình đầu tiên của user
     @GetMapping("/getPhotos/{userId}")
-    public ResponseEntity<Object> getLatestPhotosByUserId(@RequestHeader("Authorization") String authorizationHeader, @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "9") int size, @PathVariable("userId") String userId) {
+    public ResponseEntity<Object> getLatestPhotosByUserId(@RequestHeader("Authorization") String authorizationHeader,
+                                                          @RequestParam(defaultValue = "0") int page,
+                                                          @RequestParam(defaultValue = "9") int size,
+                                                          @PathVariable("userId") String userId) {
         String token = authorizationHeader.substring(7);
         String currentUserId = jwtService.extractUserId(token);
         Pageable pageable = PageRequest.of(page, size);
@@ -131,7 +127,8 @@ public class PostController {
 
     // Xem chi tiết bài share
     @GetMapping("/share/{shareId}")
-    public ResponseEntity<GenericResponse> getShare(@RequestHeader("Authorization") String authorizationHeader, @PathVariable("shareId") String shareId) {
+    public ResponseEntity<GenericResponse> getShare(@RequestHeader("Authorization") String authorizationHeader,
+                                                    @PathVariable("shareId") String shareId) {
         String token = authorizationHeader.substring(7);
         String currentUserId = jwtService.extractUserId(token);
         return shareService.getShare(currentUserId, shareId);
@@ -139,7 +136,10 @@ public class PostController {
 
     // Lấy những bài post liên quan đến mình như: nhóm, bạn bè, cá nhân
     @GetMapping("/get/timeLine")
-    public ResponseEntity<GenericResponse> getPostsByUserAndFriendsAndGroups(@RequestHeader("Authorization") String authorizationHeader, @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "20") int size) throws JsonProcessingException {
+    public ResponseEntity<GenericResponse> getPostsByUserAndFriendsAndGroups(
+            @RequestHeader("Authorization") String authorizationHeader,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) throws JsonProcessingException {
         String token = authorizationHeader.substring(7);
         String currentUserId = jwtService.extractUserId(token);
         return postService.getPostTimelineByUserId(currentUserId, page, size);
@@ -147,7 +147,11 @@ public class PostController {
 
     // Lấy tất cả bài post của 1 nhóm
     @GetMapping("/{postGroupId}/posts")
-    public ResponseEntity<GenericResponse> getPostOfPostGroup(@RequestHeader("Authorization") String authorizationHeader, @PathVariable String postGroupId, @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "20") int size) throws JsonProcessingException {
+    public ResponseEntity<GenericResponse> getPostOfPostGroup(
+            @RequestHeader("Authorization") String authorizationHeader,
+            @PathVariable String postGroupId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) throws JsonProcessingException {
         String token = authorizationHeader.substring(7);
         String userIdToken = jwtService.extractUserId(token);
         return postService.getGroupPosts(userIdToken, postGroupId, page, size);
@@ -155,7 +159,10 @@ public class PostController {
 
     // Lấy tất cả các bài post của những nhóm mình tham gia
     @GetMapping("/inGroup")
-    public ResponseEntity<GenericResponse> getShareOfUserPostGroup(@RequestHeader("Authorization") String authorizationHeader, @RequestParam(defaultValue = "0") Integer page, @RequestParam(defaultValue = "20") Integer size) throws JsonProcessingException {
+    public ResponseEntity<GenericResponse> getShareOfUserPostGroup(
+            @RequestHeader("Authorization") String authorizationHeader,
+            @RequestParam(defaultValue = "0") Integer page,
+            @RequestParam(defaultValue = "20") Integer size) throws JsonProcessingException {
         String token = authorizationHeader.substring(7);
         String currentUserId = jwtService.extractUserId(token);
         return postService.getPostOfPostGroup(currentUserId, page, size);
@@ -169,13 +176,17 @@ public class PostController {
 
     // Lấy danh sách photo của 1 nhóm
     @GetMapping("/photos/{groupId}")
-    public Page<PhotosOfGroupDTO> getLatestPhotoOfGroup(@RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "5") int size, @PathVariable("groupId") String groupId) {
+    public Page<PhotosOfGroupDTO> getLatestPhotoOfGroup(@RequestParam(defaultValue = "0") int page,
+                                                        @RequestParam(defaultValue = "5") int size,
+                                                        @PathVariable("groupId") String groupId) {
         return postService.findLatestPhotosByGroupId(groupId, page, size);
     }
 
     // Lấy những bài viết trong nhóm do Admin đăng
     @GetMapping("/roleAdmin/{groupId}")
-    public ResponseEntity<GenericResponse> getPostsByAdminRoleInGroup(@PathVariable("groupId") String groupId, @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "5") int size) {
+    public ResponseEntity<GenericResponse> getPostsByAdminRoleInGroup(@PathVariable("groupId") String groupId,
+                                                                      @RequestParam(defaultValue = "0") int page,
+                                                                      @RequestParam(defaultValue = "5") int size) {
         Pageable pageable = PageRequest.of(page, size);
         List<PostsResponse> groupPosts = postService.findPostsByAdminRoleInGroup(groupId, pageable);
         if (groupPosts.isEmpty()) {
@@ -204,7 +215,7 @@ public class PostController {
 
     // search post by content and location
     @GetMapping("/search")
-    public  List<PostElastic> searchPost(@RequestParam("search") String search,
+    public List<PostElastic> searchPost(@RequestParam("search") String search,
                                         @RequestParam(defaultValue = "0") int page,
                                         @RequestParam(defaultValue = "20") int size)
             throws IOException {

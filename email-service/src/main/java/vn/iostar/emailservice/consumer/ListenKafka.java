@@ -8,6 +8,7 @@ import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
 import vn.iostar.constant.KafkaTopicName;
 import vn.iostar.emailservice.service.EmailService;
+import vn.iostar.model.EmailVerify;
 import vn.iostar.model.PasswordReset;
 import vn.iostar.model.VerifyParent;
 
@@ -37,5 +38,11 @@ public class ListenKafka {
         logger.info("Consumed message:",email);
         emailService.sendVerify(email);
         System.out.println(email);
+    }
+
+    @KafkaListener(topics = KafkaTopicName.EMAIL_VERIFY_PARENT_TOPIC, groupId = "email-service")
+    public void consumeVerifyParent(EmailVerify emailVerify) throws MessagingException, UnsupportedEncodingException {
+        logger.info("Consumed message:",emailVerify);
+        emailService.sendVerifyParent(emailVerify);
     }
 }

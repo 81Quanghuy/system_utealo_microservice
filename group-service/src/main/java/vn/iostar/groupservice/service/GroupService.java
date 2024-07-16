@@ -23,7 +23,7 @@ import java.util.Optional;
 
 public interface GroupService {
 
-    ResponseEntity<GenericResponse> getPostGroupByUserId(String authorizationHeader) throws JsonProcessingException;
+    ResponseEntity<GenericResponse> getPostGroupByUserId(String currentUserId) throws JsonProcessingException;
 
     ResponseEntity<GenericResponse> createGroup(GroupCreateRequest postGroup, String userId);
 
@@ -107,4 +107,5 @@ public interface GroupService {
     ResponseEntity<GenericResponse> addMemberToSystemGroup(GroupResponse groupResponse);
 
     ResponseEntity<GenericResponse> searchKey(String key,int page, int size) throws IOException;
+
 }

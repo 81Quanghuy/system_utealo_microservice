@@ -41,11 +41,17 @@ public class Report implements Serializable {
     private String userId;
 
     @Field(name = "post_id")
-    private int postId;
+    private String postId;
 
     @CreatedDate
     @JsonFormat(shape = JsonFormat.Shape.STRING)
     @Field(name = "post_time")
     private Date postTime;
 
+    @Field(name = "share_id")
+    private String shareId;
+
+    @Builder.Default
+    @Field(name = "isRead")
+    private Boolean isRead =false;
 }

@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
+import vn.iostar.model.DateResponse;
 import vn.iostar.postservice.dto.GenericResponse;
 import vn.iostar.postservice.dto.request.CommentUpdateRequest;
 import vn.iostar.postservice.dto.request.CreateCommentPostRequestDTO;
@@ -13,6 +14,8 @@ import vn.iostar.postservice.dto.request.ReplyCommentPostRequestDTO;
 import vn.iostar.postservice.entity.Comment;
 import vn.iostar.postservice.jwt.service.JwtService;
 import vn.iostar.postservice.service.CommentService;
+
+import java.util.Date;
 
 @RestController
 @RequiredArgsConstructor
@@ -71,5 +74,10 @@ public class CommentPostController {
     public ResponseEntity<GenericResponse> getCountCommentOfPost(
             @PathVariable("postId") String postId) {
         return commentService.getCountCommentOfPost(postId);
+    }
+
+    @PostMapping("/countComments/{userId}")
+    public Long countCommentsByUserId(@PathVariable String userId, @RequestBody DateResponse dateResponse) {
+        return commentService.countCommentsByUserId(userId, dateResponse.getStartDate(), dateResponse.getEndDate());
     }
 }

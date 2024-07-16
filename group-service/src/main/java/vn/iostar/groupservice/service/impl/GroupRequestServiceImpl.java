@@ -44,6 +44,8 @@ public class GroupRequestServiceImpl implements GroupRequestService {
         if(optionalGroupRequest.get().getGroup().getIsApprovalRequired() &&  !CheckGroupRole(optionalGroupRequest.get().getInvitingUser(), postGroupId) ){
             optionalGroupRequest.get().setIsAccept(true);
             groupRequestRepository.save(optionalGroupRequest.get());
+            return ResponseEntity.ok(GenericResponse.builder().success(true).result("Waiting Accept").message("Accept successfully")
+                    .statusCode(HttpStatus.OK.value()).build());
         }
         GroupMember groupMember = GroupMember.builder()
                 .id(UUID.randomUUID().toString())
@@ -56,7 +58,7 @@ public class GroupRequestServiceImpl implements GroupRequestService {
         groupMemberRepository.save(groupMember);
 
         groupRequestRepository.delete(optionalGroupRequest.get());
-        return ResponseEntity.ok(GenericResponse.builder().success(true).message("Accept successfully")
+        return ResponseEntity.ok(GenericResponse.builder().success(true).result("Member").message("Accept successfully")
                 .statusCode(HttpStatus.OK.value()).build());
     }
 
@@ -133,7 +135,7 @@ public class GroupRequestServiceImpl implements GroupRequestService {
             throw new NotFoundException("Group request not found");
         }
         groupRequestRepository.delete(optionalGroupRequest.get());
-        return ResponseEntity.ok(GenericResponse.builder().success(true).message("Cancel successfully")
+        return ResponseEntity.ok(GenericResponse.builder().success(true).result("None").message("Cancel successfully")
                 .statusCode(HttpStatus.OK.value()).build());
     }
 
@@ -145,7 +147,7 @@ public class GroupRequestServiceImpl implements GroupRequestService {
             throw new NotFoundException("Group request not found");
         }
         groupRequestRepository.delete(optionalGroupRequest.get());
-        return ResponseEntity.ok(GenericResponse.builder().success(true).message("Decline successfully")
+        return ResponseEntity.ok(GenericResponse.builder().success(true).result("None").message("Decline successfully")
                 .statusCode(HttpStatus.OK.value()).build());
     }
 

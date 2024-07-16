@@ -160,4 +160,10 @@ public interface UserService {
 	ResponseEntity<GenericResponse> acceptParent(String currentUserId, String userId);
 
 	ResponseEntity<GenericResponse> declineParent(String currentUserId, String userId);
+
+	ResponseEntity<GenericResponse> getAllParentNotVerify(String userId, int page, int size);
+
+	ResponseEntity<GenericResponse> adminAcceptParent(String currentUserId, String relationId);
+
+	ResponseEntity<GenericResponse> adminDeclineParent(String currentUserId, String relationId);
 }

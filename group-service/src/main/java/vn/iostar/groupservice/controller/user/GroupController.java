@@ -61,9 +61,21 @@ public class GroupController {
      * @return GenericResponse
      */
     @GetMapping("/list/all")
-    public ResponseEntity<GenericResponse> getPostGroupByUserId(
+    public ResponseEntity<GenericResponse> getPostGroupByCurrentId(
             @RequestHeader("Authorization") String authorizationHeader) throws JsonProcessingException {
-        return groupService.getPostGroupByUserId(authorizationHeader);
+        String token = authorizationHeader.substring(7);
+        String currentUserId = jwtService.extractUserId(token);
+        return groupService.getPostGroupByUserId(currentUserId);
+    }
+
+    /**
+     * Get group join by user id
+     * @param userId userId
+     * @return GenericResponse
+     */
+    @GetMapping("/list/all/{userId}")
+    public ResponseEntity<GenericResponse> getPostGroupByUserId(@PathVariable String userId) throws JsonProcessingException {
+        return groupService.getPostGroupByUserId(userId);
     }
 
     /**
@@ -279,4 +291,6 @@ public class GroupController {
             throws IOException {
         return groupService.searchKey(key.trim(),page,size);
     }
+
+    // them quyen pho quan trị viên
 }

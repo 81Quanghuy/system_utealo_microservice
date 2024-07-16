@@ -19,10 +19,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 import vn.iostar.constant.*;
-import vn.iostar.model.GroupResponse;
-import vn.iostar.model.PasswordReset;
-import vn.iostar.model.RelationshipResponse;
-import vn.iostar.model.VerifyParent;
+import vn.iostar.model.*;
 import vn.iostar.userservice.constant.RoleUserGroup;
 import vn.iostar.userservice.dto.*;
 import vn.iostar.userservice.dto.request.AccountManager;
@@ -46,14 +43,13 @@ import vn.iostar.userservice.service.RoleService;
 import vn.iostar.userservice.service.TokenService;
 import vn.iostar.userservice.service.UserService;
 import vn.iostar.userservice.service.client.GroupClient;
+import vn.iostar.userservice.service.client.PostClient;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.text.ParseException;
 import java.time.LocalDateTime;
 import java.time.Month;
 import java.time.ZoneId;
-import java.time.temporal.ChronoUnit;
 import java.util.*;
 
 @Service
@@ -78,9 +74,11 @@ public class UserServiceImpl implements UserService {
     private final RoleService roleService;
 
     private final GroupClient groupClient;
+    private final PostClient  postClient;
     private final RelationshipRepository relationshipRepository;
 
     private final KafkaTemplate<String, PasswordReset> kafkaTemplate;
+    private final KafkaTemplate<String, EmailVerify> kafkaTemplateVerify;
     private final KafkaTemplate<String, VerifyParent> kafkaTemplateParent;
     private final UsersElasticSearchRepository usersElasticSearchRepository;
     private final TokenService tokenService;
@@ -345,7 +343,7 @@ public class UserServiceImpl implements UserService {
         Pageable pageable = PageRequest.of(page - 1, itemsPerPage);
         Page<UserResponse> usersPage = userRepository.findAllUsers(pageable);
 
-        Page<UserResponse> processedUsersPage = usersPage.map(userItem -> {
+        return usersPage.map(userItem -> {
             Optional<User> userOptional = findById(userItem.getUserId());
             if (userOptional.isPresent()) {
 
@@ -369,8 +367,6 @@ public class UserServiceImpl implements UserService {
             }
             return userItem;
         });
-
-        return processedUsersPage;
     }
 
     // Lấy tất cả người dùng trong hệ thống
@@ -643,19 +639,22 @@ public class UserServiceImpl implements UserService {
         Date start = Date.from(startDate.atZone(ZoneId.systemDefault()).toInstant());
         Date end = Date.from(now.atZone(ZoneId.systemDefault()).toInstant());
 
+        DateResponse dateResponse = new DateResponse();
+        dateResponse.setStartDate(start);
+        dateResponse.setEndDate(end);
+
         List<User> allUsers = userRepository.findAll(); // Lấy tất cả người dùng
 
         // Tạo một Map để lưu userId và tổng số hoạt động của từng người dùng
         Map<String, Long> userActivityMap = new HashMap<>();
 
         for (User user : allUsers) {
-//			long postCount = postRepository.countByUserAndPostTimeBetween(user, start, end);
-//			long shareCount = shareRepository.countByUserAndCreateAtBetween(user, start, end);
-//			long commentCount = commentRepository.countByUserAndCreateTimeBetween(user, start, end);
+			long postCount = postClient.countPostsByUserId(user.getUserId(), dateResponse);
+			long shareCount = postClient.countSharesByUserId(user.getUserId(), dateResponse);
+			long commentCount = postClient.countCommentsByUserId(user.getUserId(), dateResponse);
 
             // Tổng số hoạt động của người dùng = bài post + bài share + bình luận
-//			long totalActivity = postCount + shareCount + commentCount;
-            long totalActivity = 0;
+			long totalActivity = postCount + shareCount + commentCount;
 
             userActivityMap.put(user.getUserId(), totalActivity);
         }
@@ -675,18 +674,17 @@ public class UserServiceImpl implements UserService {
             if (user != null) {
                 Profile profile = user.getProfile(); // Lấy profile của user
 
-//				long postCount = postRepository.countByUserAndPostTimeBetween(user, start, end);
-//				long shareCount = shareRepository.countByUserAndCreateAtBetween(user, start, end);
-//				long commentCount = commentRepository.countByUserAndCreateTimeBetween(user, start, end);
-//				long total = postCount + shareCount + commentCount;
-                long total = 0;
+                long postCount = postClient.countPostsByUserId(user.getUserId(), dateResponse);
+                long shareCount = postClient.countSharesByUserId(user.getUserId(), dateResponse);
+                long commentCount = postClient.countCommentsByUserId(user.getUserId(), dateResponse);
+				long total = postCount + shareCount + commentCount;
 
                 Top3UserOfMonth top3UserOfMonth = new Top3UserOfMonth();
                 top3UserOfMonth.setUserName(user.getUserName());
                 top3UserOfMonth.setUserId(user.getUserId());
-//				top3UserOfMonth.setCountPostOfMonth(postCount);
-//				top3UserOfMonth.setCountCommentOfMonth(commentCount);
-//				top3UserOfMonth.setCountShareOfMonth(shareCount);
+				top3UserOfMonth.setCountPostOfMonth(postCount);
+				top3UserOfMonth.setCountCommentOfMonth(commentCount);
+				top3UserOfMonth.setCountShareOfMonth(shareCount);
                 top3UserOfMonth.setTotal(total);
                 top3UserOfMonth.setAvatar(profile != null ? profile.getAvatar() : null); // Lấy avatar từ profile
 
@@ -718,6 +716,7 @@ public class UserServiceImpl implements UserService {
                 // Duyệt qua các hàng trong sheet
                 for (int i = 1; i <= sheet.getLastRowNum(); i++) {
                     User user = new User();
+
                     UserFileDTO userDTO = mapRowToUserDTO(sheet, i, inputStream,j);
                     System.out.println(userDTO);
                     // Nếu người dùng chưa tồn tại trong hệ thống
@@ -783,6 +782,7 @@ public class UserServiceImpl implements UserService {
                             } else {
                                 GroupResponse groupResponse = new GroupResponse();
                                 groupResponse.setName(userDTO.getClassUser());
+                                groupResponse.setEmailUser(userDTO.getEmail());
                                 groupResponse.setUsername(userDTO.getUserName());
                                 groupResponse.setRoleUser(userDTO.getRoleGroup());
                                 groupResponse.setRole(GroupMemberRoleType.valueOf(String.valueOf(userDTO.getRoleUserGroup())));
@@ -964,14 +964,16 @@ public class UserServiceImpl implements UserService {
 
         Date start = Date.from(startDate.atZone(ZoneId.systemDefault()).toInstant());
         Date end = Date.from(now.atZone(ZoneId.systemDefault()).toInstant());
-//		long postCount = postRepository.countByUserAndPostTimeBetween(user, start, end);
-//		long shareCount = shareRepository.countByUserAndCreateAtBetween(user, start, end);
-//		long commentCount = commentRepository.countByUserAndCreateTimeBetween(user, start, end);
+        DateResponse dateResponse = new DateResponse(start,end);
+
+        long postCount = postClient.countPostsByUserId(user.getUserId(), dateResponse);
+        long shareCount = postClient.countSharesByUserId(user.getUserId(), dateResponse);
+        long commentCount = postClient.countCommentsByUserId(user.getUserId(), dateResponse);
 
         UserStatisticsDTO userStatisticsDTO = new UserStatisticsDTO();
-//		userStatisticsDTO.setPostCount(postCount);
-//		userStatisticsDTO.setShareCount(shareCount);
-//		userStatisticsDTO.setCommentCount(commentCount);
+		userStatisticsDTO.setPostCount(postCount);
+		userStatisticsDTO.setShareCount(shareCount);
+		userStatisticsDTO.setCommentCount(commentCount);
 
         return userStatisticsDTO;
 
@@ -1215,5 +1217,68 @@ public class UserServiceImpl implements UserService {
                 "Từ chối phụ huynh thành công!",
                 null,
                 HttpStatus.OK.value()));
+    }
+
+    @Override
+    public ResponseEntity<GenericResponse> getAllParentNotVerify(String userId, int page, int size) {
+        Optional<User> user = findById(userId);
+        if (user.isEmpty()) {
+            throw new NotFoundException("Người dùng không tồn tại");
+        }
+        Pageable pageable = PageRequest.of(page, size);
+        if(!user.get().getRole().getRoleName().equals(RoleName.Admin)){
+           throw new BadRequestException("Không có quyền truy cập");
+        }
+        Page<Relationship> parents = relationshipRepository.findAllByIsAcceptedFalse(pageable);
+        List<RelationShipResponseAll> parentResponse = new ArrayList<>();
+        for (Relationship parent : parents) {
+            parentResponse.add(RelationShipMapper.toRelationShipResponseAll(parent));
+        }
+        return ResponseEntity.ok().body(new GenericResponse(true,
+                "Lấy danh sách phụ huynh chưa xác nhận thành công!",
+                parentResponse,
+                HttpStatus.OK.value()));
+    }
+
+    @Override
+    public ResponseEntity<GenericResponse> adminAcceptParent(String currentUserId, String relationId) {
+        Optional<User> currentUser = findById(currentUserId);
+        Optional<Relationship> relationship = relationshipRepository.findById(relationId);
+        if (currentUser.isEmpty() || relationship.isEmpty()) {
+            throw new NotFoundException("Người dùng không tồn tại");
+        }
+        if(!currentUser.get().getRole().getRoleName().equals(RoleName.Admin)){
+            throw new BadRequestException("Không có quyền truy cập");
+        }
+        relationship.get().setIsAccepted(true);
+        relationshipRepository.save(relationship.get());
+        EmailVerify  emailVerify = new EmailVerify(relationship.get().getParent().getAccount().getEmail(),
+                "Thông tin của bạn đã được xác nhận bởi admin");
+        kafkaTemplateVerify.send(KafkaTopicName.EMAIL_VERIFY_PARENT_TOPIC,emailVerify);
+        return ResponseEntity.ok().body(new GenericResponse(true,
+                "Xác nhận phụ huynh thành công!",
+                RelationShipMapper.toRelationShipResponseAll(relationship.get()),
+                HttpStatus.OK.value()));
+    }
+
+    @Override
+    public ResponseEntity<GenericResponse> adminDeclineParent(String currentUserId, String relationId) {
+        Optional<User> currentUser = findById(currentUserId);
+        Optional<Relationship> relationship = relationshipRepository.findById(relationId);
+        if (currentUser.isEmpty() || relationship.isEmpty()) {
+            throw new NotFoundException("Người dùng không tồn tại");
+        }
+        if(!currentUser.get().getRole().getRoleName().equals(RoleName.Admin)){
+            throw new BadRequestException("Không có quyền truy cập");
+        }
+        relationshipRepository.delete(relationship.get());
+        EmailVerify  emailVerify = new EmailVerify(relationship.get().getParent().getAccount().getEmail(),
+                "Thông tin của bạn đã bị từ chối bởi admin");
+        kafkaTemplateVerify.send(KafkaTopicName.EMAIL_VERIFY_PARENT_TOPIC,emailVerify);
+        return ResponseEntity.ok().body(new GenericResponse(true,
+                "Từ chối phụ huynh thành công!",
+                null,
+                HttpStatus.OK.value()));
+
     }
 }

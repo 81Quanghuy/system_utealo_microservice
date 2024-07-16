@@ -33,6 +33,8 @@ import vn.iostar.postservice.service.client.FileClientService;
 import vn.iostar.postservice.service.client.UserClientService;
 
 import java.io.IOException;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
 import java.time.Month;
 import java.time.ZoneId;
@@ -822,6 +824,11 @@ public class CommentServiceImpl implements CommentService {
         }
 
         return commentCountsByMonth;
+    }
+
+    @Override
+    public Long countCommentsByUserId(String userId, Date start, Date end) {
+        return commentRepository.countByUserIdAndCreateTimeBetween(userId, start, end);
     }
 
 }

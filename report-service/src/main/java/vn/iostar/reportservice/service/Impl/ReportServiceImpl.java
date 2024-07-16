@@ -2,17 +2,17 @@ package vn.iostar.reportservice.service.Impl;
 
 import jakarta.ws.rs.NotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
-import vn.iostar.reportservice.dto.CreatePostRequestDTO;
-import vn.iostar.reportservice.dto.GenericResponse;
-import vn.iostar.reportservice.dto.ReportsResponse;
-import vn.iostar.reportservice.dto.UserProfileResponse;
+import vn.iostar.reportservice.dto.*;
+import vn.iostar.reportservice.entity.Report;
 import vn.iostar.reportservice.jwt.service.JwtService;
 import vn.iostar.reportservice.repository.ReportRepository;
-import vn.iostar.reportservice.entity.Report;
 import vn.iostar.reportservice.service.CloudinaryService;
 import vn.iostar.reportservice.service.ReportService;
 import vn.iostar.reportservice.service.client.UserClientService;
@@ -55,7 +55,8 @@ public class ReportServiceImpl implements ReportService {
         post.setId(UUID.randomUUID().toString());
         post.setContent(requestDTO.getContent());
         post.setPrivacyLevel(requestDTO.getPrivacyLevel());
-
+        post.setShareId(requestDTO.getShareId());
+        post.setPostId(requestDTO.getPostId());
         try {
             if (requestDTO.getPhotos() == null || requestDTO.getPhotos().getContentType() == null) {
                 post.setPhotos("");
@@ -112,5 +113,48 @@ public class ReportServiceImpl implements ReportService {
         }
         throw new NotFoundException("Report not found");
 
+    }
+
+    @Override
+    public ResponseEntity<GenericResponseAdmin> getAllReports(String authorizationHeader, int page, int itemsPerPage) {
+        Pageable pageable = PageRequest.of(page - 1, itemsPerPage);
+        Page<Report> schedulesPage = reportRepository.findAll(pageable);
+        long totalSchedules = reportRepository.count();
+
+        PaginationInfo pagination = new PaginationInfo();
+        pagination.setPage(page);
+        pagination.setItemsPerPage(itemsPerPage);
+        pagination.setCount(totalSchedules);
+        pagination.setPages((int) Math.ceil((double) totalSchedules / itemsPerPage));
+
+        if (schedulesPage.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(GenericResponseAdmin.builder()
+                    .success(true)
+                    .message("Empty")
+                    .result(null)
+                    .statusCode(HttpStatus.NOT_FOUND.value())
+                    .build());
+        } else {
+            return ResponseEntity.status(HttpStatus.OK).body(GenericResponseAdmin.builder()
+                    .success(true)
+                    .message("Lấy danh sách thời khóa biểu thành công")
+                    .result(schedulesPage)
+                    .pagination(pagination)
+                    .statusCode(HttpStatus.OK.value())
+                    .build());
+        }
+    }
+
+    @Override
+    public ResponseEntity<Object> readReport(String reportId) {
+        Optional<Report> reportOptional = reportRepository.findById(reportId);
+        if (reportOptional.isPresent()) {
+            Report report = reportOptional.get();
+            report.setIsRead(true);
+            reportRepository.save(report);
+            return ResponseEntity.ok(GenericResponse.builder().success(true).message("Read report successfully")
+                    .result(report).statusCode(HttpStatus.OK.value()).build());
+        }
+        throw new NotFoundException("Report not found");
     }
 }

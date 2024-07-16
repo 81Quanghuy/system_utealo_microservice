@@ -7,6 +7,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import vn.iostar.model.DateResponse;
 import vn.iostar.postservice.dto.GenericResponse;
 import vn.iostar.postservice.dto.SharePostRequestDTO;
 import vn.iostar.postservice.dto.response.SharesResponse;
@@ -16,6 +17,7 @@ import vn.iostar.postservice.jwt.service.JwtService;
 import vn.iostar.postservice.service.ShareService;
 import vn.iostar.postservice.service.client.UserClientService;
 
+import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 
@@ -125,5 +127,11 @@ public class ShareController {
         String token = authorizationHeader.substring(7);
         String currentUserId = jwtService.extractUserId(token);
         return shareService.getGroupSharePosts(currentUserId, postGroupId, page, size);
+    }
+
+    // Đếm số lượng bài share của user
+    @PostMapping("/countShares/{userId}")
+    public Long countSharesByUserId(@PathVariable String userId, @RequestBody DateResponse dateResponse) {
+        return shareService.countSharesByUserId(userId, dateResponse.getStartDate(), dateResponse.getEndDate());
     }
 }

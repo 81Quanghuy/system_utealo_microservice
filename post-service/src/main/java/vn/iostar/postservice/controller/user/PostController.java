@@ -11,6 +11,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import vn.iostar.groupservice.dto.FilesOfGroupDTO;
 import vn.iostar.groupservice.dto.PhotosOfGroupDTO;
+import vn.iostar.model.DateResponse;
 import vn.iostar.model.PostElastic;
 import vn.iostar.postservice.dto.GenericResponse;
 import vn.iostar.postservice.dto.request.CreatePostRequestDTO;
@@ -28,6 +29,7 @@ import vn.iostar.postservice.service.client.UserClientService;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 
@@ -176,7 +178,7 @@ public class PostController {
 
     // Lấy danh sách photo của 1 nhóm
     @GetMapping("/photos/{groupId}")
-    public Page<PhotosOfGroupDTO> getLatestPhotoOfGroup(@RequestParam(defaultValue = "0") int page,
+    public Page<Object> getLatestPhotoOfGroup(@RequestParam(defaultValue = "0") int page,
                                                         @RequestParam(defaultValue = "5") int size,
                                                         @PathVariable("groupId") String groupId) {
         return postService.findLatestPhotosByGroupId(groupId, page, size);
@@ -221,5 +223,11 @@ public class PostController {
             throws IOException {
         Pageable pageable = PageRequest.of(page, size);
         return postService.searchPost(search, pageable);
+    }
+
+    // get so luong bai post cua user
+    @PostMapping("/countPosts/{userId}")
+    public Long countPostsByUserId(@PathVariable String userId, @RequestBody DateResponse dateResponse) {
+        return postService.countPostsByUserId(userId, dateResponse.getStartDate(), dateResponse.getEndDate());
     }
 }

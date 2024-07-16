@@ -22,6 +22,7 @@ import vn.iostar.userservice.dto.request.UserUpdateRequest;
 import vn.iostar.userservice.dto.response.FriendResponse;
 import vn.iostar.userservice.dto.response.GenericResponse;
 import vn.iostar.userservice.dto.response.UserProfileResponse;
+import vn.iostar.userservice.dto.response.UserResponse;
 import vn.iostar.userservice.entity.PasswordResetOtp;
 import vn.iostar.userservice.entity.User;
 import vn.iostar.userservice.jwt.service.JwtService;
@@ -356,5 +357,11 @@ public class UserController {
         String token = authorizationHeader.substring(7);
         String currentUserId = jwtService.extractUserId(token);
         return userService.declineParent(currentUserId, parentId);
+    }
+    // lay thong tin user thong qua email
+    @GetMapping("/getUserByEmail")
+    public UserResponse getUserByEmail(@RequestParam String email) {
+        Optional<User> user = userService.findByAccountEmail(email);
+        return user.map(UserResponse::new).orElse(null);
     }
 }

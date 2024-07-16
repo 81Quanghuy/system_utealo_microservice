@@ -7,6 +7,7 @@ import vn.iostar.groupservice.dto.UserIds;
 import vn.iostar.groupservice.dto.response.FriendResponse;
 import vn.iostar.groupservice.dto.response.UserProfileResponse;
 import vn.iostar.model.UserElastic;
+import vn.iostar.model.UserResponse;
 
 import java.io.IOException;
 import java.util.List;
@@ -24,4 +25,7 @@ public interface UserClientService {
 
     @GetMapping("/search")
     List<UserElastic> searchUser(@RequestParam String key) throws IOException;
+
+    @GetMapping("/getUserByEmail")
+    UserResponse getUserByEmail(@RequestParam String email) ;
 }

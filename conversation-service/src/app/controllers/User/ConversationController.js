@@ -7,12 +7,12 @@ const console = require('console');
 // const IP = require('ip');
 const crypto = require('crypto');
 const Conversation = require('./../../models/Conversation');
-const { getPagination } = require('./../../../utils/Pagination');
+const {getPagination} = require('./../../../utils/Pagination');
 const Message = require('./../../models/Message');
-const { populateConversation } = require('./../../../utils/Populate/Conversation');
+const {populateConversation} = require('./../../../utils/Populate/Conversation');
 const mongoose = require('mongoose');
-const { responseError } = require('./../../../utils/Response/error');
-const { getListData } = require('./../../../utils/Response/listData');
+const {responseError} = require('./../../../utils/Response/error');
+const {getListData} = require('./../../../utils/Response/listData');
 const getLocationByIPAddress = require('./../../../configs/location');
 const {getListConversation} = require("../../../utils/Response/listData");
 const {populateUser} = require("../../../utils/clients/userClient");
@@ -25,22 +25,23 @@ const algorithm = 'aes-256-cbc';
 // private key
 const key = process.env.DECODE_KEY; // must be of 32 characters
 const apiKey = process.env.API_KEY_VIDEOCALL;
+
 class ConversationController {
     // search conversation
     async search(req, res, next) {
         // tìm kiếm cuộc trò chuyện theo tên mà người dùng có trong cuộc trò chuyện bỏ qua các cuộc trò chuyện có 2 thành viên
-        const { limit, offset } = getPagination(req.query.page, req.query.size, req.query.offset);
+        const {limit, offset} = getPagination(req.query.page, req.query.size, req.query.offset);
         const q = req.query.key ?? '';
         try {
             const conversations = await Conversation.find({
-                name: { $regex: q, $options: 'i' },
-               'members.userId': req.user.userId ,
+                name: {$regex: q, $options: 'i'},
+                'members.userId': req.user.userId,
             })
                 .populate({
                     path: 'lastest_message',
                     select: 'senderId text createdAt updatedAt readerId iv',
                 })
-                .sort({ updatedAt: -1 })
+                .sort({updatedAt: -1})
                 .skip(offset)
                 .limit(limit);
             conversations.forEach((item) => {
@@ -52,7 +53,7 @@ class ConversationController {
                     item.lastest_message.text = decryptedData;
                 }
                 // doi ten cuoc tro chuyen neu la cuoc tro chuyen 1-1
-                if(item.members.length === 2){
+                if (item.members.length === 2) {
                     const member = item.members.find((member) => member.userId !== req.user.userId);
                     item.name = member.nickname;
                 }
@@ -82,44 +83,44 @@ class ConversationController {
             let index = -1;
             index = conversation.members.findIndex((item) => item.userId === req.user.userId);
 
-                console.log(conversation.members.length)
-                if(index !== -1){
-                    const adminOfConversation = conversation.members.filter((member) => member.role === 'admin');
-                    conversation.members.splice(index, 1);
-                    // ramdom admin
-                    if (adminOfConversation.length === 1) {
-                        const newAdmin = conversation.members.find((member) => member.userId !== req.user.userId);
-                        if (newAdmin) {
-                            newAdmin.role = 'admin';
-                        }
-
-                    }
-                    // create message system
-                    const messageSystem = await new Message({
-                        conversation: conversation._id,
-                        text: `<b>${req.user.userName}</b> đã rời khỏi cuộc hội thoại này`,
-                        isSystem: true,
-                    }).save();
-
-                    // set lastest message
-                    conversation.lastest_message = messageSystem._id;
-                    if(conversation.members.length === 0){
-                        await Conversation.deleteOne({_id: req.params.id});
-                    }else{
-                        await conversation.save();
-                        const userIds = conversation.members
-                            .filter((member) => member.userId !== req.user.userId)
-                            .map((item) => item.userId);
-
-                        // send socket
-                        SocketManager.sendToList(userIds, eventName.SEND_MESSAGE, messageSystem);
+            console.log(conversation.members.length)
+            if (index !== -1) {
+                const adminOfConversation = conversation.members.filter((member) => member.role === 'admin');
+                conversation.members.splice(index, 1);
+                // ramdom admin
+                if (adminOfConversation.length === 1) {
+                    const newAdmin = conversation.members.find((member) => member.userId !== req.user.userId);
+                    if (newAdmin) {
+                        newAdmin.role = 'admin';
                     }
 
-
-                    return res.status(200).send('Bạn đã rời khỏi cuộc trò chuyện này');
-                } else {
-                    return responseError(res, 404, 'Bạn không có cuộc hội thoại này');
                 }
+                // create message system
+                const messageSystem = await new Message({
+                    conversation: conversation._id,
+                    text: `<b>${req.user.userName}</b> đã rời khỏi cuộc hội thoại này`,
+                    isSystem: true,
+                }).save();
+
+                // set lastest message
+                conversation.lastest_message = messageSystem._id;
+                if (conversation.members.length === 0) {
+                    await Conversation.deleteOne({_id: req.params.id});
+                } else {
+                    await conversation.save();
+                    const userIds = conversation.members
+                        .filter((member) => member.userId !== req.user.userId)
+                        .map((item) => item.userId);
+
+                    // send socket
+                    SocketManager.sendToList(userIds, eventName.SEND_MESSAGE, messageSystem);
+                }
+
+
+                return res.status(200).send('Bạn đã rời khỏi cuộc trò chuyện này');
+            } else {
+                return responseError(res, 404, 'Bạn không có cuộc hội thoại này');
+            }
 
         } catch (err) {
             console.error(err);
@@ -147,7 +148,7 @@ class ConversationController {
                 if (index !== -1) {
                     conversation.user_deleted[index].deletedAt = Date.now();
                 } else {
-                    conversation.user_deleted.push({ userId: req.user._id });
+                    conversation.user_deleted.push({userId: req.user._id});
                 }
                 await conversation.save();
                 return res.status(200).send('Đã xóa cuộc hội thoại cho User');
@@ -178,18 +179,20 @@ class ConversationController {
             if (req.body.userId === req.user.userId) {
                 return responseError(res, 400, 'Không thể tạo cuộc trò chuyện với chính mình');
             }
-            const name = `${req.user.userName} ${user.userName}`;
-            const revertName = `${user.userName} ${req.user.userName}`;
+            // lấy conversation dựa vào 2 id của user và conversation có type là direct
             const checkConversation = await Conversation.findOne({
-                name: name,});
-            const checkConversation1 = await Conversation.findOne({
-                name: revertName,});
+                type: 'direct',
+                members: {
+                    $all: [
+                        {$elemMatch: {userId: req.user.userId}},
+                        {$elemMatch: {userId: req.body.userId}},
+                    ],
+                },
+
+            });
 
             if (checkConversation) {
                 return res.status(200).json(checkConversation);
-            }
-            if(checkConversation1){
-                return res.status(200).json(checkConversation1);
             }
 
             const conversation = new Conversation({
@@ -214,8 +217,7 @@ class ConversationController {
             conversation.name = `${req.user.userName} ${req.body.userName}`;
             await conversation.save();
             return res.status(200).json(conversation);
-        }
-        catch (err) {
+        } catch (err) {
             console.error(err);
             return next(
                 createError.InternalServerError(
@@ -230,6 +232,7 @@ class ConversationController {
         }
 
     }
+
     // [Post] add a new conversation
     async add(req, res, next) {
         // validate request
@@ -252,7 +255,7 @@ class ConversationController {
             avatar: Joi.string(),
         }).unknown();
 
-        const { error } = schema.validate(req.body);
+        const {error} = schema.validate(req.body);
         if (error) {
             return next(createError.BadRequest(error.details[0].message));
         }
@@ -260,12 +263,11 @@ class ConversationController {
         try {
             if (req.body.members.length < 2) {
                 return responseError(res, 400, 'Cuộc hội thoại phải có ít nhất 2 thành viên');
-            }
-            else{
+            } else {
                 let newConversation = new Conversation({
                     members: req.body.members,
-                    name:  req.body.name,
-                    avatar :  req.body.avatar,
+                    name: req.body.name,
+                    avatar: req.body.avatar,
                     type: 'group',
                 });
                 newConversation.members.push({
@@ -280,7 +282,7 @@ class ConversationController {
                     editorId: req.user.userId,
                     content: `<b>${req.user.userName}</b> đã tạo cuộc hội thoại`,
                 });
-                    // save the conversation
+                // save the conversation
                 const savedConversation = await newConversation.save();
 
                 // create message system
@@ -311,16 +313,42 @@ class ConversationController {
 
     // [Get] get conv of a user
     async getConversationOfUser(req, res, next) {
-        const { limit, offset } = getPagination(req.query.page, req.query.size, req.query.offset);
+        const {limit, offset} = getPagination(req.query.page, req.query.size, req.query.offset);
         const q = req.query.key ?? '';
 
         try {
             // Tìm tất cả các cuộc trò chuyện mà có thành viên có userId là giá trị của tham số
-            const conversations = await Conversation.find({ 'members.userId': req.user.userId }).populate({
+            const conversations = await Conversation.find({'members.userId': req.user.userId}).populate({
                 path: 'lastest_message',
                 select: 'senderId text createdAt updatedAt readerId iv',
             });
-            conversations.forEach((item) => {
+            // kiểm tra consersation có type = drect hay không
+            let checkChange = false;
+            for (const item of conversations) {
+                if ('direct' == (await item).type) {
+                    // kiểm tra thông tin của thành viên trong conversation
+                    for (const member of (await item).members) {
+                        if (member.userId !== req.user.userId) {
+                            const userMember = await populateUser(member.userId);
+                            if (member.nickname !== userMember.userName) {
+                                member.nickname = userMember.userName;
+                                checkChange = true;
+                            }
+                            member.avatar = userMember.avatar;
+                        } else {
+                            if (member.nickname !== req.user.userName) {
+                                member.nickname = req.user.userName;
+                                checkChange = true;
+                            }
+                            member.avatar = req.user.avatar;
+                        }
+                    }
+                }
+                if (checkChange) {
+                    item.name = `${item.members[0].nickname} ${item.members[1].nickname}`;
+                    checkChange = false;
+                    item.save();
+                }
                 if (item.lastest_message && item.lastest_message.iv) {
                     const iv = Buffer.from(item.lastest_message.iv, 'base64');
                     const decipher = crypto.createDecipheriv(algorithm, key, iv);
@@ -328,7 +356,7 @@ class ConversationController {
                     decryptedData += decipher.final('utf-8');
                     item.lastest_message.text = decryptedData;
                 }
-            });
+            }
             return getListConversation(res, true, 'Danh sách cuộc trò chuyện', conversations, 200);
         } catch (err) {
             console.log(err);
@@ -345,12 +373,11 @@ class ConversationController {
     }
 
 
-
     // [Get] get all conversations
     async getAll(req, res) {
-        const { limit, offset } = getPagination(req.query.page, req.query.size, req.query.offset);
+        const {limit, offset} = getPagination(req.query.page, req.query.size, req.query.offset);
 
-        Conversation.paginate({}, { offset, limit, sort: { updatedAt: -1 } })
+        Conversation.paginate({}, {offset, limit, sort: {updatedAt: -1}})
             .then((data) => {
                 getListData(res, data);
             })
@@ -362,7 +389,7 @@ class ConversationController {
     // get conversation by id
     async getConversationById(req, res) {
         try {
-            const conversation =await Conversation.findById(req.params.id);
+            const conversation = await Conversation.findById(req.params.id);
             if (conversation && conversation.members.some((member) => member.userId === req.user.userId)) {
                 // lay creatAt va UpdateAt cua lastest message
                 if (conversation.lastest_message && conversation.lastest_message.iv) {
@@ -411,7 +438,7 @@ class ConversationController {
             const query = {
                 members: {
                     $size: 2,
-                    $all: [{ $elemMatch: { user: req.user._id } }, { $elemMatch: { user: req.params.userId } }],
+                    $all: [{$elemMatch: {user: req.user._id}}, {$elemMatch: {user: req.params.userId}}],
                 },
             };
             const conversation = await Conversation.findOne(query)
@@ -513,7 +540,7 @@ class ConversationController {
                 avatar: Joi.string().min(3).max(255),
                 user_deleted: Joi.string(),
             }).unknown();
-            const { error } = schema.validate(req.body);
+            const {error} = schema.validate(req.body);
             if (error) {
                 return responseError(res, 400, error.details[0].message);
             }
@@ -596,7 +623,7 @@ class ConversationController {
     async updateMembers(req, res, next) {
         try {
             const conversation = await Conversation.findById(req.params.id);
-            if(!conversation){
+            if (!conversation) {
                 return responseError(res, 404, 'Không tìm thấy cuộc hội thoại');
             }
             if (conversation.members.some((member) => member.userId === req.user.userId)) {
@@ -664,7 +691,7 @@ class ConversationController {
             if (adminOfConversation.includes(req.user._id.toString()) || req.user.role.name === 'ADMIN') {
                 await conversation.delete();
                 // delete all message in conversation
-                await Message.deleteMany({ conversation: req.params.id });
+                await Message.deleteMany({conversation: req.params.id});
                 return conversation;
             } else {
                 return responseError(res, 403, 'Bạn không có quyền xóa cuộc hội thoại này');
@@ -693,11 +720,10 @@ class ConversationController {
             //check user is admin of conversation
             const userAdmin = conversation.members.filter((member) => member.role === 'admin' && member.userId === req.user.userId);
             if (userAdmin.length > 0) {
-                await Conversation.deleteOne({ _id: req.params.id });
-                await Message.deleteOne({ conversation: req.params.id });
+                await Conversation.deleteOne({_id: req.params.id});
+                await Message.deleteOne({conversation: req.params.id});
                 return res.status(200).json('Đã xóa cuộc hội thoại thành công');
-            }
-            else{
+            } else {
                 return responseError(res, 403, 'Bạn không có quyền xóa cuộc hội thoại này');
             }
         } catch (err) {
@@ -720,27 +746,27 @@ class ConversationController {
             if (!conversations) {
                 return responseError(res, 404, 'Không tìm thấy cuộc hội thoại');
             }
-            const { limit, offset } = getPagination(req.query.page, req.query.size, req.query.offset);
+            const {limit, offset} = getPagination(req.query.page, req.query.size, req.query.offset);
             const memberOfConversation = conversations.members.filter(
                 (member) => member.user.toString() === req.user._id.toString()
             );
             if (memberOfConversation.length > 0) {
-                const query = [{ conversation: req.params.id }];
+                const query = [{conversation: req.params.id}];
                 const mimeTypeOfMedia = ['image/png', 'image/jpeg', 'video/mp4', 'video/x-matroska'];
                 if (req.params.type === 'media') {
-                    query.push({ type: { $in: mimeTypeOfMedia } });
+                    query.push({type: {$in: mimeTypeOfMedia}});
                 } else if (req.params.type === 'other') {
-                    query.push({ type: { $nin: mimeTypeOfMedia } });
+                    query.push({type: {$nin: mimeTypeOfMedia}});
                 } else {
                     return responseError(res, 404, 'Không tìm thấy');
                 }
 
                 File.paginate(
-                    { $and: query },
+                    {$and: query},
                     {
                         limit,
                         offset,
-                        sort: { createdAt: -1 },
+                        sort: {createdAt: -1},
                         populate: {
                             path: 'creator',
                             select: '_id fullname profilePicture isOnline',
@@ -878,14 +904,14 @@ class ConversationController {
 
     async getFiles(req, res, next) {
         try {
-            const listMessage = await Message.find({ conversation: req.params.id })
+            const listMessage = await Message.find({conversation: req.params.id})
             if (!listMessage) {
                 return responseError(res, 404, 'Không tìm thấy cuộc hội thoại');
             }
             //Chi lay mediaId cua message co trong listMessage
             const listMediaId = listMessage.flatMap(message => message.mediaId);
             let listMedia = await populateListMedia(
-                {mediaIds: listMediaId, type: req.body.type ,page: req.query.page || 0, size: req.query.size || 20});
+                {mediaIds: listMediaId, type: req.body.type, page: req.query.page || 0, size: req.query.size || 20});
             return res.status(200).json(listMedia.data);
         } catch (err) {
             console.log(err);
@@ -917,8 +943,8 @@ class ConversationController {
             }
             member.role = req.body.role;
             const myMember = conversation.members.find((member) => member.userId === req.user.userId);
-            myMember.role ='member';
-            const messageSystem =await new Message({
+            myMember.role = 'member';
+            const messageSystem = await new Message({
                 conversation: conversation._id,
                 text: `<b>${req.user.userName}</b> đã thay đổi vai trò của <b>${member.nickname}</b> thành ${req.body.role}`,
                 isSystem: true,
@@ -971,11 +997,10 @@ class ConversationController {
                 .filter((member) => member.userId !== req.user.userId)
                 .map((item) => item.userId);
             // send socket
-            console.log("messageSystem",messageSystem);
+            console.log("messageSystem", messageSystem);
             SocketManager.sendToList(userIds, eventName.SEND_MESSAGE, messageSystem);
             return res.status(200).json(conversation);
-        }
-        catch (err) {
+        } catch (err) {
             console.log(err);
             return next(
                 createError.InternalServerError(

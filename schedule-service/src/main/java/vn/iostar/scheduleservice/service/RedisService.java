@@ -18,4 +18,7 @@ public interface RedisService {
     void delete(String key);
     void delete(String key, String field);
     void delete(String key, List<String> fields);
+
+    // get all schedule pageable
+    List<Object> getAllSchedulePageable(String key, int page, int size);
 }

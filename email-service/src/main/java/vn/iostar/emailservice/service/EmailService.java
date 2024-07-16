@@ -6,6 +6,7 @@ import vn.iostar.emailservice.dto.request.EmailVerificationRequest;
 import vn.iostar.emailservice.dto.request.PasswordRequest;
 import vn.iostar.emailservice.dto.response.GenericResponse;
 import vn.iostar.emailservice.entity.Email;
+import vn.iostar.model.EmailVerify;
 import vn.iostar.model.PasswordReset;
 import vn.iostar.model.VerifyParent;
 
@@ -17,4 +18,6 @@ public interface EmailService {
     void sendOtpForgotPassword(PasswordReset email) throws MessagingException, UnsupportedEncodingException;
     ResponseEntity<GenericResponse> verifyOtp(EmailVerificationRequest emailVerificationRequest);
     void sendVerify(VerifyParent email) throws MessagingException, UnsupportedEncodingException;
+
+    void sendVerifyParent(EmailVerify emailVerify) throws MessagingException, UnsupportedEncodingException;
 }

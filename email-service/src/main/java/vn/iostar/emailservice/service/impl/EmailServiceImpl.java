@@ -20,6 +20,7 @@ import vn.iostar.emailservice.entity.Email;
 import vn.iostar.emailservice.repository.EmailRepository;
 import vn.iostar.emailservice.service.EmailService;
 import vn.iostar.emailservice.service.client.UserClientService;
+import vn.iostar.model.EmailVerify;
 import vn.iostar.model.PasswordReset;
 import vn.iostar.model.VerifyParent;
 
@@ -134,6 +135,24 @@ public class EmailServiceImpl implements EmailService {
         helper.setSubject(subject);
         helper.setText(content, true);
         helper.setTo(email.getEmailStudent());
+        helper.setFrom(Objects.requireNonNull(env.getProperty("spring.mail.username")), ADMIN_EMAIL);
+        mailSender.send(message);
+    }
+
+    @Override
+    public void sendVerifyParent(EmailVerify emailVerify) throws MessagingException, UnsupportedEncodingException {
+        log.info("Sending OTP for verify parent to email: {}", emailVerify.getEmail());
+        String content_Email = emailVerify.getContent();
+        String subject = "Xác thực thông tin phụ huynh";
+        Context context = new Context();
+        context.setVariable("content", content_Email);
+        String content = templateEngine.process("verify-parent-admin", context);
+
+        MimeMessage message = mailSender.createMimeMessage();
+        MimeMessageHelper helper = new MimeMessageHelper(message, true);
+        helper.setSubject(subject);
+        helper.setText(content, true);
+        helper.setTo(emailVerify.getEmail());
         helper.setFrom(Objects.requireNonNull(env.getProperty("spring.mail.username")), ADMIN_EMAIL);
         mailSender.send(message);
     }

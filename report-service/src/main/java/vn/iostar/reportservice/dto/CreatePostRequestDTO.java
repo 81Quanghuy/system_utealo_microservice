@@ -19,4 +19,6 @@ public class CreatePostRequestDTO {
     private PrivacyLevel privacyLevel;
     private String userId;
     private String postGroupId;
+    private String shareId;
+    private String postId;
 }

@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.*;
 import vn.iostar.userservice.dto.*;
 import vn.iostar.userservice.dto.request.AccountManager;
 import vn.iostar.userservice.dto.request.UserManagerRequest;
+import vn.iostar.userservice.dto.response.GenericResponse;
 import vn.iostar.userservice.dto.response.UserResponse;
 import vn.iostar.userservice.entity.User;
 import vn.iostar.userservice.jwt.service.JwtService;
@@ -146,5 +147,31 @@ public class UserManagerController {
 	public ResponseEntity<Object> searchUsers(@RequestParam(name = "fields") String fields,
 			@RequestParam(name = "q") String query) {
 		return userService.searchUser(fields, query);
+	}
+	// get all parent chua xac thuc
+	@GetMapping("/getAllParentNotVerify")
+	public ResponseEntity<GenericResponse> getAllParentNotVerify(@RequestHeader("Authorization") String authorizationHeader,
+																 @RequestParam(value = "page",defaultValue = "0") int page,
+																 @RequestParam(value = "size",defaultValue = "10") int size ){
+		String token = authorizationHeader.substring(7);
+		String userId = jwtService.extractUserId(token);
+		return userService.getAllParentNotVerify(userId,page,size);
+	}
+	// admin accept parent
+	@PutMapping("/adminAcceptParent")
+	public ResponseEntity<GenericResponse> adminAcceptParent(@RequestHeader("Authorization") String authorizationHeader,
+															 @RequestParam String relationId) {
+		String token = authorizationHeader.substring(7);
+		String currentUserId = jwtService.extractUserId(token);
+		return userService.adminAcceptParent(currentUserId, relationId);
+	}
+
+	// admin decline parent
+	@PutMapping("/adminDeclineParent")
+	public ResponseEntity<GenericResponse> adminDeclineParent(@RequestHeader("Authorization") String authorizationHeader,
+															  @RequestParam String relationId) {
+		String token = authorizationHeader.substring(7);
+		String currentUserId = jwtService.extractUserId(token);
+		return userService.adminDeclineParent(currentUserId, relationId);
 	}
 }

@@ -1,5 +1,7 @@
 package vn.iostar.userservice.repository.jpa;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
@@ -26,4 +28,7 @@ public interface RelationshipRepository extends JpaRepository<Relationship,Strin
     void deleteAllByParentIn(@Param("users") List<User> users);
 
     List<Relationship> findByChildUserIdAndIsAcceptedFalse(String userId);
+
+    // get all relationship
+    Page<Relationship> findAllByIsAcceptedFalse(Pageable pageable);
 }

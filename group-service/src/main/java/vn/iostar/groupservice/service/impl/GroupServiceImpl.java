@@ -1,22 +1,21 @@
 package vn.iostar.groupservice.service.impl;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.transaction.Transactional;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
-
 import org.springframework.web.multipart.MultipartFile;
 import vn.iostar.constant.AdminInGroup;
 import vn.iostar.constant.GroupMemberRoleType;
 import vn.iostar.constant.RoleName;
+import vn.iostar.constant.RoleUserGroup;
 import vn.iostar.groupservice.constant.AppConstant;
 import vn.iostar.groupservice.dto.*;
 import vn.iostar.groupservice.dto.request.GroupCreateRequest;
@@ -43,17 +42,18 @@ import vn.iostar.groupservice.service.synchronization.GroupSynchronizationServic
 import vn.iostar.model.GroupResponse;
 import vn.iostar.model.PostElastic;
 import vn.iostar.model.UserElastic;
+import vn.iostar.model.UserResponse;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.Month;
 import java.time.ZoneId;
-import java.time.temporal.ChronoUnit;
 import java.util.*;
 
 @Service
 @Slf4j
-public class GroupServiceImpl extends RedisServiceImpl implements GroupService {
+@RequiredArgsConstructor
+public class GroupServiceImpl implements GroupService {
 
     private final GroupRepository groupRepository;
     private final GroupMemberRepository groupMemberRepository;
@@ -64,51 +64,15 @@ public class GroupServiceImpl extends RedisServiceImpl implements GroupService {
     private final UserClientService userClientService;
     private final FriendClientService friendClientService;
     private final PostClientService postClientService;
-    ObjectMapper objectMapper = new ObjectMapper();
     private final GroupSynchronizationService groupSynchronizationService;
     private final GroupElasticSearchRepository groupElasticSearchRepository;
 
-    public GroupServiceImpl(RedisTemplate<String, Object> redisTemplate,
-                            GroupRepository groupRepository,
-                            GroupMemberRepository groupMemberRepository,
-                            MapperService mapperService,
-                            GroupRequestRepository groupRequestRepository,
-                            JwtService jwtService,
-                            FileClientService fileClientService,
-                            UserClientService userClientService,
-                            FriendClientService friendClientService,
-                            PostClientService postClientService,
-                            GroupSynchronizationService groupSynchronizationService,
-                            GroupElasticSearchRepository groupElasticSearchRepository) {
-        super(redisTemplate);
-        this.groupRepository = groupRepository;
-        this.groupMemberRepository = groupMemberRepository;
-        this.mapperService = mapperService;
-        this.groupRequestRepository = groupRequestRepository;
-        this.jwtService = jwtService;
-        this.fileClientService = fileClientService;
-        this.userClientService = userClientService;
-        this.friendClientService = friendClientService;
-        this.postClientService = postClientService;
-        this.groupSynchronizationService = groupSynchronizationService;
-        this.groupElasticSearchRepository = groupElasticSearchRepository;
-    }
-
     @Override
-    public ResponseEntity<GenericResponse> getPostGroupByUserId(String authorizationHeader) throws JsonProcessingException {
+    public ResponseEntity<GenericResponse> getPostGroupByUserId(String userId) throws JsonProcessingException {
         log.info("GroupServiceImpl, getPostGroupByUserId");
-        if (this.hashExists(AppConstant.POST_GROUP_BY_ID, authorizationHeader)) {
-            return ResponseEntity.ok(GenericResponse.builder()
-                    .success(true)
-                    .message("Lấy danh sách nhóm thành công! Redis cache")
-                    .result(this.hashGet(AppConstant.POST_GROUP_BY_ID, authorizationHeader))
-                    .statusCode(HttpStatus.OK.value()).build());
-        }
-        String token = authorizationHeader.substring(7);
-        String userId = jwtService.extractUserId(token);
         List<GroupMember> groupMembers = groupMemberRepository.findByUserIdAndIsLocked(userId, false);
 
-        return getGenericResponseResponseEntity(userId, AppConstant.POST_GROUP_BY_ID, groupMembers);
+        return getGenericResponseResponseEntity(groupMembers);
     }
 
     @Override
@@ -266,7 +230,7 @@ public class GroupServiceImpl extends RedisServiceImpl implements GroupService {
             }
             return "Member";
         }
-        Optional<GroupRequest> groupRequest = groupRequestRepository.findByGroupIdAndInvitedUserAndIsAccept(postGroupId, userId, true);
+        Optional<GroupRequest> groupRequest = groupRequestRepository.findByGroupIdAndInvitedUser(postGroupId, userId);
         if (groupRequest.isPresent()) {
             if (Boolean.TRUE.equals(groupRequest.get().getIsAccept())) {
                 return "Waiting Accept";
@@ -390,7 +354,7 @@ public class GroupServiceImpl extends RedisServiceImpl implements GroupService {
 //        }
         List<GroupMember> groupMembers = groupMemberRepository.findByUserIdAndIsLockedAndRole(currentUserId, false, GroupMemberRoleType.Member);
 
-        return getGenericResponseResponseEntity(currentUserId, AppConstant.POST_GROUP_JOIN_BY_USER_ID, groupMembers);
+        return getGenericResponseResponseEntity(groupMembers);
     }
 
     @Override
@@ -408,7 +372,7 @@ public class GroupServiceImpl extends RedisServiceImpl implements GroupService {
 //                    .statusCode(HttpStatus.OK.value()).build());
 //        }
         List<GroupMember> groupMembers = groupMemberRepository.findByUserIdAndIsLockedAndRoleIn(currentUserId, false, List.of(GroupMemberRoleType.Admin, GroupMemberRoleType.Deputy));
-        return getGenericResponseResponseEntity(currentUserId, AppConstant.REDIS_KEY_GROUP_OWNER, groupMembers);
+        return getGenericResponseResponseEntity(groupMembers);
     }
 
     @Override
@@ -420,12 +384,11 @@ public class GroupServiceImpl extends RedisServiceImpl implements GroupService {
     }
 
     @NotNull
-    private ResponseEntity<GenericResponse> getGenericResponseResponseEntity(String userId, String redis, List<GroupMember> groupMembers) throws JsonProcessingException {
+    private ResponseEntity<GenericResponse> getGenericResponseResponseEntity( List<GroupMember> groupMembers) {
         List<GroupPostResponse> groupPostResponses = new ArrayList<>();
         for (GroupMember member : groupMembers) {
             groupPostResponses.add(mapperService.mapToGroupPostResponse(member));
         }
-        this.hashSet(redis, userId, objectMapper.writeValueAsString(groupPostResponses));
         return ResponseEntity.ok(GenericResponse.builder().success(true).message("Lấy danh sách nhóm thành công!").result(groupPostResponses).statusCode(HttpStatus.OK.value()).build());
     }
 
@@ -465,14 +428,13 @@ public class GroupServiceImpl extends RedisServiceImpl implements GroupService {
         Pageable pageable = PageRequest.of(page - 1, itemsPerPage);
         Page<SearchPostGroup> postGroups = groupRepository.findAllPostGroups(pageable);
 
-        Page<SearchPostGroup> simplifiedGroupPosts = postGroups.map(group -> {
+        return postGroups.map(group -> {
             Optional<Group> postGroupOptional = findById(group.getId());
             if (postGroupOptional.isPresent()) {
                 group.setCountMember(groupMemberRepository.countByGroupId(group.getId()));
             }
             return group;
         });
-        return simplifiedGroupPosts;
     }
 
     @Override
@@ -577,12 +539,11 @@ public class GroupServiceImpl extends RedisServiceImpl implements GroupService {
         LocalDateTime startDate = now.minusMonths(1);
 
         // Thời gian kết thúc là thời điểm hiện tại
-        LocalDateTime endDate = now;
 
         // Chuyển LocalDateTime sang Date (với ZoneId cụ thể, ở đây là
         // ZoneId.systemDefault())
         Date startDateAsDate = Date.from(startDate.atZone(ZoneId.systemDefault()).toInstant());
-        Date endDateAsDate = Date.from(endDate.atZone(ZoneId.systemDefault()).toInstant());
+        Date endDateAsDate = Date.from(now.atZone(ZoneId.systemDefault()).toInstant());
 
         // Truy vấn số lượng user trong khoảng thời gian này
         return groupRepository.countByCreatedAtBetween(startDateAsDate, endDateAsDate);
@@ -593,9 +554,8 @@ public class GroupServiceImpl extends RedisServiceImpl implements GroupService {
     public long countGroupsInThreeMonthsFromNow() {
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime startDate = now.minusMonths(3);
-        LocalDateTime endDate = now;
         Date startDateAsDate = Date.from(startDate.atZone(ZoneId.systemDefault()).toInstant());
-        Date endDateAsDate = Date.from(endDate.atZone(ZoneId.systemDefault()).toInstant());
+        Date endDateAsDate = Date.from(now.atZone(ZoneId.systemDefault()).toInstant());
         return groupRepository.countByCreatedAtBetween(startDateAsDate, endDateAsDate);
     }
 
@@ -604,9 +564,8 @@ public class GroupServiceImpl extends RedisServiceImpl implements GroupService {
     public long countGroupsInSixMonthsFromNow() {
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime startDate = now.minusMonths(6);
-        LocalDateTime endDate = now;
         Date startDateAsDate = Date.from(startDate.atZone(ZoneId.systemDefault()).toInstant());
-        Date endDateAsDate = Date.from(endDate.atZone(ZoneId.systemDefault()).toInstant());
+        Date endDateAsDate = Date.from(now.atZone(ZoneId.systemDefault()).toInstant());
         return groupRepository.countByCreatedAtBetween(startDateAsDate, endDateAsDate);
     }
 
@@ -615,9 +574,8 @@ public class GroupServiceImpl extends RedisServiceImpl implements GroupService {
     public long countGroupsInNineMonthsFromNow() {
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime startDate = now.minusMonths(9);
-        LocalDateTime endDate = now;
         Date startDateAsDate = Date.from(startDate.atZone(ZoneId.systemDefault()).toInstant());
-        Date endDateAsDate = Date.from(endDate.atZone(ZoneId.systemDefault()).toInstant());
+        Date endDateAsDate = Date.from(now.atZone(ZoneId.systemDefault()).toInstant());
         return groupRepository.countByCreatedAtBetween(startDateAsDate, endDateAsDate);
     }
 
@@ -626,9 +584,8 @@ public class GroupServiceImpl extends RedisServiceImpl implements GroupService {
     public long countGroupsInOneYearFromNow() {
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime startDate = now.minusYears(1);
-        LocalDateTime endDate = now;
         Date startDateAsDate = Date.from(startDate.atZone(ZoneId.systemDefault()).toInstant());
-        Date endDateAsDate = Date.from(endDate.atZone(ZoneId.systemDefault()).toInstant());
+        Date endDateAsDate = Date.from(now.atZone(ZoneId.systemDefault()).toInstant());
         return groupRepository.countByCreatedAtBetween(startDateAsDate, endDateAsDate);
     }
 
@@ -636,24 +593,21 @@ public class GroupServiceImpl extends RedisServiceImpl implements GroupService {
     public List<SearchPostGroup> getGroupsToday() {
         Date startDate = getStartOfDay(new Date());
         Date endDate = getEndOfDay(new Date());
-        List<SearchPostGroup> groups = groupRepository.findPostGroupByCreateDateBetween(startDate, endDate);
-        return groups;
+        return groupRepository.findPostGroupByCreateDateBetween(startDate, endDate);
     }
 
     @Override
     public List<SearchPostGroup> getGroupsIn7Days() {
         Date startDate = getStartOfDay(getNDaysAgo(6));
         Date endDate = getEndOfDay(new Date());
-        List<SearchPostGroup> groups = groupRepository.findPostGroupByCreateDateBetween(startDate, endDate);
-        return groups;
+        return groupRepository.findPostGroupByCreateDateBetween(startDate, endDate);
     }
 
     @Override
     public List<SearchPostGroup> getGroupsInMonth() {
         Date startDate = getStartOfDay(getNDaysAgo(30));
         Date endDate = getEndOfDay(new Date());
-        List<SearchPostGroup> groups = groupRepository.findPostGroupByCreateDateBetween(startDate, endDate);
-        return groups;
+        return groupRepository.findPostGroupByCreateDateBetween(startDate, endDate);
     }
 
     public Date getNDaysAgo(int days) {
@@ -762,15 +716,21 @@ public class GroupServiceImpl extends RedisServiceImpl implements GroupService {
                 group.setIsActive(true);
                 group.setCreatedAt(new Date());
                 group.setUpdatedAt(new Date());
-                group.setAuthorId(groupResponse.getUserId());
+                UserResponse userResponse = userClientService.getUserByEmail(groupResponse.getEmailUser());
+                System.out.println("userResponse: " + userResponse);
+                if(userResponse == null){
+                    userResponse = new UserResponse();
+                    userResponse.setUserId("");
+                }
+                group.setAuthorId(userResponse.getUserId());
                 groupRepository.save(group);
                 groupElasticSearchRepository.save(GroupMapper.toGroupDocument(group));
                 GroupMember groupMember = GroupMember.builder()
                         .id(UUID.randomUUID().toString())
-                        .userId(groupResponse.getUserId())
+                        .userId(userResponse.getUserId())
                         .group(group)
                         .isLocked(false)
-                        .memberRequestId(groupResponse.getUserId())
+                        .memberRequestId(userResponse.getUserId())
                         .createdAt(new Date())
                         .updatedAt(new Date())
                         .role(groupResponse.getRole() != null ? groupResponse.getRole() : GroupMemberRoleType.Admin)

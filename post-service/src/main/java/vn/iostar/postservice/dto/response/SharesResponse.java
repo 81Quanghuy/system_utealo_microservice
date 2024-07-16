@@ -61,11 +61,12 @@ public class SharesResponse {
         this.createAt = share.getCreateAt();
         this.updateAt = share.getUpdateAt();
 
-        if (share.getPost().getPrivacyLevel().equals(PrivacyLevel.PRIVATE) &&
-                !share.getUserId().equals(share.getPost().getUserId())) {
+        if (share.getPost().getPrivacyLevel().equals(PrivacyLevel.PRIVATE) || share.getPost().getPrivacyLevel().equals(PrivacyLevel.FRIENDS)) {
             this.postsResponse = new PostsResponse(share.getPost(), "Bài viết đã bị ẩn!!!", ownerPost, group);
         }
-        this.postsResponse = new PostsResponse(share.getPost(), ownerPost, group);
+        else{
+            this.postsResponse = new PostsResponse(share.getPost(), ownerPost, group);
+        }
         this.userId = share.getUserId();
         this.avatarUser = user.getAvatar();
         this.roleName = user.getRoleName();

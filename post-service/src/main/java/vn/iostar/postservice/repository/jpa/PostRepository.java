@@ -87,6 +87,9 @@ public interface PostRepository extends MongoRepository<Post, String> {
     // Lấy danh sách photo của 1 nhóm
     @Query(value = "{'groupId': ?0, 'photos': {$nin: [null, '']}}")
     Page<String> findPhotosOfPostByGroupId(String groupId, Pageable pageable);
+    // lay danh sach video cua 1 nhom
+    @Query(value = "{'groupId': ?0, 'video': {$nin: [null, '']}}")
+    Page<String> findVideosOfPostByGroupId(String groupId, Pageable pageable);
     // Lấy những bài viết trong nhóm do Admin đăng theo list userId và groupId
     @Query(value = "{'userId': {$in: ?0}, 'groupId': ?1}")
     List<Post> findPostsByAdminRoleInGroup(List<String> userIds, String groupId, Pageable pageable);

@@ -70,5 +70,7 @@ public interface ShareService {
     // Lấy những bài share của group theo id
     ResponseEntity<GenericResponse> getGroupSharePosts(String currentUserId, String postGroupId, Integer page,
                                                        Integer size) throws JsonProcessingException;
+    // Đếm số lượng bài share của user
+    Long countSharesByUserId(String userId, Date start, Date end);
 
 }

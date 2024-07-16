@@ -1,6 +1,7 @@
 package vn.iostar.scheduleservice.service.impl;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellType;
 import org.apache.poi.ss.usermodel.DataFormatter;
@@ -16,6 +17,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import vn.iostar.model.RelationshipResponse;
+import vn.iostar.scheduleservice.constant.AppConstant;
 import vn.iostar.scheduleservice.constant.RoleName;
 import vn.iostar.scheduleservice.dto.GenericResponse;
 import vn.iostar.scheduleservice.dto.PaginationInfo;
@@ -37,10 +39,14 @@ import vn.iostar.scheduleservice.service.client.UserClientService;
 import java.io.IOException;
 import java.io.InputStream;
 import java.text.ParseException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
+@Slf4j
 public class ScheduleServiceImpl extends RedisServiceImpl implements ScheduleService {
 
     private final ScheduleRepository scheduleRepository;
@@ -70,6 +76,14 @@ public class ScheduleServiceImpl extends RedisServiceImpl implements ScheduleSer
 
     @Override
     public ResponseEntity<GenericResponse> getSchedule(String userId, Pageable pageable) {
+        log.info("ScheduleServiceImpl, getSchedule");
+        if (this.hashExists(AppConstant.GET_SCHEDULE, userId)) {
+            return ResponseEntity.ok(GenericResponse.builder()
+                    .success(true)
+                    .message("Lấy danh sách nhóm thành công! Redis cache")
+                    .result(this.hashGet(AppConstant.GET_SCHEDULE, userId))
+                    .statusCode(HttpStatus.OK.value()).build());
+        }
         List<Schedule> schedules = scheduleRepository.findByUserId(userId);
         return ResponseEntity.ok(GenericResponse.builder().success(true).message("Retrieved schedules successfully")
                 .result(schedules).statusCode(HttpStatus.OK.value()).build());
@@ -77,7 +91,6 @@ public class ScheduleServiceImpl extends RedisServiceImpl implements ScheduleSer
 
     @Override
     public ResponseEntity<Object> createSchedule(String userId, ScheduleRequest requestDTO) {
-
         String scheduleId = UUID.randomUUID().toString();
         Schedule schedule = new Schedule();
         schedule.setId(scheduleId);
@@ -122,7 +135,7 @@ public class ScheduleServiceImpl extends RedisServiceImpl implements ScheduleSer
 
     public ResponseEntity<Object> updateSchedule(String scheduleId, ScheduleRequest requestDTO, String currentUserId) {
         Optional<Schedule> optionalSchedule = scheduleRepository.findById(scheduleId);
-        if (!optionalSchedule.isPresent()) {
+        if (optionalSchedule.isEmpty()) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .body(GenericResponse.builder()
                             .success(false)
@@ -335,7 +348,7 @@ public class ScheduleServiceImpl extends RedisServiceImpl implements ScheduleSer
     @Override
     public ResponseEntity<Object> addScheduleDetailtoSchdule(String currentUserId, AddScheduleDetailRequest requestDTO) {
         Optional<ScheduleDetail> optionalScheduleDetail = scheduleDetailRepository.findById(requestDTO.getScheduleDetailId());
-        if (!optionalScheduleDetail.isPresent()) {
+        if (optionalScheduleDetail.isEmpty()) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .body(GenericResponse.builder()
                             .success(false)
@@ -389,6 +402,14 @@ public class ScheduleServiceImpl extends RedisServiceImpl implements ScheduleSer
 
     @Override
     public ResponseEntity<GenericResponse> getScheduleofOtherUser(String currentUserId, String userId, Pageable pageable) {
+        log.info("ScheduleServiceImpl, getScheduleofOtherUser");
+        if (this.hashExists(AppConstant.GET_SCHEDULE_OTHER_USER, userId)) {
+            return ResponseEntity.ok(GenericResponse.builder()
+                    .success(true)
+                    .message("Lấy danh sách nhóm thành công! Redis cache")
+                    .result(this.hashGet(AppConstant.GET_SCHEDULE_OTHER_USER, userId))
+                    .statusCode(HttpStatus.OK.value()).build());
+        }
         UserProfileResponse currentUser = userClientService.getUser(currentUserId);
         if (currentUser.getRoleName().equals(RoleName.Admin)) {
             List<Schedule> schedules = scheduleRepository.findByUserId(userId);
@@ -584,6 +605,14 @@ public class ScheduleServiceImpl extends RedisServiceImpl implements ScheduleSer
 
     @Override
     public ResponseEntity<GenericResponseAdmin> getAllScheduleDetails(int page, int itemsPerPage) {
+        log.info("ScheduleServiceImpl, getAllScheduleDetails");
+        if (this.hashExists(AppConstant.GET_SCHEDULE_ALL, "all")) {
+            return ResponseEntity.ok(GenericResponseAdmin.builder()
+                    .success(true)
+                    .message("Lấy danh sách nhóm thành công! Redis cache")
+                    .result(this.hashGet(AppConstant.GET_SCHEDULE_ALL, "all"))
+                    .statusCode(HttpStatus.OK.value()).build());
+        }
         Pageable pageable = PageRequest.of(page - 1, itemsPerPage);
         Page<ScheduleDetail> scheduleDetailsPage = scheduleDetailRepository.findAll(pageable);
         long totalScheduleDetails = scheduleDetailRepository.count();

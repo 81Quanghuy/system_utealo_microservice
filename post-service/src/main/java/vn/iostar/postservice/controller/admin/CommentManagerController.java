@@ -54,7 +54,7 @@ public class CommentManagerController {
 
     // Đếm số lượng comment từng tháng trong năm
     @GetMapping("/countCommentsByMonthInYear")
-    public ResponseEntity<Map<String, Long>> countComemntsByMonthInYear() {
+    public ResponseEntity<Map<String, Long>> countCommentsByMonthInYear() {
         try {
             Map<String, Long> commentCountsByMonth = commentService.countCommentsByMonthInYear();
             return ResponseEntity.ok(commentCountsByMonth);

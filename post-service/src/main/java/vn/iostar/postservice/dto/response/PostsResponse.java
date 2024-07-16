@@ -52,6 +52,7 @@ public class PostsResponse {
 			this.postGroupName = group.getGroupName();
 			this.avatarGroup = group.getGroupAvatar();
 			this.groupType = group.getGroupType();
+
 		}
 		this.privacyLevel = post.getPrivacyLevel();
 		if(post.getComments() != null) {
@@ -70,9 +71,15 @@ public class PostsResponse {
 		this.postTime = post.getPostTime();
 		this.updateAt = post.getUpdatedAt();
 		this.content =content;
-		this.photos = post.getPhotos();
-		this.files = post.getFiles();
-		this.video = post.getVideo();
+		if(content== null){
+			this.photos = post.getPhotos();
+			this.files = post.getFiles();
+			this.video = post.getVideo();
+		} else{
+			this.photos = null;
+			this.files = null;
+			this.video = null;
+		}
 		this.location = post.getLocation();
 		this.userId = post.getUserId();
 		if (user != null) {
@@ -85,6 +92,9 @@ public class PostsResponse {
 			this.postGroupName = group.getGroupName();
 			this.avatarGroup = group.getGroupAvatar();
 			this.groupType = group.getGroupType();
+			if ("private".equalsIgnoreCase(group.getGroupType())) {
+				this.content = "Bài viết bị ẩn vì lấy từ nhóm riêng tư";
+			}
 		}
 		this.privacyLevel = post.getPrivacyLevel();
 		if(post.getComments() != null) {

@@ -9,6 +9,7 @@ import vn.iostar.postservice.dto.request.*;
 import vn.iostar.postservice.dto.response.CommentsResponse;
 import vn.iostar.postservice.entity.Comment;
 
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -47,4 +48,6 @@ public interface CommentService {
     Streamable<Object> findAllCommentsByUserId(int page, int itemsPerPage, String userId);
     // Đếm số lượng comment của 1 user từng tháng trong năm
     Map<String, Long> countCommentsByUserMonthInYear(String userId);
+    // Đếm số lượng comment của user
+    Long countCommentsByUserId(String userId, Date start, Date end);
 }

@@ -83,9 +83,11 @@ public interface PostService{
     // Lấy danh sách file của 1 nhóm
     List<FilesOfGroupDTO> findLatestFilesByGroupId(String groupId);
     // Lấy danh sách photo của 1 nhóm
-    Page<PhotosOfGroupDTO> findLatestPhotosByGroupId(String groupId, int page, int size);
+    Page<Object> findLatestPhotosByGroupId(String groupId, int page, int size);
     // Lấy những bài viết trong nhóm do Admin đăng
     List<PostsResponse> findPostsByAdminRoleInGroup(String groupId, Pageable pageable);
 
     List<PostElastic>searchPost(String search, Pageable pageable) throws IOException;
+    // Đếm số lượng bài post của một người dùng cụ thể
+    Long countPostsByUserId(String userId, Date start, Date end);
 }

@@ -76,6 +76,8 @@ class NotificationController {
                 notification.type = 'conversation';
             }
             await notification.save();
+            console.log('notification', notification);
+            console.log('req.body.userId', req.body.userId);
             SocketManager.send(req.body.userId, eventName.NOTIFICATION, notification);
             return  getListConversation(res, true,
                 'Add notification successfully',

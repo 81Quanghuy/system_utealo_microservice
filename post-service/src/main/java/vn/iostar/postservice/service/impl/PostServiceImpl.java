@@ -17,6 +17,7 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.PathVariable;
 import vn.iostar.groupservice.dto.FilesOfGroupDTO;
 import vn.iostar.groupservice.dto.PhotosOfGroupDTO;
+import vn.iostar.groupservice.dto.VideosOfGroupDTO;
 import vn.iostar.model.PostElastic;
 import vn.iostar.postservice.constant.PrivacyLevel;
 import vn.iostar.postservice.constant.RoleName;
@@ -302,7 +303,18 @@ public class PostServiceImpl implements PostService {
         if (post.get().getGroupId() != null) {
             groupProfileResponse = groupClientService.getGroup(post.get().getGroupId());
         }
-        PostsResponse postsResponse = new PostsResponse(post.get(), userOfPostResponse, groupProfileResponse);
+        List<String> friendIds = friendClientService.getFriendIdsByUserId(post.get().getUserId());
+        PostsResponse postsResponse = null;
+        if (!post.get().getUserId().equals(currentId)) {
+            if (post.get().getPrivacyLevel().equals(PrivacyLevel.PRIVATE) ||
+                    (post.get().getPrivacyLevel().equals(PrivacyLevel.FRIENDS) && !friendIds.contains(currentId))) {
+                postsResponse = new PostsResponse(post.get(), "Bài viết đã bị ẩn", userOfPostResponse, groupProfileResponse);
+            } else {
+                postsResponse = new PostsResponse(post.get(), userOfPostResponse, groupProfileResponse);
+            }
+        } else {
+            postsResponse = new PostsResponse(post.get(), userOfPostResponse, groupProfileResponse);
+        }
 
         return ResponseEntity.ok(GenericResponse.builder().success(true).message("Retrieving user profile successfully")
                 .result(postsResponse).statusCode(HttpStatus.OK.value()).build());
@@ -854,10 +866,11 @@ public class PostServiceImpl implements PostService {
     }
 
     @Override
-    public Page<PhotosOfGroupDTO> findLatestPhotosByGroupId(String groupId, int page, int size) {
+    public Page<Object> findLatestPhotosByGroupId(String groupId, int page, int size) {
         PageRequest pageable = PageRequest.of(page, size);
         Page<String> photos = postRepository.findPhotosOfPostByGroupId(groupId, pageable);
-        List<PhotosOfGroupDTO> photosDTOList = new ArrayList<>();
+        Page<String> videos = postRepository.findVideosOfPostByGroupId(groupId, pageable);
+        List<Object> photosDTOList = new ArrayList<>();
         for (String photo : photos.getContent()) {
             try {
                 // Parse JSON string to JSONObject
@@ -880,6 +893,33 @@ public class PostServiceImpl implements PostService {
                         photoDTO.setUserId(jsonObject.getString("group_id"));
                     }
                     photosDTOList.add(photoDTO);
+                }
+            } catch (JSONException e) {
+                throw new RuntimeException(e);
+            }
+        }
+        for (String video : videos.getContent()) {
+            try {
+                // Parse JSON string to JSONObject
+                JSONObject jsonObject = new JSONObject(video);
+                // Check if the JSON object has "photos" field
+                if (jsonObject.has("video")) {
+                    VideosOfGroupDTO videoDTO = new VideosOfGroupDTO();
+                    videoDTO.setVideo(jsonObject.getString("video"));
+                    if (jsonObject.has("_id")) {
+                        videoDTO.setPostId(jsonObject.getString("_id"));
+                    }
+                    if (jsonObject.has("user_id")) {
+                        UserProfileResponse userProfileResponse = userClientService.getUser(jsonObject.getString("user_id"));
+                        videoDTO.setUserName(userProfileResponse.getUserName());
+                        videoDTO.setUserId(jsonObject.getString("user_id"));
+                    }
+                    if (jsonObject.has("group_id")) {
+                        GroupProfileResponse groupProfileResponse = groupClientService.getGroup(jsonObject.getString("group_id"));
+                        videoDTO.setPostGroupName(groupProfileResponse.getGroupName());
+                        videoDTO.setUserId(jsonObject.getString("group_id"));
+                    }
+                    photosDTOList.add(videoDTO);
                 }
             } catch (JSONException e) {
                 throw new RuntimeException(e);
@@ -915,5 +955,11 @@ public class PostServiceImpl implements PostService {
     @Override
     public List<PostElastic> searchPost(String search, Pageable pageable) throws IOException {
         return postSynchronizationService.autoSuggestUserSearch(search);
+    }
+
+    // Đếm số lượng bài post của user
+    @Override
+    public Long countPostsByUserId(String userId, Date start, Date end) {
+        return postRepository.countByUserIdAndPostTimeBetween(userId, start, end);
     }
 }

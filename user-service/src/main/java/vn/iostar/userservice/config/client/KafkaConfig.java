@@ -29,4 +29,9 @@ public class KafkaConfig {
     public NewTopic getUserInf() {
         return new NewTopic(KafkaTopicName.EMAIL_FORGOT_PASSWORD_TOPIC, 2, (short) 1);
     }
+
+    @Bean
+    public NewTopic verifyParent() {
+        return new NewTopic(KafkaTopicName.EMAIL_VERIFY_PARENT_TOPIC, 2, (short) 1);
+    }
 }

@@ -8,4 +8,5 @@ public class KafkaTopicName {
     public static final  String USER_TOPIC = "user-topic";
     public static final  String EMAIL_VERIFY_TOPIC = "email-verify-topic";
     public  static  final  String POST_TOPIC_GET_USER = "post-topic-get-user";
+    public static final String EMAIL_VERIFY_PARENT_TOPIC = "email-verify-parent-topic";
 }

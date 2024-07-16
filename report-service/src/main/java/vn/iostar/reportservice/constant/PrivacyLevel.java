@@ -8,4 +8,5 @@ public enum PrivacyLevel {
     ADMIN, // Những bài đăng của admin để tất cả mọi người thấy
     CONTRIBUTE,// Những bài đóng góp của người dùng
     BUG, // Những lỗi mà người dùng phát hiện
+    REPORT
 }

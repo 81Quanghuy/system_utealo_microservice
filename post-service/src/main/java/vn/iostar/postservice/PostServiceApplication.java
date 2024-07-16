@@ -17,6 +17,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @Info(title = "Post API", version = "1.0", description = "Documentation Post API v1.0")
 )
 @EnableScheduling
+@EnableAsync
 public class PostServiceApplication {
 
     public static void main(String[] args) {

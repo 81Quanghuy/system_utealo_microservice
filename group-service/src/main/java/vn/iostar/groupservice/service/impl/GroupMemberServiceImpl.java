@@ -42,6 +42,7 @@ public class GroupMemberServiceImpl implements GroupMemberService {
     @Transactional
     public ResponseEntity<GenericResponse> acceptMemberPostGroup(PostGroupDTO postGroup, String currentUserId) {
         log.info("GroupMemberServiceImpl, acceptMemberPostGroup");
+        System.out.println(postGroup);
         Optional<Group> optionalGroup = groupRepository.findById(postGroup.getPostGroupId());
         if (optionalGroup.isPresent()) {
             Group group = optionalGroup.get();
@@ -63,21 +64,21 @@ public class GroupMemberServiceImpl implements GroupMemberService {
                                     .build();
                             groupRequestRepository.delete(optionalGroupRequest.get());
                             groupMemberRepository.save(newGroupMember);
-                            return ResponseEntity.ok(GenericResponse.builder()
-                                    .success(true)
-                                    .statusCode(200)
-                                    .message("Chấp nhận thành viên vào nhóm thành công!")
-                                    .result(null)
-                                    .build());
                         }
                     }
-                    throw new NotFoundException("Yêu cầu tham gia nhóm không tồn tại!");
+                    return ResponseEntity.ok(GenericResponse.builder()
+                            .success(true)
+                            .statusCode(200)
+                            .message("Chấp nhận thành viên vào nhóm thành công!")
+                            .result(null)
+                            .build());
                 }
                 throw new ForbiddenException("Bạn không có quyền chấp nhận thành viên vào nhóm!");
             }
             throw new BadRequestException("Bạn không phải là thành viên của nhóm!");
         }
         throw new NotFoundException("Nhóm không tồn tại!");
+
     }
 
     @Override
@@ -248,7 +249,7 @@ public class GroupMemberServiceImpl implements GroupMemberService {
                         .success(true)
                         .statusCode(200)
                         .message("Rời khỏi nhóm thành công!")
-                        .result(null)
+                        .result("None")
                         .build());
             }
             throw new BadRequestException("Bạn không thể rời khỏi nhóm vì bạn là quản trị viên hoặc phó quản trị viên!");

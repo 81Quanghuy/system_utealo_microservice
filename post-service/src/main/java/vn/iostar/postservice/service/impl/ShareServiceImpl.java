@@ -32,6 +32,8 @@ import vn.iostar.postservice.service.client.FriendClientService;
 import vn.iostar.postservice.service.client.GroupClientService;
 import vn.iostar.postservice.service.client.UserClientService;
 
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
 import java.time.Month;
 import java.time.ZoneId;
@@ -84,7 +86,7 @@ public class ShareServiceImpl implements ShareService {
         share.setUserId(user.getUserId());
         share.setPrivacyLevel(requestDTO.getPrivacyLevel());
         if (requestDTO.getPostGroupId() != null)
-            if (!requestDTO.getPostGroupId().isEmpty() ) {
+            if (!requestDTO.getPostGroupId().isEmpty() && !requestDTO.getPostGroupId().equals("0")) {
                 postGroup = groupClientService.getGroup(requestDTO.getPostGroupId());
             if (postGroup != null) {
                 share.setPostGroupId(postGroup.getId());
@@ -628,5 +630,10 @@ public class ShareServiceImpl implements ShareService {
         }
         return ResponseEntity.ok(GenericResponse.builder().success(true).message("Retrieved group share posts successfully")
                 .result(sharesResponses).statusCode(HttpStatus.OK.value()).build());
+    }
+
+    @Override
+    public Long countSharesByUserId(String userId, Date start, Date end) {
+        return shareRepository.countByUserIdAndCreateAtBetween(userId, start, end);
     }
 }

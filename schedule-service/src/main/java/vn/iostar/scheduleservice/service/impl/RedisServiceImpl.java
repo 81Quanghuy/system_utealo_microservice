@@ -1,6 +1,7 @@
 package vn.iostar.scheduleservice.service.impl;
 
 import org.springframework.data.redis.core.HashOperations;
+import org.springframework.data.redis.core.RedisOperations;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import vn.iostar.scheduleservice.service.RedisService;
@@ -96,5 +97,13 @@ public abstract class RedisServiceImpl implements RedisService {
     public void delete(String key, List<String> fields) {
         hashOperations.delete(key, fields.toArray());
 
+    }
+    @Override
+    public List<Object> getAllSchedulePageable(String key, int page, int size){
+//        RedisOperations<String, String> redisOperations = redisTemplate.opsForList();
+//
+//
+//        List<String> range = redisOperations.range(key, start, end);
+        return null;
     }
 }

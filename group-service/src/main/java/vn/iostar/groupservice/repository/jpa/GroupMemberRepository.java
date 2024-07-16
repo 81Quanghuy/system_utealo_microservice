@@ -25,4 +25,6 @@ public interface GroupMemberRepository extends MongoRepository<GroupMember, Stri
     List<GroupMember> findUserIdAdminInGroup(String groupId);
 
     void deleteByUserId(String userId);
+
+    Optional<GroupMember> findByUserIdAndRole(String id, GroupMemberRoleType role);
 }

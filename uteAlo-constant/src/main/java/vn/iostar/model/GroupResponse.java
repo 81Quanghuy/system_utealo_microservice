@@ -22,4 +22,5 @@ public class GroupResponse {
     private String username;
     private GroupMemberRoleType role;
     private RoleName roleUser;
+    private String emailUser;
 }
